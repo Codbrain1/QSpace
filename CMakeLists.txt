@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(TxtToGrdConvert VERSION 0.1 LANGUAGES CXX)
+option(BUILD_TESTS "Build Convert library tests" ON)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -21,18 +22,27 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -flto")
 
-#устанавливаем директорию сборки
-#CMAKE_BINARY_DIR - корневая директория сборки
-if(CMAKE_BUILD_TYPE STREQUAL "Debug") 
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Debug/bin) #для исполнимых файлов
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Debug/lib) #для динамических библиотек
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Debug/lib) #для статических библиотек
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(OUTPUT_SUBDIR "Debug")
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Release/bin)
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Release/lib)
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Release/lib)
+    set(OUTPUT_SUBDIR "Release")
+elseif(CMAKE_BUILD_TYPE STREQUAL "Test")  # Для тестов, если зададите -DCMAKE_BUILD_TYPE=Test
+    set(OUTPUT_SUBDIR "Test")
+else()
+    set(OUTPUT_SUBDIR "default")  # Fallback
 endif()
 
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${OUTPUT_SUBDIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${OUTPUT_SUBDIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${OUTPUT_SUBDIR}/lib)
+
+
+if(BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+    set(TEST_BINARY_DIR ${CMAKE_BINARY_DIR}/${OUTPUT_SUBDIR}/tests)  # Тесты в поддиректории
+endif()
 # Поиск Qt6, включая LinguistTools
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets LinguistTools)
 
@@ -47,23 +57,23 @@ qt6_add_translations(
     TS_FILES ${TS_FILES}
     QM_FILES_OUTPUT_VARIABLE QM_FILES
 )
-include_directories(TxtToGrdConvert ${CMAKE_CURRENT_SOURCE_DIR}/includes)
 #добавляем таргет библиотеки
-add_library(Convert includes/Converter/Converter.h)
+# add_library(Convert includes/Converter/Converter.h)
 
 set(PROJECT_SOURCES
-    src/main.cpp
-    src/UI/mainwindow.cpp
-    includes/mainwindow.h
-    src/UI/mainwindow.ui
-    ${QM_FILES}
+src/main.cpp
+src/UI/mainwindow.cpp
+includes/mainwindow.h
+includes/Converter/Converter.h
+src/UI/mainwindow.ui
+${QM_FILES}
 )
 qt_add_executable(TxtToGrdConvert
-    MANUAL_FINALIZATION
-    ${PROJECT_SOURCES}
+MANUAL_FINALIZATION
+${PROJECT_SOURCES}
 )
-
-target_link_libraries(TxtToGrdConvert PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Convert)
+target_include_directories(TxtToGrdConvert PRIVATE ${CMAKE_SOURCE_DIR}/includes)
+target_link_libraries(TxtToGrdConvert PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets)
 
 if(WIN32)
 set_target_properties(TxtToGrdConvert PROPERTIES
