@@ -24,7 +24,7 @@
     <item>
      <widget class="QLabel" name="inputlabel">
       <property name="text">
-       <string>Выберите .txt файл для преобразования в .grd</string>
+       <string>Выберите .txt файлы для преобразования в .grd</string>
       </property>
      </widget>
     </item>
@@ -38,14 +38,14 @@
     <item>
      <widget class="QPushButton" name="pushButton_txt">
       <property name="text">
-       <string>Выбрать .txt файл</string>
+       <string>Выбрать .txt файлы</string>
       </property>
      </widget>
     </item>
     <item>
      <widget class="QLabel" name="outputlabel">
       <property name="text">
-       <string>Выходной путь</string>
+       <string>Выходной путь (название папки)</string>
       </property>
      </widget>
     </item>
@@ -59,7 +59,7 @@
     <item>
      <widget class="QPushButton" name="pushButtongrd">
       <property name="text">
-       <string>выбрать выходной файл</string>
+       <string>выбрать выходной путь</string>
       </property>
      </widget>
     </item>

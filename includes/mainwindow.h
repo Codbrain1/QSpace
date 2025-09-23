@@ -1,6 +1,9 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include <qcontainerfwd.h>
+#include <qobject.h>
+
 #include <QComboBox>
 #include <QMainWindow>
 
@@ -30,7 +33,9 @@ class MainWindow : public QMainWindow
 
    private:
     Ui::MainWindow *ui;
-    Translator<double> translator;
+    QStringList inputFiles;
+    QString outputDir;
+    std::vector<Converter<double>> converters;
     QVector<QComboBox *> columnCombos;
 };
 #endif  // MAINWINDOW_H

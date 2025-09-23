@@ -1,13 +1,17 @@
 #include "mainwindow.h"
-#include "./ui_mainwindow.h"
+
+#include <qcontainerfwd.h>
+#include <qdir.h>
 
 #include <QFileDialog>
 #include <QFormLayout>
 #include <QMessageBox>
-#include<iostream>
-MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
+#include <cstddef>
+
+#include "./ui_mainwindow.h"
+#include "Converter/Converter.h"
+
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
 }
@@ -20,18 +24,21 @@ MainWindow::~MainWindow()
 void MainWindow::on_pushButton_txt_clicked()
 {
     try {
-        QString inputfileName = QFileDialog::getOpenFileName(this, tr("Select TXT File"), "", tr("Text Files (*.txt)"));
-        // если входная входной путь не пустой
-        if (!inputfileName.isEmpty()) {
-            // добавляем текст входного файла в input_line_edit
-            ui->lineEdit_input->setText(inputfileName);
+        QStringList inputfileNames =
+            QFileDialog::getOpenFileNames(this, tr("Select TXT Files"), "", tr("Text Files (*.txt)"));
 
-            // если выходной путь не выбран автоматически выбирается имя входного файла с расширением txt
+        if (!inputfileNames.isEmpty()) {
+            inputFiles = inputfileNames;
+            // добавляем текст входного файла в input_line_edit
+            ui->lineEdit_input->setText(inputfileNames.first() + ", ...");
+
+            // если выходной путь не выбран автоматически выбирается корневая директория входных файлов/output
             if (ui->lineEdit_output->text().toStdString().empty()) {
-                QFileInfo fileInfo(inputfileName);  // Извлекаем информацию о файле
-                QString outputfileName =
-                    fileInfo.path() + "/" + fileInfo.completeBaseName() + ".grd";  // Имя без расширения + .grd
-                ui->lineEdit_output->setText(outputfileName);
+                QDir current_dir = QDir::currentPath();
+                QString outputfileName = "output";
+                QString new_output_folder_name = current_dir.absolutePath() + "/" + outputfileName;
+                outputDir = new_output_folder_name;
+                ui->lineEdit_output->setText(outputDir);
             }
 
             // Проверяем ui->scrollContent
@@ -67,34 +74,71 @@ void MainWindow::on_pushButton_txt_clicked()
                 delete item;  // Удаляем QLayoutItem
             }
 
+            QString first_file = inputfileNames.first();
+            if (!first_file.isEmpty()) {
+                Converter<double> first_converter;
 #ifdef _WIN32
-            translator.load_input_file(std::filesystem::path(inputfileName.toStdU16String()));
+                first_translator.load_input_file(std::filesystem::path(first_file.toStdU16String()));
 #else
-            translator.load_input_file(std::filesystem::path(inputfileName.toStdString()));
+                first_converter.load_input_file(std::filesystem::path(first_file.toStdString()));
 #endif
-            // Получите число колонок
-            int numColumns = translator.get_column_count();
+                // Получите число колонок
+                int numColumns = first_converter.get_column_count();
 
-            // елси файл не содержит колонок
-            if (numColumns <= 0) {
-                QMessageBox::warning(this, tr("Ошибка"), tr("Файл пуст или не содержит колонок."));
-                return;
-            }
-            if (numColumns != columnCombos.size()) {
-                columnCombos.clear();
-                auto optionsStd = translator.get_columns();
-                QStringList options;
-                for (const auto &opt : optionsStd) {
-                    options.append(QString::fromStdString(opt));
+                // елси файл не содержит колонок
+                if (numColumns <= 0) {
+                    std::string file_path = first_file.toStdString();
+                    std::string text = "Файл пуст или не содержит колонок: ";
+                    QMessageBox::warning(this, tr("Ошибка"), tr(std::string(text + file_path).c_str()));
+                    return;
+                }
+                if (numColumns != columnCombos.size()) {
+                    columnCombos.clear();
+                    auto optionsStd = Converter<double>::get_columns();
+                    QStringList options;
+                    for (const auto &opt : optionsStd) {
+                        options.append(QString::fromStdString(std::string(opt)));
+                    }
+
+                    for (int i = 0; i < numColumns; ++i) {
+                        QLabel *label = new QLabel(tr("Колонка %1:").arg(i + 1), this);
+                        QComboBox *combo = new QComboBox(this);
+                        combo->addItems(options);
+                        combo->setCurrentIndex(options.indexOf("None"));  // По умолчанию "None"
+                        columnsLayout->addRow(label, combo);
+                        columnCombos.append(combo);
+                    }
                 }
 
-                for (int i = 0; i < numColumns; ++i) {
-                    QLabel *label = new QLabel(tr("Колонка %1:").arg(i + 1), this);
-                    QComboBox *combo = new QComboBox(this);
-                    combo->addItems(options);
-                    combo->setCurrentIndex(options.indexOf("None"));  // По умолчанию "None"
-                    columnsLayout->addRow(label, combo);
-                    columnCombos.append(combo);
+                first_converter.clear();
+                for (auto &inputfileName : inputfileNames) {
+                    // если  входной путь не пустой
+                    if (!inputfileName.isEmpty()) {
+                        Converter<double> item_converter;
+#ifdef _WIN32
+                        item_translator.load_input_file(std::filesystem::path(inputfileName.toStdU16String()));
+#else
+                        item_converter.load_input_file(std::filesystem::path(inputfileName.toStdString()));
+#endif
+                        // Получите число колонок
+                        int numColumns_i = item_converter.get_column_count();
+
+                        // елси файл не содержит колонок
+                        if (numColumns_i <= 0) {
+                            std::string file_path = inputfileName.toStdString();
+                            std::string text = "Файл пуст или не содержит колонок: ";
+                            QMessageBox::warning(this, tr("Ошибка"), tr(std::string(text + file_path).c_str()));
+                            return;
+                        }
+                        if (numColumns_i != numColumns) {
+                            std::string file_path = inputfileName.toStdString();
+                            std::string first_file_path = first_file.toStdString();
+                            std::string text = "число колонок в файлах не совпадают: ";
+                            QMessageBox::warning(this, tr("Ошибка"),
+                                                 tr(std::string(text + file_path + " != " + first_file_path).c_str()));
+                            return;
+                        }
+                    }
                 }
             }
         }
@@ -103,46 +147,47 @@ void MainWindow::on_pushButton_txt_clicked()
         return;
     }
 }
-
-
 void MainWindow::on_pushButtongrd_clicked()
 {
-    QString outputfileName = QFileDialog::getSaveFileName(this, tr("Select GRD File"), "", tr("GRD Files (*.grd)"));
-    if (!outputfileName.isEmpty()) {
-        ui->lineEdit_output->setText(outputfileName);
-        try {
-#ifdef _WIN32
-            translator.load_output_file(outputfileName.toStdU16String());
-#else
-            translator.load_output_file(outputfileName.toStdString());
-#endif
-        } catch (const std::exception &e) {
-            QMessageBox::critical(this, tr("Ошибка"), QString("Ошибка открытия выходного файла: %1").arg(e.what()));
-        }
+    QString outputfolderName = QFileDialog::getSaveFileName(this, tr("Select GRD Folder"));
+    if (!outputfolderName.isEmpty()) {
+        ui->lineEdit_output->setText(outputfolderName);
+        outputDir = outputfolderName;
     }
-
+    QDir new_dir;
+    if (new_dir.mkpath(outputDir)) {
+        outputDir = outputfolderName;
+    } else {
+        QMessageBox::warning(this, "Ошибка", "Не удалось создать папку. Проверь права доступа.");
+    }
 }
-
 
 void MainWindow::on_pushButtonconvert_clicked()
 {
-    QString input = ui->lineEdit_input->text();
-    QString output = ui->lineEdit_output->text();
-    // если входной или выходной пути пусты
-    if (input.isEmpty() || output.isEmpty()) {
-        QMessageBox::warning(this, tr("Ошибка"), tr("Выберите файлы ввода и вывода."));
-        return;
-    }
     try {
+        QDir dir;
+        if (!dir.exists(outputDir)) {
+            if (!dir.mkpath(outputDir)) {
+                QMessageBox::warning(this, "Ошибка", "Не удалось создать папку. Проверь права доступа.");
+            }
+        }
+        for (auto &inputfileName : inputFiles) {
+            QFileInfo fileInfo(inputfileName);                                                // Извлекаем информацию о файле
+            QString outputfileName = outputDir + "/" + fileInfo.completeBaseName() + ".grd";  // Имя без расширения + .grd
+            converters.push_back(Converter<double>());
+            auto &item_converter = converters.back();
 #ifdef _WIN32
-        translator.load_output_file(output.toStdU16String());
+            item_converter.load_input_file(std::filesystem::path(inputfileName.toStdU16String()));
+            item_converter.load_output_file(outputfileName.toStdU16String());
 #else
-        translator.load_output_file(output.toStdString());
+            item_converter.load_input_file(std::filesystem::path(inputfileName.toStdString()));
+            item_converter.load_output_file(outputfileName.toStdString());
 #endif
+        }
     } catch (const std::exception &e) {
         QMessageBox::critical(this, tr("Ошибка"), QString("Ошибка открытия выходного файла: %1").arg(e.what()));
-        return;
     }
+
     std::vector<std::string> columnMappings;  // вектор колонок
     std::vector<std::string> xyzNames;        // вектор координат в grd файле
     for (auto &combo : columnCombos) {
@@ -206,15 +251,16 @@ void MainWindow::on_pushButtonconvert_clicked()
     }
 
     try {
-        // Настройте Translator
-        translator.setup_columns(columnMappings, xyzNames);
-        translator.setup_gridXYZ({xMin, xMax}, {yMin, yMax}, {0, 1}, {nx, ny});
-        translator.read_file();
-        translator.translate_to_grd_bindings();
+        for (size_t i = 0; i < converters.size(); ++i) {
+            // Настроука Converter
+            converters[i].setup_columns(columnMappings, xyzNames);
+            converters[i].setup_gridXYZ({xMin, xMax}, {yMin, yMax}, {0, 1}, {nx, ny});
+            converters[i].read_input_file();
+            converters[i].translate_to_grd_bindings();
+            converters[i].clear_output_file_state();
+        }
         QMessageBox::information(this, tr("Успех"), tr("Конвертация завершена."));
-        translator.clear_output_file_state();
     } catch (const std::exception &e) {
         QMessageBox::critical(this, tr("Ошибка"), QString("Конвертация не удалась: %1").arg(e.what()));
     }
 }
-

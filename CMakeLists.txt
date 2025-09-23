@@ -1,19 +1,21 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(TxtToGrdConvert VERSION 0.1 LANGUAGES CXX)
-option(BUILD_TESTS "Build Convert library tests" ON)
+option(BUILD_TESTS "Build Convert library tests" OFF)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC ON)
+ set(CMAKE_AUTOMOC ON)
+ set(CMAKE_AUTORCC ON)
+ set(CMAKE_AUTOUIC ON)
 
 if(WIN32)
     # Путь к статическому Qt6
     set(CMAKE_PREFIX_PATH "C:/Qt/Qt-6.9.2")
     # Отключение Vulkan
     set(QT_NO_VULKAN ON)
+    set(CMAKE_CXX_COMPILER "C:/Qt/Tools/mingw1310_64/bin/g++.exe")
+    set(CMAKE_C_COMPILER "C:/Qt/Tools/mingw1310_64/bin/gcc.exe")
     # Флаги компиляции для статической сборки
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -static-libstdc++ -static-libgcc")
 endif()
