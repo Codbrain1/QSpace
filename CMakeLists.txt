@@ -22,7 +22,7 @@ endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -flto")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -flto")
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(OUTPUT_SUBDIR "Debug")
@@ -66,7 +66,11 @@ set(PROJECT_SOURCES
 src/main.cpp
 src/UI/mainwindow.cpp
 includes/mainwindow.h
-includes/Converter/Converter.h
+includes/Converter/DataStorage.h
+src/Converter/DataStorage/DataStorage_file_func.cpp
+src/Converter/DataStorage/DataStorage_gets.cpp
+src/Converter/DataStorage/DataStorage_sets.cpp
+includes/ConstantsParametrs.h
 src/UI/mainwindow.ui
 ${QM_FILES}
 )
