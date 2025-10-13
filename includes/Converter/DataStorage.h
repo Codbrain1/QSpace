@@ -45,9 +45,7 @@ class DataStorage
     std::vector<size_t>& get_Ns();
     void set_buff_size(const size_t size);
     void setup_columns(const std::vector<int>& columns);
-    bool read_txt();                       // чтение txt с добавлением в колонки
     bool readw_txt();                      // чтение txt с перезаписью в колонки
-    bool read_bin();                       // чтение bin с добавлением в колонки
     bool readw_bin();                      // чтение bin с перезаписью в колонки
     void reset_cursor() noexcept;          // сброс курсора
     void set_cursor(const size_t cursor);  // установка положения курсора

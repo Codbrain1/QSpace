@@ -223,22 +223,6 @@ void MainWindow::on_pushButton_txt_clicked()
         QStringList inputfileNames =
             QFileDialog::getOpenFileNames(this, tr("Select TXT Files"), "", tr("Text Files (*.txt)"));
 
-        if (!inputfileNames.isEmpty()) {
-            // добавляем текст входного файла в input_line_edit
-            // ui->lineEdit_input->setText(inputfileNames.first() + ", ...");
-            std::vector<std::filesystem::path> vec;
-            for (auto i : inputfileNames) {
-                vec.push_back(i.toStdString());
-            }
-            DataStorage storage(vec);
-            std::vector<int> vec1;
-            for (auto i : columnCombos) {
-                vec1.push_back(i->currentIndex());
-            }
-            storage.setup_columns(vec1);
-            storage.load_file_metadate_txt();
-            storage.readw_txt();
-        }
         //         // если выходной путь не выбран автоматически выбирается корневая директория входных файлов/output
         //         if (ui->lineEdit_output->text().toStdString().empty()) {
         //             QDir current_dir = QDir::currentPath();
