@@ -43,6 +43,7 @@ class DataStorage
     std::vector<int>& get_ind_sph();
     std::vector<double>& get_t_MCYS();
     std::vector<size_t>& get_Ns();
+    std::vector<size_t>& get_offsets();
     void set_buff_size(const size_t size);
     void setup_columns(const std::vector<int>& columns);
     bool readw_txt();                      // чтение txt с перезаписью в колонки

@@ -1,3 +1,5 @@
+#include <cerrno>
+#include <cstddef>
 #include <vector>
 
 #include "Converter/DataStorage.h"
@@ -85,4 +87,12 @@ std::vector<size_t>& DataStorage::get_Ns()
         return Ns;
     else
         throw std::runtime_error("Ns is not allocated");
+}
+std::vector<size_t>& DataStorage::get_offsets()
+{
+    if (!offsets.empty()) {
+        return offsets;
+    } else {
+        throw std::runtime_error("Ns is not allocated");
+    }
 }
