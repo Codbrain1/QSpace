@@ -14,7 +14,7 @@
 #include "Converter/DataStorage.h"
 #include "DataStorageVisit.cpp"
 DataStorage::DataStorage(const std::vector<std::filesystem::path>& pathes)
-    : buff_size(8), current_cursor(0), file_buffer_size(16384), capacity(0)
+    : ibuff_size(8), current_cursor(0), ifile_buffer_size(16384), capacity(0)
 {
     if (!pathes.empty()) {
         ifile_names.reserve(pathes.size());
@@ -25,9 +25,9 @@ DataStorage::DataStorage(const std::vector<std::filesystem::path>& pathes)
                 // TODO: добавить класс logov
             }
         }
-        if (buff_size > ifile_names.size()) buff_size = ifile_names.size();
-        ifiles.reserve(buff_size);
-        ifiles.assign(buff_size, nullptr);
+        if (ibuff_size > ifile_names.size()) ibuff_size = ifile_names.size();
+        ifiles.reserve(ibuff_size);
+        ifiles.assign(ibuff_size, nullptr);
         Ns.reserve(ifile_names.size());
     }
 }
@@ -79,34 +79,34 @@ bool DataStorage::readw_txt()
 {
     // проверка не выходит ли буфер за границы
     if (current_cursor < ifile_names.size()) {
-        if (current_cursor + buff_size < ifile_names.size()) {  // сокльзящее окно с размером buff_size
+        if (current_cursor + ibuff_size < ifile_names.size()) {  // сокльзящее окно с размером buff_size
             size_t index_capacity = 0;
             offsets.clear();
-            offsets.reserve(buff_size);
-            for (size_t i = 0; i < buff_size; ++i) {
+            offsets.reserve(ibuff_size);
+            for (size_t i = 0; i < ibuff_size; ++i) {
                 index_capacity += Ns[current_cursor + i];
                 offsets.push_back(index_capacity);
             }
         } else {  // если файлов осталось меньше чем размер buff_size
-            buff_size = ifile_names.size() - current_cursor;
+            ibuff_size = ifile_names.size() - current_cursor;
             offsets.clear();
-            offsets.reserve(buff_size);
+            offsets.reserve(ibuff_size);
             size_t index_capacity = 0;
-            for (size_t i = 0; i < buff_size; ++i) {
+            for (size_t i = 0; i < ibuff_size; ++i) {
                 index_capacity += Ns[current_cursor + i];
                 offsets.push_back(index_capacity);
             }
         }
 
         //  чтение файлов
-        if (buff_size >= 8) {
+        if (ibuff_size >= 8) {
             // выделение памяти для массивов
             for (size_t i = 0; i < column_list.size(); ++i) {
                 std::visit(ResizeVisitor{offsets.back()}, column_list[i]);
             }
 
 #pragma omp parallel for schedule(dinamic)
-            for (size_t i = 0; i < buff_size; ++i) {
+            for (size_t i = 0; i < ibuff_size; ++i) {
 #ifdef _WIN32
                 ifiles[i] = _wfopen(ifile_names[current_cursor + i].wstring().c_str(), "r");
 #else
@@ -115,7 +115,7 @@ bool DataStorage::readw_txt()
                 if (!ifiles[i]) {
                     // TODO: добавить логи (ошибка открытия файла)
                 } else {
-                    std::vector<char> buffer(file_buffer_size);  // создание буфера для чтения из файла
+                    std::vector<char> buffer(ifile_buffer_size);  // создание буфера для чтения из файла
                     setvbuf(ifiles[i], buffer.data(), _IOFBF, buffer.size());
 
                     fseek(ifiles[i], 0, SEEK_END);
@@ -167,14 +167,14 @@ bool DataStorage::readw_txt()
                     }
                 }
             }
-            current_cursor += buff_size;
+            current_cursor += ibuff_size;
         } else {
             // выделение памяти для массивов
             for (size_t i = 0; i < column_list.size(); ++i) {
                 std::visit(ReservVisitor{offsets.back()}, column_list[i]);
             }
 
-            for (size_t i = 0; i < buff_size; ++i) {
+            for (size_t i = 0; i < ibuff_size; ++i) {
 #ifdef _WIN32
                 ifiles[i] = _wfopen(ifile_names[current_cursor + i].wstring().c_str(), "r");
 #else
@@ -183,7 +183,7 @@ bool DataStorage::readw_txt()
                 if (!ifiles[i]) {
                     // TODO: добавить логи (ошибка открытия файла)
                 } else {
-                    std::vector<char> buffer(file_buffer_size);  // создание буфера для чтения из файла
+                    std::vector<char> buffer(ifile_buffer_size);  // создание буфера для чтения из файла
                     setvbuf(ifiles[i], buffer.data(), _IOFBF, buffer.size());
 
                     fseek(ifiles[i], 0, SEEK_END);
@@ -234,7 +234,7 @@ bool DataStorage::readw_txt()
                     }
                 }
             }
-            current_cursor += buff_size;
+            current_cursor += ibuff_size;
         }
         return true;
     } else {
@@ -244,27 +244,27 @@ bool DataStorage::readw_txt()
 bool DataStorage::readw_bin()
 {
     if (current_cursor < ifile_names.size()) {
-        if (current_cursor + buff_size < ifile_names.size()) {  // сокльзящее окно с размером buff_size
+        if (current_cursor + ibuff_size < ifile_names.size()) {  // сокльзящее окно с размером buff_size
             size_t index_capacity = 0;
             offsets.clear();
-            offsets.reserve(buff_size);
-            for (size_t i = 0; i < buff_size; ++i) {
+            offsets.reserve(ibuff_size);
+            for (size_t i = 0; i < ibuff_size; ++i) {
                 index_capacity += Ns[current_cursor + i];
                 offsets.push_back(index_capacity);
             }
         } else {  // если файлов осталось меньше чем размер buff_size
-            buff_size = ifile_names.size() - current_cursor;
+            ibuff_size = ifile_names.size() - current_cursor;
             offsets.clear();
-            offsets.reserve(buff_size);
+            offsets.reserve(ibuff_size);
             size_t index_capacity = 0;
-            for (size_t i = 0; i < buff_size; ++i) {
+            for (size_t i = 0; i < ibuff_size; ++i) {
                 index_capacity += Ns[current_cursor + i];
                 offsets.push_back(index_capacity);
             }
         }
-        if (buff_size >= 8) {
+        if (ibuff_size >= 8) {
         } else {
-            for (size_t i = 0; i < buff_size; ++i) {
+            for (size_t i = 0; i < ibuff_size; ++i) {
 #ifdef _WIN32
                 ifiles[i] = _wfopen(ifile_names[current_cursor + i].wstring().c_str(), "rb");
 #else
@@ -273,7 +273,7 @@ bool DataStorage::readw_bin()
                 if (!ifiles[i]) {
                     Ns[current_cursor + i] = 0;
                 } else {
-                    std::vector<char> buffer(file_buffer_size);
+                    std::vector<char> buffer(ifile_buffer_size);
                     setvbuf(ifiles[i], buffer.data(), _IOFBF, buffer.size());
                     int _N;
                     fread(&_N, sizeof(int), 1, ifiles[i]);
@@ -297,7 +297,7 @@ bool DataStorage::readw_bin()
                     fclose(ifiles[i]);
                 }
             }
-            current_cursor += buff_size;
+            current_cursor += ibuff_size;
         }
         return true;
     } else {

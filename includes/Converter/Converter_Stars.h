@@ -1,12 +1,13 @@
 #pragma once
 #include "Converter.h"
-class Converter_Stars : protected Converter
+class Converter_Stars : public Converter
 {
    protected:
-    double dV;    //_hb2 / (zmax - zmin);
     double _hb3;  // 1/hb^3
 
    public:
+    Converter_Stars(DataStorage& _data, ParametrsList::iniConstants& c, count_cell _Nbxy);
+    void convert();  // функция конвертации
     // lg означает десятичный логарифм
     void calculate_LgSigma();
     void calculate_Sigma();

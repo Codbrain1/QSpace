@@ -1,5 +1,6 @@
 #include <cerrno>
 #include <cstddef>
+#include <filesystem>
 #include <vector>
 
 #include "Converter/DataStorage.h"
@@ -95,4 +96,17 @@ std::vector<size_t>& DataStorage::get_offsets()
     } else {
         throw std::runtime_error("Ns is not allocated");
     }
+}
+size_t DataStorage::get_count_files()
+{
+    return ifile_names.size();
+}
+size_t DataStorage::get_ibuff_size()
+{
+    return ibuff_size;
+}
+std::vector<std::filesystem::path> DataStorage::get_last_file_names()
+{
+    return std::vector<std::filesystem::path>(ifile_names.begin() + current_cursor - ibuff_size,
+                                              ifile_names.begin() + current_cursor);
 }

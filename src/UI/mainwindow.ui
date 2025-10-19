@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1054</width>
-    <height>691</height>
+    <width>1102</width>
+    <height>699</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -496,8 +496,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>1012</width>
-             <height>237</height>
+             <width>1060</width>
+             <height>241</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_5">
@@ -530,8 +530,8 @@
            <property name="geometry">
             <rect>
              <x>0</x>
-             <y>0</y>
-             <width>998</width>
+             <y>-176</y>
+             <width>1046</width>
              <height>727</height>
             </rect>
            </property>
@@ -916,7 +916,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1054</width>
+     <width>1102</width>
      <height>23</height>
     </rect>
    </property>

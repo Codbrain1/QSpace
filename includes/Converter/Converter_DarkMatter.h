@@ -1,20 +1,28 @@
 #pragma once
+#include <filesystem>
+
 #include "Converter.h"
-class Converter_DarkMatter : protected Converter
+class Converter_DarkMatter : public Converter
 {
    protected:
-    double dV;   //_hb2 / (zmax - zmin);
-    double hb3;  // 1/hb^3
+    double _hb3;  // 1/hb^3
+
+    void calculate_LgSigma(std::vector<double>& projection1, std::vector<double>& projection2);
+    void calculate_Sigma(std::vector<double>& projection1, std::vector<double>& projection2);
+    void calculate_LgRho(std::vector<double>& projection1, std::vector<double>& projection2,
+                         std::vector<double>& projection3);
+    void calculate_Rho(std::vector<double>& projection1, std::vector<double>& projection2, std::vector<double>& projection3);
+
+    void calculate_Vr(std::vector<double>& projection1, std::vector<double>& projection2, std::vector<double>& projection3,
+                      std::vector<double>& v_projection1, std::vector<double>& v_projection2);
+    void calculate_Vfi(std::vector<double>& projection1, std::vector<double>& projection2, std::vector<double>& projection3,
+                       std::vector<double>& v_projection1, std::vector<double>& v_projection2);
+    void calculate_V_projection(std::vector<double>& projection1, std::vector<double>& projection2,
+                                std::vector<double>& projection3, std::vector<double>& v_projection);
 
    public:
+    Converter_DarkMatter(DataStorage& _data, ParametrsList::iniConstants& c, count_cell _Nbxy,
+                         std::filesystem::path _output_path);
+    void convert();  // функция конвертации
     // lg означает десятичный логарифм
-    void calculate_LgSigma();
-    void calculate_Sigma();
-    void calculate_LgRho();
-    void calculate_Rho();
-    void calculate_Vr();
-    void calculate_Vfi();
-    void calculate_Vx();
-    void calculate_Vy();
-    void calculate_Vz();
 };

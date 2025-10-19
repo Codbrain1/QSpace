@@ -1,6 +1,6 @@
 #pragma once
 #include "Converter.h"
-class Converter_YoungStars : protected Converter
+class Converter_YoungStars : public Converter
 {
    protected:
     double gamma;   // адиабатическая постоянная
@@ -8,6 +8,8 @@ class Converter_YoungStars : protected Converter
     double l_Te;    // l_Te = gamma * gamma1 * 10000 / (100.0 / (l_v * l_v));  --> K
 
    public:
+    Converter_YoungStars(DataStorage& _data, ParametrsList::iniConstants& c, count_cell _Nbxy);
+    void convert();  // функция конвертации
     // lg означает десятичный логарифм
     void calculate_LgSigma();
     void calculate_Sigma();

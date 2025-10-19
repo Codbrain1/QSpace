@@ -9,9 +9,6 @@
 #include <QMainWindow>
 #include <memory>
 
-#include "ConstantsParametrs.h"
-#include "Converter/Converter.h"
-
 QT_BEGIN_NAMESPACE
 namespace Ui
 {
@@ -42,7 +39,7 @@ class MainWindow : public QMainWindow
    private:
     // -----------------------------------------------------поля-----------------------------------------------------
     std::unique_ptr<Ui::MainWindow> ui;  // указатель на основное окно приложения
-    // ParametrsList initconst_params;  // списки неизменных параметров приложения
+    QStringList inputfiles_names;
     QString outputDir;  // имя выходной директории
     QVector<QComboBox *> columnCombos;
 

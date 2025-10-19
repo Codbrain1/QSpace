@@ -1,23 +1,29 @@
 #pragma once
 #include "Converter.h"
-class Converter_MolecularClouds : protected Converter
+class Converter_MolecularClouds : public Converter
 {
    protected:
     double gamma;   // адиабатическая постоянная
     double gamma1;  //=gamma-1.0
     double l_Te;    // l_Te = gamma * gamma1 * 10000 / (100.0 / (l_v * l_v));  --> K
+    void calculate_LgT(std::vector<double>& projection1, std::vector<double>& projection2, std::vector<double>& projection3);
+    void calculate_T(std::vector<double>& projection1, std::vector<double>& projection2, std::vector<double>& projection3);
+    void calculate_LgSigma(std::vector<double>& projection1, std::vector<double>& projection2);
+    void calculate_Sigma(std::vector<double>& projection1, std::vector<double>& projection2);
+    void calculate_LgRho(std::vector<double>& projection1, std::vector<double>& projection2,
+                         std::vector<double>& projection3);
+    void calculate_Rho(std::vector<double>& projection1, std::vector<double>& projection2, std::vector<double>& projection3);
+
+    void calculate_Vr(std::vector<double>& projection1, std::vector<double>& projection2, std::vector<double>& projection3,
+                      std::vector<double>& v_projection1, std::vector<double>& v_projection2);
+    void calculate_Vfi(std::vector<double>& projection1, std::vector<double>& projection2, std::vector<double>& projection3,
+                       std::vector<double>& v_projection1, std::vector<double>& v_projection2);
+    void calculate_V_projection(std::vector<double>& projection1, std::vector<double>& projection2,
+                                std::vector<double>& projection3, std::vector<double>& v_projection);
 
    public:
+    Converter_MolecularClouds(DataStorage& _data, ParametrsList::iniConstants& c, count_cell _Nbxy,
+                              std::filesystem::path _output_path);
+    void convert();  // функция конвертации
     // lg означает десятичный логарифм
-    void calculate_LgSigma();
-    void calculate_Sigma();
-    void calculate_LgRho();
-    void calculate_LgT();
-    void calculate_T();
-    void calculate_Rho();
-    void calculate_Vr();
-    void calculate_Vfi();
-    void calculate_Vx();
-    void calculate_Vy();
-    void calculate_Vz();
 };

@@ -1,3 +1,4 @@
+#pragma once
 #include <array>
 #include <string_view>
 class ParametrsList
@@ -30,6 +31,15 @@ class ParametrsList
                                                                     "Vx (X-компонента скорости)",
                                                                     "Vy (Y-компонента скорости)",
                                                                     "Vz (Z-компонента скорости)"};
+    static constexpr std::string_view Z_outParams_Rho = Z_outParams[0];
+    static constexpr std::string_view Z_outParams_LgRho = Z_outParams[1];
+    static constexpr std::string_view Z_outParams_LgSigma = Z_outParams[2];
+    static constexpr std::string_view Z_outParams_Sigma = Z_outParams[3];
+    static constexpr std::string_view Z_outParams_Vfi = Z_outParams[4];
+    static constexpr std::string_view Z_outParams_Vr = Z_outParams[5];
+    static constexpr std::string_view Z_outParams_Vx = Z_outParams[6];
+    static constexpr std::string_view Z_outParams_Vy = Z_outParams[7];
+    static constexpr std::string_view Z_outParams_Vz = Z_outParams[8];
     static constexpr std::string_view Z_outParamT = "T (температура)";
     static constexpr std::string_view Z_outParamLgT = "LgT (десятичный логарифм от температуры)";
     static constexpr std::string_view Z_outParamKit = "Набор параметров";
@@ -47,4 +57,17 @@ class ParametrsList
                                                                     "m (масса частицы)",
                                                                     "ind_sph",
                                                                     "t_MCYS"};
+    static constexpr std::string_view X = Columns_names[0];
+    static constexpr std::string_view Y = Columns_names[1];
+    static constexpr std::string_view Z = Columns_names[2];
+
+    struct iniConstants {
+        double gamma, Km, Kr;
+        double hb;
+    };
+    static constexpr std::string_view is_bin_grd = ".grd (бинарный)";
+    static constexpr std::string_view is_txt_grd = ".grd (текстовый)";
+    static constexpr std::string_view is_bin_ifiles = "бинарный";
+    static constexpr std::string_view is_txt_ifiles = "текстовый";
+    ParametrsList() = delete;
 };

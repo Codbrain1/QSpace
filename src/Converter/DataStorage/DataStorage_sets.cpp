@@ -7,17 +7,17 @@
 void DataStorage::set_buff_size(const size_t size)
 {
     if (size > 0) {
-        buff_size = size;
+        ibuff_size = size;
         ifiles.clear();
-        ifiles.reserve(buff_size);
-        ifiles.assign(buff_size, nullptr);
+        ifiles.reserve(ibuff_size);
+        ifiles.assign(ibuff_size, nullptr);
     }
     throw std::invalid_argument("buff size must not be less 0");
 }
 void DataStorage::set_file_buffer_size(const size_t size)
 {
     if (size > 0) {
-        file_buffer_size = size;
+        ifile_buffer_size = size;
     }
     throw std::invalid_argument("file buff size must not be less 0");
 }
