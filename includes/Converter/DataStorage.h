@@ -31,7 +31,6 @@ class DataStorage
     DataStorage(const std::vector<std::filesystem::path>& pathes);
     DataStorage(const DataStorage&) = delete;             // запрет конструктора копирования
     DataStorage& operator=(const DataStorage&) = delete;  // запрет копирования присваиванием
-    size_t get_count_files();
     std::vector<double>& get_x();
     std::vector<double>& get_y();
     std::vector<double>& get_z();
@@ -48,7 +47,7 @@ class DataStorage
     std::vector<std::filesystem::path> get_last_file_names();
     size_t get_ibuff_size();
     void set_buff_size(const size_t size);
-    void setup_columns(const std::vector<int>& columns);
+    void setup_columns(const std::vector<std::string>& columns);
     bool readw_txt();                      // чтение txt с перезаписью в колонки
     bool readw_bin();                      // чтение bin с перезаписью в колонки
     void reset_cursor() noexcept;          // сброс курсора

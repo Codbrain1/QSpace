@@ -60,6 +60,14 @@ class ParametrsList
     static constexpr std::string_view X = Columns_names[0];
     static constexpr std::string_view Y = Columns_names[1];
     static constexpr std::string_view Z = Columns_names[2];
+    static constexpr std::string_view Rho = Columns_names[3];
+    static constexpr std::string_view VX = Columns_names[4];
+    static constexpr std::string_view VY = Columns_names[5];
+    static constexpr std::string_view VZ = Columns_names[6];
+    static constexpr std::string_view e = Columns_names[7];
+    static constexpr std::string_view m = Columns_names[8];
+    static constexpr std::string_view ind_sph = Columns_names[9];
+    static constexpr std::string_view t_MCYS = Columns_names[10];
 
     struct iniConstants {
         double gamma, Km, Kr;

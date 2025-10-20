@@ -26,7 +26,7 @@ void Converter_DarkMatter::convert()
     std::vector<double>& projection2 = [xy = &XY, data = &data]() -> std::vector<double>& {  // проекция для y
         if (xy->second == ParametrsList::X) {
             return data->get_x();
-        } else if (xy->first == ParametrsList::Y) {
+        } else if (xy->second == ParametrsList::Y) {
             return data->get_y();
         } else {
             return data->get_z();
@@ -57,7 +57,7 @@ void Converter_DarkMatter::convert()
     std::vector<double>& v_projection2 = [xy = &XY, data = &data]() -> std::vector<double>& {  // проекция для y
         if (xy->second == ParametrsList::X) {
             return data->get_vx();
-        } else if (xy->first == ParametrsList::Y) {
+        } else if (xy->second == ParametrsList::Y) {
             return data->get_vy();
         } else {
             return data->get_vz();
@@ -75,7 +75,8 @@ void Converter_DarkMatter::convert()
         }
     }();
     auto file_pathes = data.get_last_file_names();
-    std::vector<std::string> file_names(file_pathes.size());
+    std::vector<std::string> file_names;
+    file_names.reserve(file_pathes.size());
     for (const auto& i : file_pathes) {
         file_names.push_back(i.stem());
     }
@@ -88,8 +89,9 @@ void Converter_DarkMatter::convert()
             //-----------------------создание поддиректории--------------------------
             ofiles_names.reserve(file_names.size());
             std::string dir = "Rho";
+            std::filesystem::create_directory(output_directory / dir);
             for (size_t i = 0; i < file_names.size(); ++i) {
-                ofiles_names.push_back(output_directory / dir / (dir + file_names[i]));
+                ofiles_names.push_back(output_directory / dir / (dir + file_names[i] + ".grd"));
             }
         } else if (Z_grd_list[file_type] == ParametrsList::Z_outParams_LgRho) {
             //-----------------------Вычисление значений--------------------------
@@ -98,8 +100,9 @@ void Converter_DarkMatter::convert()
             //-----------------------создание поддиректории--------------------------
             ofiles_names.reserve(file_names.size());
             std::string dir = "LgRho";
+            std::filesystem::create_directory(output_directory / dir);
             for (size_t i = 0; i < file_names.size(); ++i) {
-                ofiles_names.push_back(output_directory / dir / (dir + file_names[i]));
+                ofiles_names.push_back(output_directory / dir / (dir + file_names[i] + ".grd"));
             }
 
         } else if (Z_grd_list[file_type] == ParametrsList::Z_outParams_LgSigma) {
@@ -109,8 +112,9 @@ void Converter_DarkMatter::convert()
             //-----------------------создание поддиректории--------------------------
             ofiles_names.reserve(file_names.size());
             std::string dir = "LgSigma";
+            std::filesystem::create_directory(output_directory / dir);
             for (size_t i = 0; i < file_names.size(); ++i) {
-                ofiles_names.push_back(output_directory / dir / (dir + file_names[i]));
+                ofiles_names.push_back(output_directory / dir / (dir + file_names[i] + ".grd"));
             }
 
         } else if (Z_grd_list[file_type] == ParametrsList::Z_outParams_Sigma) {
@@ -120,8 +124,9 @@ void Converter_DarkMatter::convert()
             //-----------------------создание поддиректории--------------------------
             ofiles_names.reserve(file_names.size());
             std::string dir = "Sigma";
+            std::filesystem::create_directory(output_directory / dir);
             for (size_t i = 0; i < file_names.size(); ++i) {
-                ofiles_names.push_back(output_directory / dir / (dir + file_names[i]));
+                ofiles_names.push_back(output_directory / dir / (dir + file_names[i] + ".grd"));
             }
 
         } else if (Z_grd_list[file_type] == ParametrsList::Z_outParams_Vfi) {
@@ -131,8 +136,9 @@ void Converter_DarkMatter::convert()
             //-----------------------создание поддиректории--------------------------
             ofiles_names.reserve(file_names.size());
             std::string dir = "Vfi";
+            std::filesystem::create_directory(output_directory / dir);
             for (size_t i = 0; i < file_names.size(); ++i) {
-                ofiles_names.push_back(output_directory / dir / (dir + file_names[i]));
+                ofiles_names.push_back(output_directory / dir / (dir + file_names[i] + ".grd"));
             }
 
         } else if (Z_grd_list[file_type] == ParametrsList::Z_outParams_Vr) {
@@ -142,8 +148,9 @@ void Converter_DarkMatter::convert()
             //-----------------------создание поддиректории--------------------------
             ofiles_names.reserve(file_names.size());
             std::string dir = "Vr";
+            std::filesystem::create_directory(output_directory / dir);
             for (size_t i = 0; i < file_names.size(); ++i) {
-                ofiles_names.push_back(output_directory / dir / (dir + file_names[i]));
+                ofiles_names.push_back(output_directory / dir / (dir + file_names[i] + ".grd"));
             }
 
         } else if (Z_grd_list[file_type] == ParametrsList::Z_outParams_Vx) {
@@ -153,8 +160,9 @@ void Converter_DarkMatter::convert()
             //-----------------------создание поддиректории--------------------------
             ofiles_names.reserve(file_names.size());
             std::string dir = std::string(XY.first);
+            std::filesystem::create_directory(output_directory / dir);
             for (size_t i = 0; i < file_names.size(); ++i) {
-                ofiles_names.push_back(output_directory / dir / (dir + file_names[i]));
+                ofiles_names.push_back(output_directory / dir / (dir + file_names[i] + ".grd"));
             }
 
         } else if (Z_grd_list[file_type] == ParametrsList::Z_outParams_Vy) {
@@ -164,8 +172,9 @@ void Converter_DarkMatter::convert()
             //-----------------------создание поддиректории--------------------------
             ofiles_names.reserve(file_names.size());
             std::string dir = std::string(XY.second);
+            std::filesystem::create_directory(output_directory / dir);
             for (size_t i = 0; i < file_names.size(); ++i) {
-                ofiles_names.push_back(output_directory / dir / (dir + file_names[i]));
+                ofiles_names.push_back(output_directory / dir / (dir + file_names[i] + ".grd"));
             }
         } else if (Z_grd_list[file_type] == ParametrsList::Z_outParams_Vz) {
             //-----------------------Вычисление значений--------------------------
@@ -184,8 +193,9 @@ void Converter_DarkMatter::convert()
                     return std::string(ParametrsList::Z_outParams_Vx);
                 }
             }();
+            std::filesystem::create_directory(output_directory / dir);
             for (size_t i = 0; i < file_names.size(); ++i) {
-                ofiles_names.push_back(output_directory / dir / (dir + file_names[i]));
+                ofiles_names.push_back(output_directory / dir / (dir + file_names[i] + ".grd"));
             }
         } else {
             // TODO: добавить логи
@@ -200,7 +210,7 @@ void Converter_DarkMatter::calculate_LgSigma(std::vector<double>& projection1, s
     const auto& offests = data.get_offsets();
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     //------------------------------------вычисления значений на сетке----------------------------------
-    for (size_t i = 0; i < Ns.size(); ++i) {
+    for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
         for (size_t j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
@@ -232,12 +242,12 @@ void Converter_DarkMatter::calculate_LgSigma(std::vector<double>& projection1, s
 }
 void Converter_DarkMatter::calculate_Sigma(std::vector<double>& projection1, std::vector<double>& projection2)
 {
-    auto Ns = data.get_Ns();  // число строк в каждом файле
-    auto m_p = data.get_m();
-    auto offests = data.get_offsets();
+    const auto& Ns = data.get_Ns();  // число строк в каждом файле
+    const auto& m_p = data.get_m();
+    const auto& offests = data.get_offsets();
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     //------------------------------------вычисления значений на сетке----------------------------------
-    for (size_t i = 0; i < Ns.size(); ++i) {
+    for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
         for (size_t j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
@@ -276,7 +286,7 @@ void Converter_DarkMatter::calculate_LgRho(std::vector<double>& projection1, std
     const auto& offests = data.get_offsets();
     //------------------------------------вычисления значений на сетке----------------------------------
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
-    for (size_t i = 0; i < Ns.size(); ++i) {
+    for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
         for (size_t j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
@@ -316,7 +326,7 @@ void Converter_DarkMatter::calculate_Rho(std::vector<double>& projection1, std::
     const auto& offests = data.get_offsets();
     //------------------------------------вычисления значений на сетке----------------------------------
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
-    for (size_t i = 0; i < Ns.size(); ++i) {
+    for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
         for (size_t j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
@@ -357,10 +367,10 @@ void Converter_DarkMatter::calculate_Vr(std::vector<double>& projection1, std::v
     const auto& offests = data.get_offsets();
 
     std::vector<size_t> Nij_b;
-    //------------------------------------вычисления значений на сетке----------------------------------
     Nij_b.resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
-    for (size_t i = 0; i < Ns.size(); ++i) {
+    //------------------------------------вычисления значений на сетке----------------------------------
+    for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
         for (size_t j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
@@ -382,7 +392,9 @@ void Converter_DarkMatter::calculate_Vr(std::vector<double>& projection1, std::v
     }
 #pragma omp parallel for simd
     for (size_t i = 0; i < Z.back().size(); ++i) {
-        Z.back()[i] /= Nij_b[i];
+        if (Z.back()[i] != 0) {
+            Z.back()[i] /= Nij_b[i];
+        }
     }
     //----------------------------------вычисление предельных значений---------------------------------
     limits_f.push_back(std::vector<lim<double>>());
@@ -412,10 +424,10 @@ void Converter_DarkMatter::calculate_Vfi(std::vector<double>& projection1, std::
     const auto& offests = data.get_offsets();
 
     std::vector<size_t> Nij_b;
-    //------------------------------------вычисления значений на сетке----------------------------------
     Nij_b.resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
+    //------------------------------------вычисления значений на сетке----------------------------------
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
-    for (size_t i = 0; i < Ns.size(); ++i) {
+    for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
         for (size_t j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
@@ -437,7 +449,9 @@ void Converter_DarkMatter::calculate_Vfi(std::vector<double>& projection1, std::
     }
 #pragma omp parallel for simd
     for (size_t i = 0; i < Z.back().size(); ++i) {
-        Z.back()[i] /= Nij_b[i];
+        if (Z.back()[i] != 0) {
+            Z.back()[i] /= Nij_b[i];
+        }
     }
     //----------------------------------вычисление предельных значений---------------------------------
     limits_f.push_back(std::vector<lim<double>>());
@@ -467,7 +481,7 @@ void Converter_DarkMatter::calculate_V_projection(std::vector<double>& projectio
     //------------------------------------вычисления значений на сетке----------------------------------
     Nij_b.resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
-    for (size_t i = 0; i < Ns.size(); ++i) {
+    for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
         for (size_t j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
@@ -485,7 +499,9 @@ void Converter_DarkMatter::calculate_V_projection(std::vector<double>& projectio
     }
 #pragma omp parallel for simd
     for (size_t i = 0; i < Z.back().size(); ++i) {
-        Z.back()[i] /= Nij_b[i];
+        if (Z.back()[i] != 0) {
+            Z.back()[i] /= Nij_b[i];
+        }
     }
     //----------------------------------вычисление предельных значений---------------------------------
     limits_f.push_back(std::vector<lim<double>>());

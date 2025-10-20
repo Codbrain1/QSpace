@@ -5,11 +5,10 @@
 #include <cstdio>
 #include <filesystem>
 #include <stdexcept>
-#include <string_view>
 #include <utility>
 #include <vector>
 Converter::Converter(DataStorage& _data, ParametrsList::iniConstants& c, count_cell _Nbxy, std::filesystem::path _output_path)
-    : Nfiles_into_clomun(_data.get_count_files()),
+    : Nfiles_into_clomun(_data.get_ibuff_size()),
       output_directory(_output_path),
       data(_data),
       obuff_size(_data.get_ibuff_size()),
@@ -61,7 +60,7 @@ void Converter::set_ofile_buff_size(size_t size)
     }
 }
 void Converter::setup_output_data(const std::vector<std::string>& Z_grd_list_columns,
-                                  const std::pair<std::string_view, std::string_view>& _XY)
+                                  const std::pair<std::string, std::string>& _XY)
 {
     for (const auto& i : Z_grd_list_columns) {
         Z_grd_list.push_back(i);
@@ -75,7 +74,7 @@ void Converter::save_grd_txt()
                                            // требуется записать (учитывает разные столбцы)
     }
     ofiles.resize(obuff_size);
-
+    Nfiles_into_clomun = data.get_ibuff_size();
     for (size_t col = 0; col < Z_grd_list.size(); ++col) {  // запись данных в различные папки
         size_t current_cursor = 0;
         while (current_cursor < Nfiles_into_clomun) {  // шаг по буферу файлов записываемых за раз
@@ -104,7 +103,7 @@ void Converter::save_grd_bin()
                                            // требуется записать (учитывает разные столбцы)
     }
     ofiles.resize(obuff_size);
-
+    Nfiles_into_clomun = data.get_ibuff_size();
     for (size_t col = 0; col < Z_grd_list.size(); ++col) {  // запись данных в различные папки
         size_t current_cursor = 0;
         while (current_cursor < Nfiles_into_clomun) {  // шаг по буферу файлов записываемых за раз
@@ -177,21 +176,11 @@ void Converter::parallel_save_txt(size_t current_cursor, size_t col)
             std::vector<char> writefile;
             size_t size = Nb_XY.Nx * Nb_XY.Ny * 32 + (Nb_XY.Nx - 1) * Nb_XY.Ny + Nb_XY.Ny + 256;
 
-            // перенести в вычисления
-            //  for (int j = 0; j < Nb_XY.Nx * Nb_XY.Ny; ++j) {
-            //      limits_f.min = (Z[col][j + Nb_XY.Nx * Nb_XY.Ny * (i + current_cursor)] < limits_f.min)
-            //                         ? Z[col][j + Nb_XY.Nx * Nb_XY.Ny * (i + current_cursor)]
-            //                         : limits_f.min;
-            //      limits_f.max = (Z[col][j + Nb_XY.Nx * Nb_XY.Ny * (i + current_cursor)] > limits_f.max)
-            //                         ? Z[col][j + Nb_XY.Nx * Nb_XY.Ny * (i + current_cursor)]
-            //                         : limits_f.max;
-            //  }
-
             writefile.reserve(size);
             char header[256];
-            int header_len = snprintf(header, sizeof(header), "DSAA\n%d %d\n%.13f %.13f\n%.13f %.13f\n%.13f %.13f\n",
-                                      Nb_XY.Nx, Nb_XY.Ny, fx_lim.min, fx_lim.max, fy_lim.min, fy_lim.max,
-                                      limits_f[col][cursor_i].min, limits_f[col][cursor_i].max);
+            int header_len = snprintf(header, sizeof(header), "DSAA\n%d %d\n%.6f %.6f\n%.6f %.6f\n%.6f %.6f\n", Nb_XY.Nx,
+                                      Nb_XY.Ny, fx_lim.min, fx_lim.max, fy_lim.min, fy_lim.max, limits_f[col][cursor_i].min,
+                                      limits_f[col][cursor_i].max);
             if (header_len < 0 || header_len >= static_cast<int>(sizeof(header))) {
                 // TODO: добавить логи
                 fclose(ofiles[cursor_i]);
@@ -200,7 +189,7 @@ void Converter::parallel_save_txt(size_t current_cursor, size_t col)
                 for (int ib = 0; ib < Nb_XY.Ny; ++ib) {
                     for (int jb = 0; jb < Nb_XY.Nx; ++jb) {
                         char value[32];
-                        int len_value = snprintf(value, sizeof(value), "%.13f",
+                        int len_value = snprintf(value, sizeof(value), "%.6f",
                                                  Z[col][Nb_XY.Ny * ib + jb + Nb_XY.Nx * Nb_XY.Ny * (i + current_cursor)]);
                         writefile.insert(writefile.end(), value, value + len_value);
                         if (jb < Nb_XY.Nx - 1) writefile.push_back(' ');
@@ -265,9 +254,9 @@ void Converter::consistent_save_txt(size_t current_cursor, size_t col)
 
             writefile.reserve(size);
             char header[256];
-            int header_len = snprintf(header, sizeof(header), "DSAA\n%d %d\n%.13f %.13f\n%.13f %.13f\n%.13f %.13f\n",
-                                      Nb_XY.Nx, Nb_XY.Ny, fx_lim.min, fx_lim.max, fy_lim.min, fy_lim.max,
-                                      limits_f[col][cursor_i].min, limits_f[col][cursor_i].max);
+            int header_len = snprintf(header, sizeof(header), "DSAA\n%d %d\n%.6f %.13f\n%.6f %.13f\n%.6f %.6f\n", Nb_XY.Nx,
+                                      Nb_XY.Ny, fx_lim.min, fx_lim.max, fy_lim.min, fy_lim.max, limits_f[col][cursor_i].min,
+                                      limits_f[col][cursor_i].max);
             if (header_len < 0 || header_len >= static_cast<int>(sizeof(header))) {
                 // TODO: добавить логи
                 fclose(ofiles[cursor_i]);
@@ -276,7 +265,7 @@ void Converter::consistent_save_txt(size_t current_cursor, size_t col)
                 for (int ib = 0; ib < Nb_XY.Ny; ++ib) {
                     for (int jb = 0; jb < Nb_XY.Nx; ++jb) {
                         char value[32];
-                        int len_value = snprintf(value, sizeof(value), "%.13f",
+                        int len_value = snprintf(value, sizeof(value), "%.6f",
                                                  Z[col][Nb_XY.Ny * ib + jb + Nb_XY.Nx * Nb_XY.Ny * (i + current_cursor)]);
                         writefile.insert(writefile.end(), value, value + len_value);
                         if (jb < Nb_XY.Nx - 1) writefile.push_back(' ');

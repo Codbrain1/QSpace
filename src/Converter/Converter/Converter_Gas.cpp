@@ -1,6 +1,7 @@
 #include "Converter/Converter_Gas.h"
 
 #include <cmath>
+#include <limits>
 Converter_Gas::Converter_Gas(DataStorage& _data, ParametrsList::iniConstants& c, count_cell _Nbxy,
                              std::filesystem::path _output_path)
     : Converter(_data, c, _Nbxy, _output_path)
@@ -25,7 +26,7 @@ void Converter_Gas::convert()
     std::vector<double>& projection2 = [xy = &XY, data = &data]() -> std::vector<double>& {  // проекция для y
         if (xy->second == ParametrsList::X) {
             return data->get_x();
-        } else if (xy->first == ParametrsList::Y) {
+        } else if (xy->second == ParametrsList::Y) {
             return data->get_y();
         } else {
             return data->get_z();
@@ -56,7 +57,7 @@ void Converter_Gas::convert()
     std::vector<double>& v_projection2 = [xy = &XY, data = &data]() -> std::vector<double>& {  // проекция для y
         if (xy->second == ParametrsList::X) {
             return data->get_vx();
-        } else if (xy->first == ParametrsList::Y) {
+        } else if (xy->second == ParametrsList::Y) {
             return data->get_vy();
         } else {
             return data->get_vz();
@@ -74,7 +75,8 @@ void Converter_Gas::convert()
         }
     }();
     auto file_pathes = data.get_last_file_names();
-    std::vector<std::string> file_names(file_pathes.size());
+    std::vector<std::string> file_names;
+    file_names.reserve(file_pathes.size());
     for (const auto& i : file_pathes) {
         file_names.push_back(i.stem());
     }
@@ -87,8 +89,9 @@ void Converter_Gas::convert()
             //-----------------------создание поддиректории--------------------------
             ofiles_names.reserve(file_names.size());
             std::string dir = "Rho";
+            std::filesystem::create_directory(output_directory / dir);
             for (size_t i = 0; i < file_names.size(); ++i) {
-                ofiles_names.push_back(output_directory / dir / (dir + file_names[i]));
+                ofiles_names.push_back(output_directory / dir / (dir + file_names[i] + ".grd"));
             }
         } else if (Z_grd_list[file_type] == ParametrsList::Z_outParams_LgRho) {
             //-----------------------Вычисление значений--------------------------
@@ -97,8 +100,9 @@ void Converter_Gas::convert()
             //-----------------------создание поддиректории--------------------------
             ofiles_names.reserve(file_names.size());
             std::string dir = "LgRho";
+            std::filesystem::create_directory(output_directory / dir);
             for (size_t i = 0; i < file_names.size(); ++i) {
-                ofiles_names.push_back(output_directory / dir / (dir + file_names[i]));
+                ofiles_names.push_back(output_directory / dir / (dir + file_names[i] + ".grd"));
             }
 
         } else if (Z_grd_list[file_type] == ParametrsList::Z_outParams_LgSigma) {
@@ -108,8 +112,9 @@ void Converter_Gas::convert()
             //-----------------------создание поддиректории--------------------------
             ofiles_names.reserve(file_names.size());
             std::string dir = "LgSigma";
+            std::filesystem::create_directory(output_directory / dir);
             for (size_t i = 0; i < file_names.size(); ++i) {
-                ofiles_names.push_back(output_directory / dir / (dir + file_names[i]));
+                ofiles_names.push_back(output_directory / dir / (dir + file_names[i] + ".grd"));
             }
 
         } else if (Z_grd_list[file_type] == ParametrsList::Z_outParams_Sigma) {
@@ -119,8 +124,9 @@ void Converter_Gas::convert()
             //-----------------------создание поддиректории--------------------------
             ofiles_names.reserve(file_names.size());
             std::string dir = "Sigma";
+            std::filesystem::create_directory(output_directory / dir);
             for (size_t i = 0; i < file_names.size(); ++i) {
-                ofiles_names.push_back(output_directory / dir / (dir + file_names[i]));
+                ofiles_names.push_back(output_directory / dir / (dir + file_names[i] + ".grd"));
             }
 
         } else if (Z_grd_list[file_type] == ParametrsList::Z_outParams_Vfi) {
@@ -130,8 +136,9 @@ void Converter_Gas::convert()
             //-----------------------создание поддиректории--------------------------
             ofiles_names.reserve(file_names.size());
             std::string dir = "Vfi";
+            std::filesystem::create_directory(output_directory / dir);
             for (size_t i = 0; i < file_names.size(); ++i) {
-                ofiles_names.push_back(output_directory / dir / (dir + file_names[i]));
+                ofiles_names.push_back(output_directory / dir / (dir + file_names[i] + ".grd"));
             }
 
         } else if (Z_grd_list[file_type] == ParametrsList::Z_outParams_Vr) {
@@ -141,8 +148,9 @@ void Converter_Gas::convert()
             //-----------------------создание поддиректории--------------------------
             ofiles_names.reserve(file_names.size());
             std::string dir = "Vr";
+            std::filesystem::create_directory(output_directory / dir);
             for (size_t i = 0; i < file_names.size(); ++i) {
-                ofiles_names.push_back(output_directory / dir / (dir + file_names[i]));
+                ofiles_names.push_back(output_directory / dir / (dir + file_names[i] + ".grd"));
             }
 
         } else if (Z_grd_list[file_type] == ParametrsList::Z_outParams_Vx) {
@@ -152,8 +160,9 @@ void Converter_Gas::convert()
             //-----------------------создание поддиректории--------------------------
             ofiles_names.reserve(file_names.size());
             std::string dir = std::string(XY.first);
+            std::filesystem::create_directory(output_directory / dir);
             for (size_t i = 0; i < file_names.size(); ++i) {
-                ofiles_names.push_back(output_directory / dir / (dir + file_names[i]));
+                ofiles_names.push_back(output_directory / dir / (dir + file_names[i] + ".grd"));
             }
 
         } else if (Z_grd_list[file_type] == ParametrsList::Z_outParams_Vy) {
@@ -163,8 +172,9 @@ void Converter_Gas::convert()
             //-----------------------создание поддиректории--------------------------
             ofiles_names.reserve(file_names.size());
             std::string dir = std::string(XY.second);
+            std::filesystem::create_directory(output_directory / dir);
             for (size_t i = 0; i < file_names.size(); ++i) {
-                ofiles_names.push_back(output_directory / dir / (dir + file_names[i]));
+                ofiles_names.push_back(output_directory / dir / (dir + file_names[i] + ".grd"));
             }
         } else if (Z_grd_list[file_type] == ParametrsList::Z_outParams_Vz) {
             //-----------------------Вычисление значений--------------------------
@@ -183,8 +193,9 @@ void Converter_Gas::convert()
                     return std::string(ParametrsList::Z_outParams_Vx);
                 }
             }();
+            std::filesystem::create_directory(output_directory / dir);
             for (size_t i = 0; i < file_names.size(); ++i) {
-                ofiles_names.push_back(output_directory / dir / (dir + file_names[i]));
+                ofiles_names.push_back(output_directory / dir / (dir + file_names[i] + ".grd"));
             }
 
         } else if (Z_grd_list[file_type] == ParametrsList::Z_outParamT) {
@@ -194,8 +205,9 @@ void Converter_Gas::convert()
             //-----------------------создание поддиректории--------------------------
             ofiles_names.reserve(file_names.size());
             std::string dir = "Termal";
+            std::filesystem::create_directory(output_directory / dir);
             for (size_t i = 0; i < file_names.size(); ++i) {
-                ofiles_names.push_back(output_directory / dir / (dir + file_names[i]));
+                ofiles_names.push_back(output_directory / dir / (dir + file_names[i] + ".grd"));
             }
         } else if (Z_grd_list[file_type] == ParametrsList::Z_outParamLgT) {
             //-----------------------Вычисление значений--------------------------
@@ -204,8 +216,9 @@ void Converter_Gas::convert()
             //-----------------------создание поддиректории--------------------------
             ofiles_names.reserve(file_names.size());
             std::string dir = "LgTermal";
+            std::filesystem::create_directory(output_directory / dir);
             for (size_t i = 0; i < file_names.size(); ++i) {
-                ofiles_names.push_back(output_directory / dir / (dir + file_names[i]));
+                ofiles_names.push_back(output_directory / dir / (dir + file_names[i] + ".grd"));
             }
         } else {
             // TODO: добавить логи
@@ -218,18 +231,21 @@ void Converter_Gas::calculate_LgSigma(std::vector<double>& projection1, std::vec
     const auto& Ns = data.get_Ns();  // число строк в каждом файле
     const auto& m_p = data.get_m();
     const auto& offests = data.get_offsets();
+    const auto& ind_sph = data.get_ind_sph();
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     //------------------------------------вычисления значений на сетке----------------------------------
-    for (size_t i = 0; i < Ns.size(); ++i) {
+    for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
         for (size_t j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
-            double pr1 = projection1[index];
-            double pr2 = projection2[index];
-            if (pr1 >= limits_x.min && pr1 <= limits_x.max && pr2 >= limits_y.min && pr2 <= limits_y.max) {
-                int ib = (int)((pr1 - limits_x.min) / hb);
-                int jb = (int)((pr2 - limits_y.min) / hb);
-                Z.back()[ib + jb * Nb_XY.Ny + Z_offset] += m_p[index];
+            if (ind_sph[index] == 0) {
+                double pr1 = projection1[index];
+                double pr2 = projection2[index];
+                if (pr1 >= limits_x.min && pr1 <= limits_x.max && pr2 >= limits_y.min && pr2 <= limits_y.max) {
+                    int ib = (int)((pr1 - limits_x.min) / hb);
+                    int jb = (int)((pr2 - limits_y.min) / hb);
+                    Z.back()[ib + jb * Nb_XY.Ny + Z_offset] += m_p[index];
+                }
             }
         }
     }
@@ -242,7 +258,7 @@ void Converter_Gas::calculate_LgSigma(std::vector<double>& projection1, std::vec
         for (int j = 0; j < Nb_XY.Nx * Nb_XY.Ny; ++j) {
             fmax = (Z.back()[index + j] > fmax) ? Z.back()[index + j] : fmax;
         }
-        limits_f.back().push_back({std::log10(fmax * _hb2 * l_s), std::log10(0.0001 * fmax * l_s)});
+        limits_f.back().push_back({std::log10(fmax * _hb2 * l_s), std::log10(0.000001 * fmax * l_s * _hb2)});
     }
     //-----------------------------------перевод к размерным величинам----------------------------------
 #pragma omp parallel for simd
@@ -252,21 +268,24 @@ void Converter_Gas::calculate_LgSigma(std::vector<double>& projection1, std::vec
 }
 void Converter_Gas::calculate_Sigma(std::vector<double>& projection1, std::vector<double>& projection2)
 {
-    auto Ns = data.get_Ns();  // число строк в каждом файле
-    auto m_p = data.get_m();
-    auto offests = data.get_offsets();
+    const auto& Ns = data.get_Ns();  // число строк в каждом файле
+    const auto& m_p = data.get_m();
+    const auto& offests = data.get_offsets();
+    const auto& ind_sph = data.get_ind_sph();
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     //------------------------------------вычисления значений на сетке----------------------------------
-    for (size_t i = 0; i < Ns.size(); ++i) {
+    for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
         for (size_t j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
-            double pr1 = projection1[index];
-            double pr2 = projection2[index];
-            if (pr1 >= limits_x.min && pr1 <= limits_x.max && pr2 >= limits_y.min && pr2 <= limits_y.max) {
-                int ib = (int)((pr1 - limits_x.min) / hb);
-                int jb = (int)((pr2 - limits_y.min) / hb);
-                Z.back()[ib + jb * Nb_XY.Ny + Z_offset] += m_p[index];
+            if (ind_sph[index] == 0) {
+                double pr1 = projection1[index];
+                double pr2 = projection2[index];
+                if (pr1 >= limits_x.min && pr1 <= limits_x.max && pr2 >= limits_y.min && pr2 <= limits_y.max) {
+                    int ib = (int)((pr1 - limits_x.min) / hb);
+                    int jb = (int)((pr2 - limits_y.min) / hb);
+                    Z.back()[ib + jb * Nb_XY.Ny + Z_offset] += m_p[index];
+                }
             }
         }
     }
@@ -292,31 +311,36 @@ void Converter_Gas::calculate_LgRho(std::vector<double>& projection1, std::vecto
                                     std::vector<double>& projection3)
 {
     const auto& Ns = data.get_Ns();  // число строк в каждом файле
-    const auto& m_p = data.get_m();
+    const auto& rho_p = data.get_rho();
     const auto& offests = data.get_offsets();
+    const auto& ind_sph = data.get_ind_sph();
     std::vector<size_t> Nij_b;
     //------------------------------------вычисления значений на сетке----------------------------------
     Nij_b.resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
-    for (size_t i = 0; i < Ns.size(); ++i) {
+    for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
         for (size_t j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
-            double pr1 = projection1[index];
-            double pr2 = projection2[index];
-            double pr3 = projection3[index];
-            if (pr1 >= limits_x.min && pr1 <= limits_x.max && pr2 >= limits_y.min && pr2 <= limits_y.max &&
-                pr3 >= limits_z.min && pr3 <= limits_z.max) {
-                int ib = (int)((pr1 - limits_x.min) / hb);
-                int jb = (int)((pr2 - limits_y.min) / hb);
-                Z.back()[ib + jb * Nb_XY.Ny + Z_offset] += m_p[index];
-                Nij_b[ib + jb * Nb_XY.Ny + Z_offset]++;
+            if (ind_sph[index] == 0) {
+                double pr1 = projection1[index];
+                double pr2 = projection2[index];
+                double pr3 = projection3[index];
+                if (pr1 >= limits_x.min && pr1 <= limits_x.max && pr2 >= limits_y.min && pr2 <= limits_y.max &&
+                    pr3 >= limits_z.min && pr3 <= limits_z.max) {
+                    int ib = (int)((pr1 - limits_x.min) / hb);
+                    int jb = (int)((pr2 - limits_y.min) / hb);
+                    Z.back()[ib + jb * Nb_XY.Ny + Z_offset] += rho_p[index];
+                    Nij_b[ib + jb * Nb_XY.Ny + Z_offset]++;
+                }
             }
         }
     }
 #pragma omp parallel for simd
     for (size_t i = 0; i < Z.back().size(); ++i) {
-        Z.back()[i] /= Nij_b[i];
+        if (Z.back()[i] != 0) {
+            Z.back()[i] /= Nij_b[i];
+        }
     }
     //----------------------------------вычисление предельных значений---------------------------------
     limits_f.push_back(std::vector<lim<double>>());
@@ -327,7 +351,7 @@ void Converter_Gas::calculate_LgRho(std::vector<double>& projection1, std::vecto
         for (int j = 0; j < Nb_XY.Nx * Nb_XY.Ny; ++j) {
             fmax = (Z.back()[index + j] > fmax) ? Z.back()[index + j] : fmax;
         }
-        limits_f.back().push_back({std::log10(fmax * l_rho), std::log10(0.0001 * fmax * l_rho)});
+        limits_f.back().push_back({std::log10(fmax * l_rho), std::log10(0.000001 * fmax * l_rho)});
     }
     //-----------------------------------перевод к размерным величинам----------------------------------
 #pragma omp parallel for simd
@@ -339,31 +363,36 @@ void Converter_Gas::calculate_Rho(std::vector<double>& projection1, std::vector<
                                   std::vector<double>& projection3)
 {
     const auto& Ns = data.get_Ns();  // число строк в каждом файле
-    const auto& m_p = data.get_m();
+    const auto& rho_p = data.get_rho();
     const auto& offests = data.get_offsets();
+    const auto& ind_sph = data.get_ind_sph();
     std::vector<size_t> Nij_b;
     //------------------------------------вычисления значений на сетке----------------------------------
     Nij_b.resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
-    for (size_t i = 0; i < Ns.size(); ++i) {
+    for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
         for (size_t j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
-            double pr1 = projection1[index];
-            double pr2 = projection2[index];
-            double pr3 = projection3[index];
-            if (pr1 >= limits_x.min && pr1 <= limits_x.max && pr2 >= limits_y.min && pr2 <= limits_y.max &&
-                pr3 >= limits_z.min && pr3 <= limits_z.max) {
-                int ib = (int)((pr1 - limits_x.min) / hb);
-                int jb = (int)((pr2 - limits_y.min) / hb);
-                Z.back()[ib + jb * Nb_XY.Ny + Z_offset] += m_p[index];
-                Nij_b[ib + jb * Nb_XY.Ny + Z_offset]++;
+            if (ind_sph[index] == 0) {
+                double pr1 = projection1[index];
+                double pr2 = projection2[index];
+                double pr3 = projection3[index];
+                if (pr1 >= limits_x.min && pr1 <= limits_x.max && pr2 >= limits_y.min && pr2 <= limits_y.max &&
+                    pr3 >= limits_z.min && pr3 <= limits_z.max) {
+                    int ib = (int)((pr1 - limits_x.min) / hb);
+                    int jb = (int)((pr2 - limits_y.min) / hb);
+                    Z.back()[ib + jb * Nb_XY.Ny + Z_offset] += rho_p[index];
+                    Nij_b[ib + jb * Nb_XY.Ny + Z_offset]++;
+                }
             }
         }
     }
 #pragma omp parallel for simd
     for (size_t i = 0; i < Z.back().size(); ++i) {
-        Z.back()[i] /= Nij_b[i];
+        if (Nij_b[i] != 0) {
+            Z.back()[i] /= Nij_b[i];
+        }
     }
     //----------------------------------вычисление предельных значений---------------------------------
     limits_f.push_back(std::vector<lim<double>>());
@@ -389,34 +418,38 @@ void Converter_Gas::calculate_Vr(std::vector<double>& projection1, std::vector<d
 {
     const auto& Ns = data.get_Ns();  // число строк в каждом файле
     const auto& offests = data.get_offsets();
-
+    const auto& ind_sph = data.get_ind_sph();
     std::vector<size_t> Nij_b;
-    //------------------------------------вычисления значений на сетке----------------------------------
     Nij_b.resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
-    for (size_t i = 0; i < Ns.size(); ++i) {
+    //------------------------------------вычисления значений на сетке----------------------------------
+    for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
         for (size_t j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
-            double pr1 = projection1[index];
-            double pr2 = projection2[index];
-            double pr3 = projection3[index];
-            if (pr1 >= limits_x.min && pr1 <= limits_x.max && pr2 >= limits_y.min && pr2 <= limits_y.max &&
-                pr3 >= limits_z.min && pr3 <= limits_z.max) {
-                int ib = (int)((pr1 - limits_x.min) / hb);
-                int jb = (int)((pr2 - limits_y.min) / hb);
-                double vpr1 = v_projection1[index];
-                double vpr2 = v_projection2[index];
-                double r = std::sqrt(pr1 * pr1 + pr2 * pr2);
-                double vr = (r > 0.0) ? (vpr1 * pr1 + vpr2 * pr2) / r : 0.0;
-                Z.back()[ib + jb * Nb_XY.Ny + Z_offset] += vr;
-                Nij_b[ib + jb * Nb_XY.Ny + Z_offset]++;
+            if (ind_sph[index] == 0) {
+                double pr1 = projection1[index];
+                double pr2 = projection2[index];
+                double pr3 = projection3[index];
+                if (pr1 >= limits_x.min && pr1 <= limits_x.max && pr2 >= limits_y.min && pr2 <= limits_y.max &&
+                    pr3 >= limits_z.min && pr3 <= limits_z.max) {
+                    int ib = (int)((pr1 - limits_x.min) / hb);
+                    int jb = (int)((pr2 - limits_y.min) / hb);
+                    double vpr1 = v_projection1[index];
+                    double vpr2 = v_projection2[index];
+                    double r = std::sqrt(pr1 * pr1 + pr2 * pr2);
+                    double vr = (r > 0.0) ? (vpr1 * pr1 + vpr2 * pr2) / r : 0.0;
+                    Z.back()[ib + jb * Nb_XY.Ny + Z_offset] += vr;
+                    Nij_b[ib + jb * Nb_XY.Ny + Z_offset]++;
+                }
             }
         }
     }
 #pragma omp parallel for simd
     for (size_t i = 0; i < Z.back().size(); ++i) {
-        Z.back()[i] /= Nij_b[i];
+        if (Z.back()[i] != 0) {
+            Z.back()[i] /= Nij_b[i];
+        }
     }
     //----------------------------------вычисление предельных значений---------------------------------
     limits_f.push_back(std::vector<lim<double>>());
@@ -444,34 +477,39 @@ void Converter_Gas::calculate_Vfi(std::vector<double>& projection1, std::vector<
     // число строк в каждом файле
     const auto& Ns = data.get_Ns();
     const auto& offests = data.get_offsets();
+    const auto& ind_sph = data.get_ind_sph();
 
     std::vector<size_t> Nij_b;
-    //------------------------------------вычисления значений на сетке----------------------------------
     Nij_b.resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
+    //------------------------------------вычисления значений на сетке----------------------------------
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
-    for (size_t i = 0; i < Ns.size(); ++i) {
+    for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
         for (size_t j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
-            double pr1 = projection1[index];
-            double pr2 = projection2[index];
-            double pr3 = projection3[index];
-            if (pr1 >= limits_x.min && pr1 <= limits_x.max && pr2 >= limits_y.min && pr2 <= limits_y.max &&
-                pr3 >= limits_z.min && pr3 <= limits_z.max) {
-                int ib = (int)((pr1 - limits_x.min) / hb);
-                int jb = (int)((pr2 - limits_y.min) / hb);
-                double vpr1 = v_projection1[index];
-                double vpr2 = v_projection2[index];
-                double r = std::sqrt(pr1 * pr1 + pr2 * pr2);
-                double vfi = (r > 0.0) ? (vpr2 * pr1 - vpr1 * pr1) / r : 0.0;
-                Z.back()[ib + jb * Nb_XY.Ny + Z_offset] += vfi;
-                Nij_b[ib * Nb_XY.Nx + jb + Z_offset]++;
+            if (ind_sph[index] == 0) {
+                double pr1 = projection1[index];
+                double pr2 = projection2[index];
+                double pr3 = projection3[index];
+                if (pr1 >= limits_x.min && pr1 <= limits_x.max && pr2 >= limits_y.min && pr2 <= limits_y.max &&
+                    pr3 >= limits_z.min && pr3 <= limits_z.max) {
+                    int ib = (int)((pr1 - limits_x.min) / hb);
+                    int jb = (int)((pr2 - limits_y.min) / hb);
+                    double vpr1 = v_projection1[index];
+                    double vpr2 = v_projection2[index];
+                    double r = std::sqrt(pr1 * pr1 + pr2 * pr2);
+                    double vfi = (r > 0.0) ? (vpr2 * pr1 - vpr1 * pr1) / r : 0.0;
+                    Z.back()[ib + jb * Nb_XY.Ny + Z_offset] += vfi;
+                    Nij_b[ib * Nb_XY.Nx + jb + Z_offset]++;
+                }
             }
         }
     }
 #pragma omp parallel for simd
     for (size_t i = 0; i < Z.back().size(); ++i) {
-        Z.back()[i] /= Nij_b[i];
+        if (Z.back()[i] != 0) {
+            Z.back()[i] /= Nij_b[i];
+        }
     }
     //----------------------------------вычисление предельных значений---------------------------------
     limits_f.push_back(std::vector<lim<double>>());
@@ -497,29 +535,34 @@ void Converter_Gas::calculate_V_projection(std::vector<double>& projection1, std
 {
     const auto& Ns = data.get_Ns();  // число строк в каждом файле
     const auto& offests = data.get_offsets();
+    const auto& ind_sph = data.get_ind_sph();
     std::vector<size_t> Nij_b;
     //------------------------------------вычисления значений на сетке----------------------------------
     Nij_b.resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
-    for (size_t i = 0; i < Ns.size(); ++i) {
+    for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
         for (size_t j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
-            double pr1 = projection1[index];
-            double pr2 = projection2[index];
-            double pr3 = projection3[index];
-            if (pr1 >= limits_x.min && pr1 <= limits_x.max && pr2 >= limits_y.min && pr2 <= limits_y.max &&
-                pr3 >= limits_z.min && pr3 <= limits_z.max) {
-                int ib = (int)((pr1 - limits_x.min) / hb);
-                int jb = (int)((pr2 - limits_y.min) / hb);
-                Z.back()[ib + jb * Nb_XY.Ny + Z_offset] += v_projection[index];
-                Nij_b[ib + jb * Nb_XY.Ny + Z_offset]++;
+            if (ind_sph[index] == 0) {
+                double pr1 = projection1[index];
+                double pr2 = projection2[index];
+                double pr3 = projection3[index];
+                if (pr1 >= limits_x.min && pr1 <= limits_x.max && pr2 >= limits_y.min && pr2 <= limits_y.max &&
+                    pr3 >= limits_z.min && pr3 <= limits_z.max) {
+                    int ib = (int)((pr1 - limits_x.min) / hb);
+                    int jb = (int)((pr2 - limits_y.min) / hb);
+                    Z.back()[ib + jb * Nb_XY.Ny + Z_offset] += v_projection[index];
+                    Nij_b[ib + jb * Nb_XY.Ny + Z_offset]++;
+                }
             }
         }
     }
 #pragma omp parallel for simd
     for (size_t i = 0; i < Z.back().size(); ++i) {
-        Z.back()[i] /= Nij_b[i];
+        if (Z.back()[i] != 0) {
+            Z.back()[i] /= Nij_b[i];
+        }
     }
     //----------------------------------вычисление предельных значений---------------------------------
     limits_f.push_back(std::vector<lim<double>>());
@@ -551,7 +594,7 @@ void Converter_Gas::calculate_T(std::vector<double>& projection1, std::vector<do
     //------------------------------------вычисления значений на сетке----------------------------------
     Nij_b.resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
-    for (size_t i = 0; i < Ns.size(); ++i) {
+    for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
         for (size_t j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
@@ -571,7 +614,9 @@ void Converter_Gas::calculate_T(std::vector<double>& projection1, std::vector<do
     }
 #pragma omp parallel for simd
     for (size_t i = 0; i < Z.back().size(); ++i) {
-        Z.back()[i] /= Nij_b[i];
+        if (Z.back()[i] != 0) {
+            Z.back()[i] /= Nij_b[i];
+        }
     }
     //----------------------------------вычисление предельных значений---------------------------------
     limits_f.push_back(std::vector<lim<double>>());
@@ -602,7 +647,7 @@ void Converter_Gas::calculate_LgT(std::vector<double>& projection1, std::vector<
     //------------------------------------вычисления значений на сетке----------------------------------
     Nij_b.resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
-    for (size_t i = 0; i < Ns.size(); ++i) {
+    for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
         for (size_t j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
@@ -622,7 +667,9 @@ void Converter_Gas::calculate_LgT(std::vector<double>& projection1, std::vector<
     }
 #pragma omp parallel for simd
     for (size_t i = 0; i < Z.back().size(); ++i) {
-        Z.back()[i] /= Nij_b[i];
+        if (Z.back()[i] != 0) {
+            Z.back()[i] /= Nij_b[i];
+        }
     }
     //----------------------------------вычисление предельных значений---------------------------------
     limits_f.push_back(std::vector<lim<double>>());

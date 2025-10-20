@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(TxtToGrdConvert VERSION 0.1 LANGUAGES CXX)
-option(BUILD_TESTS "Build Convert library tests" OFF)
+option(BUILD_TESTS "Build Convert library tests" ON)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -66,12 +66,25 @@ set(PROJECT_SOURCES
 src/main.cpp
 src/UI/mainwindow.cpp
 includes/mainwindow.h
+includes/ConstantsParametrs.h
 includes/Converter/DataStorage.h
+includes/Converter/Converter.h
+includes/Converter/Converter_DarkMatter.h
+includes/Converter/Converter_Gas.h
+includes/Converter/Converter_MolecularClouds.h
+includes/Converter/Converter_Stars.h
+includes/Converter/Converter_YoungStars.h
+src/Converter/Converter/Converter.cpp
+src/Converter/Converter/Converter_DarkMatter.cpp
+src/Converter/Converter/Converter_Gas.cpp
+src/Converter/Converter/Converter_MolecularClouds.cpp
+src/Converter/Converter/Converter_Stars.cpp
+src/Converter/Converter/Converter_YoungStars.cpp
 src/Converter/DataStorage/DataStorage_file_func.cpp
 src/Converter/DataStorage/DataStorage_gets.cpp
 src/Converter/DataStorage/DataStorage_sets.cpp
-includes/ConstantsParametrs.h
 src/UI/mainwindow.ui
+
 ${QM_FILES}
 )
 qt_add_executable(TxtToGrdConvert

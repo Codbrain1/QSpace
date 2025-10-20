@@ -97,10 +97,6 @@ std::vector<size_t>& DataStorage::get_offsets()
         throw std::runtime_error("Ns is not allocated");
     }
 }
-size_t DataStorage::get_count_files()
-{
-    return ifile_names.size();
-}
 size_t DataStorage::get_ibuff_size()
 {
     return ibuff_size;

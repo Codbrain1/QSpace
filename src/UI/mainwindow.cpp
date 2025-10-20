@@ -20,6 +20,8 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <string_view>
+#include <utility>
 #include <vector>
 
 #include "./ui_mainwindow.h"
@@ -261,7 +263,12 @@ void MainWindow::on_pushButton_txt_clicked()
 }
 void MainWindow::on_pushButtongrd_clicked()
 {
-    QString outputfolderName = QFileDialog::getSaveFileName(this, tr("Select GRD Folder"));
+    QString outputfolderName = QFileDialog::getExistingDirectory(nullptr,  // Родительский виджет (nullptr для модального
+                                                                           // окна)
+                                                                 tr("Выберите или создайте папку"),  // Заголовок окна
+                                                                 QDir::currentPath(),  // Начальная директория (например,
+                                                                 QFileDialog::ShowDirsOnly  // Показывать только папки
+    );
     if (outputfolderName.isEmpty()) {
         return;
     }
@@ -300,10 +307,10 @@ void MainWindow::on_pushButtonconvert_clicked()
         DataStorage datastorage(ifiles_names);  // создание хранилища данных
 
         // преобразование combobox в vector<int> для колонок
-        std::vector<int> columns;
+        std::vector<std::string> columns;
         columns.reserve(columnCombos.size());
         for (const auto &col : columnCombos) {
-            columns.push_back(col->currentIndex());
+            columns.push_back(col->currentText().toStdString());
         }
 
         datastorage.setup_columns(columns);  // задаем колонки в входных файлах
@@ -329,12 +336,17 @@ void MainWindow::on_pushButtonconvert_clicked()
         z.max = ui->lineEdit_max_z->text().toDouble();
         z.min = ui->lineEdit_min_z->text().toDouble();
 
+        auto X = ui->comboBox_X->currentText().toStdString();
+        auto Y = ui->comboBox_Y->currentText().toStdString();
+        const std::pair<std::string, std::string> XY = {X, Y};
+        std::vector<std::string> Z_col_list;
+        Z_col_list.push_back(ui->comboBox_Z->currentText().toStdString());
         //------------------------------создание конвертера------------------------------------------
         if (ui->comboBox_output_data_params->currentText() == ParametrsList::DarkMatter_type) {  // Темная Материя
-            Converter_DarkMatter cdm(datastorage, c, Nbxy);
+            Converter_DarkMatter cdm(datastorage, c, Nbxy, outputDir.toStdString());
             cdm.set_limits(x, y, z);
-            cdm.setup_output_data(ui->comboBox_Z->currentText().toStdString());
-            if (ui->comboBox_type_structures_ifiles->currentText() == ParametrsList::is_bin_grd) {  // если файлы бинарные
+            cdm.setup_output_data(Z_col_list, XY);
+            if (ui->comboBox_type_structures_ifiles->currentText() == ParametrsList::is_bin_ifiles) {  // если файлы бинарные
                 datastorage.load_file_metadate_bin();
                 while (datastorage.readw_bin()) {
                     cdm.convert();
@@ -347,7 +359,7 @@ void MainWindow::on_pushButtonconvert_clicked()
                         return;
                     }
                 }
-            } else if (ui->comboBox_type_structures_ifiles->currentText() == ParametrsList::is_txt_grd) {
+            } else if (ui->comboBox_type_structures_ifiles->currentText() == ParametrsList::is_txt_ifiles) {
                 datastorage.load_file_metadate_txt();
                 while (datastorage.readw_txt()) {
                     cdm.convert();
@@ -365,10 +377,10 @@ void MainWindow::on_pushButtonconvert_clicked()
                 return;
             }
         } else if (ui->comboBox_output_data_params->currentText() == ParametrsList::Gas_type) {  // газовые облака
-            Converter_Gas cg(datastorage, c, Nbxy);
+            Converter_Gas cg(datastorage, c, Nbxy, outputDir.toStdString());
             cg.set_limits(x, y, z);
-            cg.setup_output_data(ui->comboBox_Z->currentText().toStdString());
-            if (ui->comboBox_type_structures_ifiles->currentText() == ParametrsList::is_bin_grd) {
+            cg.setup_output_data(Z_col_list, XY);
+            if (ui->comboBox_type_structures_ifiles->currentText() == ParametrsList::is_bin_ifiles) {
                 datastorage.load_file_metadate_bin();
                 while (datastorage.readw_bin()) {
                     cg.convert();
@@ -381,7 +393,7 @@ void MainWindow::on_pushButtonconvert_clicked()
                         return;
                     }
                 }
-            } else if (ui->comboBox_type_structures_ifiles->currentText() == ParametrsList::is_txt_grd) {
+            } else if (ui->comboBox_type_structures_ifiles->currentText() == ParametrsList::is_txt_ifiles) {
                 datastorage.load_file_metadate_txt();
                 while (datastorage.readw_txt()) {
                     cg.convert();
@@ -401,10 +413,10 @@ void MainWindow::on_pushButtonconvert_clicked()
         } else if (ui->comboBox_output_data_params->currentText() == ParametrsList::MolecularClouds_type) {  // Молекулярные
                                                                                                              // облака
             // создание конвертера
-            Converter_MolecularClouds cmc(datastorage, c, Nbxy);
+            Converter_MolecularClouds cmc(datastorage, c, Nbxy, outputDir.toStdString());
             cmc.set_limits(x, y, z);
-            cmc.setup_output_data(ui->comboBox_Z->currentText().toStdString());
-            if (ui->comboBox_type_structures_ifiles->currentText() == ParametrsList::is_bin_grd) {
+            cmc.setup_output_data(Z_col_list, XY);
+            if (ui->comboBox_type_structures_ifiles->currentText() == ParametrsList::is_bin_ifiles) {
                 datastorage.load_file_metadate_bin();
                 while (datastorage.readw_bin()) {
                     cmc.convert();
@@ -417,7 +429,7 @@ void MainWindow::on_pushButtonconvert_clicked()
                         return;
                     }
                 }
-            } else if (ui->comboBox_type_structures_ifiles->currentText() == ParametrsList::is_txt_grd) {
+            } else if (ui->comboBox_type_structures_ifiles->currentText() == ParametrsList::is_txt_ifiles) {
                 datastorage.load_file_metadate_txt();
                 while (datastorage.readw_txt()) {
                     cmc.convert();
@@ -435,10 +447,10 @@ void MainWindow::on_pushButtonconvert_clicked()
                 return;
             }
         } else if (ui->comboBox_output_data_params->currentText() == ParametrsList::Stars_type) {  // Звезды
-            Converter_Stars cs(datastorage, c, Nbxy);
+            Converter_Stars cs(datastorage, c, Nbxy, outputDir.toStdString());
             cs.set_limits(x, y, z);
-            cs.setup_output_data(ui->comboBox_Z->currentText().toStdString());
-            if (ui->comboBox_type_structures_ifiles->currentText() == ParametrsList::is_bin_grd) {
+            cs.setup_output_data(Z_col_list, XY);
+            if (ui->comboBox_type_structures_ifiles->currentText() == ParametrsList::is_bin_ifiles) {
                 datastorage.load_file_metadate_bin();
                 while (datastorage.readw_bin()) {
                     cs.convert();
@@ -451,7 +463,7 @@ void MainWindow::on_pushButtonconvert_clicked()
                         return;
                     }
                 }
-            } else if (ui->comboBox_type_structures_ifiles->currentText() == ParametrsList::is_txt_grd) {
+            } else if (ui->comboBox_type_structures_ifiles->currentText() == ParametrsList::is_txt_ifiles) {
                 datastorage.load_file_metadate_txt();
                 while (datastorage.readw_txt()) {
                     cs.convert();
@@ -469,10 +481,10 @@ void MainWindow::on_pushButtonconvert_clicked()
                 return;
             }
         } else if (ui->comboBox_output_data_params->currentText() == ParametrsList::YongStars_type) {  // Молодые звезды
-            Converter_YoungStars cys(datastorage, c, Nbxy);
+            Converter_YoungStars cys(datastorage, c, Nbxy, outputDir.toStdString());
             cys.set_limits(x, y, z);
-            cys.setup_output_data(ui->comboBox_Z->currentText().toStdString());
-            if (ui->comboBox_type_structures_ifiles->currentText() == ParametrsList::is_bin_grd) {
+            cys.setup_output_data(Z_col_list, XY);
+            if (ui->comboBox_type_structures_ifiles->currentText() == ParametrsList::is_bin_ifiles) {
                 datastorage.load_file_metadate_bin();
                 while (datastorage.readw_bin()) {
                     cys.convert();
@@ -485,7 +497,7 @@ void MainWindow::on_pushButtonconvert_clicked()
                         return;
                     }
                 }
-            } else if (ui->comboBox_type_structures_ifiles->currentText() == ParametrsList::is_txt_grd) {
+            } else if (ui->comboBox_type_structures_ifiles->currentText() == ParametrsList::is_txt_ifiles) {
                 datastorage.load_file_metadate_txt();
                 while (datastorage.readw_txt()) {
                     cys.convert();

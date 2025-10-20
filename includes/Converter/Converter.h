@@ -51,5 +51,5 @@ class Converter
     void set_obuff_size(const size_t size);
     void set_ofile_buff_size(const size_t size);
     void setup_output_data(const std::vector<std::string>& Z_grd_list_columns,
-                           const std::pair<std::string_view, std::string_view>& _XY);
+                           const std::pair<std::string, std::string>& _XY);
 };
