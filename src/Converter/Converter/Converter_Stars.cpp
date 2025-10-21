@@ -212,7 +212,7 @@ void Converter_Stars::calculate_LgSigma(std::vector<double>& projection1, std::v
     //------------------------------------вычисления значений на сетке----------------------------------
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             double pr1 = projection1[index];
             double pr2 = projection2[index];
@@ -249,7 +249,7 @@ void Converter_Stars::calculate_Sigma(std::vector<double>& projection1, std::vec
     //------------------------------------вычисления значений на сетке----------------------------------
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             double pr1 = projection1[index];
             double pr2 = projection2[index];
@@ -288,7 +288,7 @@ void Converter_Stars::calculate_LgRho(std::vector<double>& projection1, std::vec
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             double pr1 = projection1[index];
             double pr2 = projection2[index];
@@ -328,7 +328,7 @@ void Converter_Stars::calculate_Rho(std::vector<double>& projection1, std::vecto
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             double pr1 = projection1[index];
             double pr2 = projection2[index];
@@ -372,7 +372,7 @@ void Converter_Stars::calculate_Vr(std::vector<double>& projection1, std::vector
     //------------------------------------вычисления значений на сетке----------------------------------
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             double pr1 = projection1[index];
             double pr2 = projection2[index];
@@ -429,7 +429,7 @@ void Converter_Stars::calculate_Vfi(std::vector<double>& projection1, std::vecto
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             double pr1 = projection1[index];
             double pr2 = projection2[index];
@@ -483,7 +483,7 @@ void Converter_Stars::calculate_V_projection(std::vector<double>& projection1, s
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             double pr1 = projection1[index];
             double pr2 = projection2[index];

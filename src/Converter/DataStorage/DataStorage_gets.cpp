@@ -82,7 +82,7 @@ std::vector<double>& DataStorage::get_t_MCYS()
     else
         throw std::runtime_error("t_MCYS is not allocated");
 }
-std::vector<size_t>& DataStorage::get_Ns()
+std::vector<int>& DataStorage::get_Ns()
 {
     if (!Ns.empty())
         return Ns;

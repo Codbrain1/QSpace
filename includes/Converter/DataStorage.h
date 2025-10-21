@@ -20,12 +20,16 @@ class DataStorage
     std::vector<double> rho, e, m;   // плотность, внутреняя энергия,масса
     std::vector<int> ind_sph;
     std::vector<double> t_MCYS;
-    std::vector<size_t> Ns;    // число строк в каждом файле
+    std::vector<int> Ns;       // число строк в каждом файле
     size_t ibuff_size;         // число читаемых за раз файлов
     size_t current_cursor;     // номер читаемого в данный момент файла
     size_t ifile_buffer_size;  // размер буфера для чтения одного файла
     size_t capacity;
     std::vector<size_t> offsets;  // вектор с смещениями
+    void read_parallel_txt();
+    void read_consistent_txt();
+    void read_parallel_bin();
+    void read_consistent_bin();
 
    public:
     DataStorage(const std::vector<std::filesystem::path>& pathes);
@@ -42,7 +46,7 @@ class DataStorage
     std::vector<double>& get_m();
     std::vector<int>& get_ind_sph();
     std::vector<double>& get_t_MCYS();
-    std::vector<size_t>& get_Ns();
+    std::vector<int>& get_Ns();
     std::vector<size_t>& get_offsets();
     std::vector<std::filesystem::path> get_last_file_names();
     size_t get_ibuff_size();

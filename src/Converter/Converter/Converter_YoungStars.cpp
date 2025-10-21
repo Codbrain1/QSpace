@@ -235,7 +235,7 @@ void Converter_YoungStars::calculate_LgSigma(std::vector<double>& projection1, s
     //------------------------------------вычисления значений на сетке----------------------------------
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             if (ind_sph[index] == 2) {
                 double pr1 = projection1[index];
@@ -275,7 +275,7 @@ void Converter_YoungStars::calculate_Sigma(std::vector<double>& projection1, std
     //------------------------------------вычисления значений на сетке----------------------------------
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             if (ind_sph[index] == 2) {
                 double pr1 = projection1[index];
@@ -319,7 +319,7 @@ void Converter_YoungStars::calculate_LgRho(std::vector<double>& projection1, std
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             if (ind_sph[index] == 2) {
                 double pr1 = projection1[index];
@@ -369,7 +369,7 @@ void Converter_YoungStars::calculate_Rho(std::vector<double>& projection1, std::
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             if (ind_sph[index] == 2) {
                 double pr1 = projection1[index];
@@ -422,7 +422,7 @@ void Converter_YoungStars::calculate_Vr(std::vector<double>& projection1, std::v
     //------------------------------------вычисления значений на сетке----------------------------------
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             if (ind_sph[index] == 2) {
                 double pr1 = projection1[index];
@@ -482,7 +482,7 @@ void Converter_YoungStars::calculate_Vfi(std::vector<double>& projection1, std::
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             if (ind_sph[index] == 2) {
                 double pr1 = projection1[index];
@@ -539,7 +539,7 @@ void Converter_YoungStars::calculate_V_projection(std::vector<double>& projectio
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             if (ind_sph[index] == 2) {
                 double pr1 = projection1[index];
@@ -593,7 +593,7 @@ void Converter_YoungStars::calculate_T(std::vector<double>& projection1, std::ve
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             if (ind_sph[index] == 2) {
                 double pr1 = projection1[index];
@@ -646,7 +646,7 @@ void Converter_YoungStars::calculate_LgT(std::vector<double>& projection1, std::
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             if (ind_sph[index] == 2) {
                 double pr1 = projection1[index];

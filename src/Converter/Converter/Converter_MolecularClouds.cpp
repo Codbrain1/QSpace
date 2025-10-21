@@ -235,7 +235,7 @@ void Converter_MolecularClouds::calculate_LgSigma(std::vector<double>& projectio
     //------------------------------------вычисления значений на сетке----------------------------------
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             if (ind_sph[index] == 1) {
                 double pr1 = projection1[index];
@@ -275,7 +275,7 @@ void Converter_MolecularClouds::calculate_Sigma(std::vector<double>& projection1
     //------------------------------------вычисления значений на сетке----------------------------------
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             if (ind_sph[index] == 1) {
                 double pr1 = projection1[index];
@@ -319,7 +319,7 @@ void Converter_MolecularClouds::calculate_LgRho(std::vector<double>& projection1
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             if (ind_sph[index] == 1) {
                 double pr1 = projection1[index];
@@ -371,7 +371,7 @@ void Converter_MolecularClouds::calculate_Rho(std::vector<double>& projection1, 
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             if (ind_sph[index] == 1) {
                 double pr1 = projection1[index];
@@ -424,7 +424,7 @@ void Converter_MolecularClouds::calculate_Vr(std::vector<double>& projection1, s
     //------------------------------------вычисления значений на сетке----------------------------------
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             if (ind_sph[index] == 1) {
                 double pr1 = projection1[index];
@@ -484,7 +484,7 @@ void Converter_MolecularClouds::calculate_Vfi(std::vector<double>& projection1, 
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             if (ind_sph[index] == 1) {
                 double pr1 = projection1[index];
@@ -541,7 +541,7 @@ void Converter_MolecularClouds::calculate_V_projection(std::vector<double>& proj
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             if (ind_sph[index] == 1) {
                 double pr1 = projection1[index];
@@ -595,7 +595,7 @@ void Converter_MolecularClouds::calculate_T(std::vector<double>& projection1, st
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             if (ind_sph[index] == 1) {
                 double pr1 = projection1[index];
@@ -648,7 +648,7 @@ void Converter_MolecularClouds::calculate_LgT(std::vector<double>& projection1, 
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             if (ind_sph[index] == 1) {
                 double pr1 = projection1[index];

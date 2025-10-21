@@ -236,7 +236,7 @@ void Converter_Gas::calculate_LgSigma(std::vector<double>& projection1, std::vec
     //------------------------------------вычисления значений на сетке----------------------------------
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             if (ind_sph[index] == 0) {
                 double pr1 = projection1[index];
@@ -276,7 +276,7 @@ void Converter_Gas::calculate_Sigma(std::vector<double>& projection1, std::vecto
     //------------------------------------вычисления значений на сетке----------------------------------
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             if (ind_sph[index] == 0) {
                 double pr1 = projection1[index];
@@ -320,7 +320,7 @@ void Converter_Gas::calculate_LgRho(std::vector<double>& projection1, std::vecto
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             if (ind_sph[index] == 0) {
                 double pr1 = projection1[index];
@@ -372,7 +372,7 @@ void Converter_Gas::calculate_Rho(std::vector<double>& projection1, std::vector<
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             if (ind_sph[index] == 0) {
                 double pr1 = projection1[index];
@@ -425,7 +425,7 @@ void Converter_Gas::calculate_Vr(std::vector<double>& projection1, std::vector<d
     //------------------------------------вычисления значений на сетке----------------------------------
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             if (ind_sph[index] == 0) {
                 double pr1 = projection1[index];
@@ -485,7 +485,7 @@ void Converter_Gas::calculate_Vfi(std::vector<double>& projection1, std::vector<
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             if (ind_sph[index] == 0) {
                 double pr1 = projection1[index];
@@ -542,7 +542,7 @@ void Converter_Gas::calculate_V_projection(std::vector<double>& projection1, std
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             if (ind_sph[index] == 0) {
                 double pr1 = projection1[index];
@@ -596,7 +596,7 @@ void Converter_Gas::calculate_T(std::vector<double>& projection1, std::vector<do
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             if (ind_sph[index] == 0) {
                 double pr1 = projection1[index];
@@ -649,7 +649,7 @@ void Converter_Gas::calculate_LgT(std::vector<double>& projection1, std::vector<
     Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
     for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
         size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
-        for (size_t j = 0; j < Ns[i]; ++j) {
+        for (int j = 0; j < Ns[i]; ++j) {
             size_t index = offests[i] - offests[0] + j;
             if (ind_sph[index] == 0) {
                 double pr1 = projection1[index];
