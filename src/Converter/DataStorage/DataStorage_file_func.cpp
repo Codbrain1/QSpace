@@ -11,7 +11,7 @@
 #include "Converter/DataStorage.h"
 #include "DataStorageVisit.cpp"
 DataStorage::DataStorage(const std::vector<std::filesystem::path>& pathes)
-    : ibuff_size(8), current_cursor(0), ifile_buffer_size(16384), capacity(0)
+    : ibuff_size(8), current_cursor(0), ifile_buffer_size(16384) /*, capacity(0) - вероятно нигде не используется*/
 {
     if (!pathes.empty()) {
         ifile_names.reserve(pathes.size());
@@ -23,9 +23,10 @@ DataStorage::DataStorage(const std::vector<std::filesystem::path>& pathes)
             }
         }
         if (ibuff_size > ifile_names.size()) ibuff_size = ifile_names.size();
-        ifiles.reserve(ibuff_size);
-        ifiles.assign(ibuff_size, nullptr);
-        Ns.reserve(ifile_names.size());
+        ifiles.reserve(ibuff_size);          // скользящее окно
+        ifiles.assign(ibuff_size, nullptr);  // скользящее окно
+        Ns.reserve(ifile_names.size());      // размеры для всех загружаемых файлов
+        t.reserve(ifile_names.size());       // времена для всех загружаемых файлов
     }
 }
 void DataStorage::load_file_metadate_txt()
@@ -39,9 +40,12 @@ void DataStorage::load_file_metadate_txt()
 #endif
         if (file != nullptr) {
             int N = 0;
+            double _t = 0;
             fscanf(file, "%d", &N);
-            if (N > 0) {
+            fscanf(file, "%lf", &_t);
+            if (N > 0 && _t >= 0) {
                 Ns.push_back(N);
+                t.push_back(_t);
             } else {
                 throw std::runtime_error("invalid content in file: " + ifile_names[i].string());
             }
@@ -61,9 +65,12 @@ void DataStorage::load_file_metadate_bin()
 #endif
         if (file != nullptr) {
             int N = 0;
+            double _t = 0;
             fread(&N, sizeof(int), 1, file);
-            if (N > 0) {
+            fread(&_t, sizeof(double), 1, file);
+            if (N > 0 && _t >= 0) {
                 Ns.push_back(N);
+                t.push_back(_t);
             } else {
                 throw std::runtime_error("invalid content in file: " + ifile_names[i].string());
             }
@@ -158,6 +165,9 @@ void DataStorage::read_consistent_bin()
         setvbuf(ifiles[i], buffer.data(), _IOFBF, buffer.size());
         int _N;
         fread(&_N, sizeof(int), 1, ifiles[i]);
+        double _t;
+        fread(&_t, sizeof(double), 1, ifiles[i]);
+
         for (int j = 0; j < Ns[current_cursor + i]; ++j) {
             for (size_t col = 0; col < column_list.size(); ++col) {
                 size_t index = offsets[i] - offsets[0] + j;
@@ -217,6 +227,16 @@ void DataStorage::read_consistent_txt()
             continue;
         }
         content_ptr = result.ptr;
+        while (content_ptr < content_end && (*content_ptr == '\t' || *content_ptr == ' ')) content_ptr++;
+        double _t = 0;
+        result = std::from_chars(content_ptr, content_end, _t);
+        // если данные не были распаршены
+        if (result.ec != std::errc() || _t != t[current_cursor + i]) {
+            // TODO: добавить логи
+            t[current_cursor + i] = -1;
+            continue;
+        }
+        content_ptr = result.ptr;
         while (content_ptr < content_end && (*content_ptr == '\n' || *content_ptr == '\r')) ++content_ptr;
         int n = 0;
         while (content_ptr < content_end && n < Ns[current_cursor + i]) {
@@ -255,6 +275,9 @@ void DataStorage::read_parallel_bin()
         setvbuf(ifiles[i], buffer.data(), _IOFBF, buffer.size());
         int _N;
         fread(&_N, sizeof(int), 1, ifiles[i]);
+        double _t;
+        fread(&_t, sizeof(double), 1, ifiles[i]);
+
         for (int j = 0; j < Ns[current_cursor + i]; ++j) {
             for (size_t col = 0; col < column_list.size(); ++col) {
                 size_t index = offsets[i] - offsets[0] + j;
@@ -312,6 +335,16 @@ void DataStorage::read_parallel_txt()
         if (result.ec != std::errc() || _N != Ns[current_cursor + i]) {
             // TODO: добавить логи
             Ns[current_cursor + i] = 0;
+            continue;
+        }
+        content_ptr = result.ptr;
+        while (content_ptr < content_end && (*content_ptr == '\t' || *content_ptr == ' ')) content_ptr++;
+        double _t = 0;
+        result = std::from_chars(content_ptr, content_end, _t);
+        // если данные не были распаршены
+        if (result.ec != std::errc() || _t != t[current_cursor + i]) {
+            // TODO: добавить логи
+            t[current_cursor + i] = -1;
             continue;
         }
         // пропускаем \n

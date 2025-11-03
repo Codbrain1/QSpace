@@ -1,6 +1,6 @@
-#include <cerrno>
 #include <cstddef>
 #include <filesystem>
+#include <stdexcept>
 #include <vector>
 
 #include "Converter/DataStorage.h"
@@ -105,4 +105,12 @@ std::vector<std::filesystem::path> DataStorage::get_last_file_names()
 {
     return std::vector<std::filesystem::path>(ifile_names.begin() + current_cursor - ibuff_size,
                                               ifile_names.begin() + current_cursor);
+}
+std::vector<double>& DataStorage::get_t()
+{
+    if (!t.empty()) {
+        return t;
+    } else {
+        throw std::runtime_error("t is not allocated");
+    }
 }

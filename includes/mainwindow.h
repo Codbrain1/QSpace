@@ -34,7 +34,7 @@ class MainWindow : public QMainWindow
     void on_pushButtonconvert_clicked();
     void on_lineEdit_numbers_columns_files_changed(const QString &changed_line);
     void on_checkbox_column_customise_change(Qt::CheckState state);
-    void on_lineEdit_hb_changed(const QString &changed_line);
+    void on_lineEdit_Slice_changed(const QString &);  // все QLineEdit отвечающие за изменение слоя отображения
 
    private:
     // -----------------------------------------------------поля-----------------------------------------------------
@@ -45,6 +45,9 @@ class MainWindow : public QMainWindow
 
     // -----------------------------------------------------методы-----------------------------------------------------
     void set_False_Enable_Line_Edit_Constants();
+    void setup_columns_comboBoxes_DM_S(const int num_col);
+    void setup_columns_comboBoxes_G_MC_YS(const int num_col);
     void setup_columns_comboBoxes(const int num_col);
+    bool is_correct_data_QLineEdit();
 };
 #endif  // MAINWINDOW_H

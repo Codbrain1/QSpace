@@ -8,7 +8,7 @@ Converter_Gas::Converter_Gas(DataStorage& _data, ParametrsList::iniConstants& c,
 {
     gamma = c.gamma;
     gamma1 = c.gamma - 1.0;
-    l_Te = l_Te = gamma * gamma1 * 10000 / (100.0 / (l_v * l_v));
+    l_Te = gamma * gamma1 * 10000 / (100.0 / (l_v * l_v));
 }
 void Converter_Gas::convert()
 {

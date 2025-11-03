@@ -57,6 +57,7 @@ class ParametrsList
                                                                     "m (масса частицы)",
                                                                     "ind_sph",
                                                                     "t_MCYS"};
+
     static constexpr std::string_view X = Columns_names[0];
     static constexpr std::string_view Y = Columns_names[1];
     static constexpr std::string_view Z = Columns_names[2];
@@ -69,6 +70,7 @@ class ParametrsList
     static constexpr std::string_view ind_sph = Columns_names[9];
     static constexpr std::string_view t_MCYS = Columns_names[10];
 
+    static constexpr std::array<std::string_view, 7> Columns_names_DM_S{X, Y, Z, VX, VY, VZ, m};
     struct iniConstants {
         double gamma, Km, Kr;
         double hb;

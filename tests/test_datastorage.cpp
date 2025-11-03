@@ -1,7 +1,6 @@
 #include <cstddef>
 #include <filesystem>
 #include <fstream>
-#include <initializer_list>
 #include <iomanip>
 #include <ios>
 #include <iostream>
@@ -10,14 +9,14 @@
 #include <stdexcept>
 #include <vector>
 
-#include "Converter/Converter.h"
-
+#include "ConstantsParametrs.h"
+#include "Converter/DataStorage.h"
 namespace test_file
 {
 std::filesystem::path test_path("/home/mask/Desktop/nir5semester/TxtToGrdConverter/tests/Datasets/");
 const size_t NUM_FILES = 10;  // Генерируем 10 файлов (≥8) для теста параллельной обработки
 const int N = 5;              // Количество строк в каждом файле
-
+const double t = 0.5;         // время (внутри модели) в каждом файле
 // Структура для хранения сгенерированных данных
 struct GeneratedData {
     std::vector<std::vector<double>> columns;  // 9 столбцов: x, y, z, rho, vx, vy, vz, e, m
@@ -57,14 +56,15 @@ GeneratedData generate_random_data(size_t rows)
 }
 
 // Генерация текстового файла в научном формате
-void generate_txt_file(const std::filesystem::path& path, const GeneratedData& data, int n)
+void generate_txt_file(const std::filesystem::path& path, const GeneratedData& data, int n, double _t)
 {
     std::ofstream out(path);
     if (!out) {
         throw std::runtime_error("Не удалось создать текстовый файл: " + path.string());
     }
     out << std::scientific << std::setprecision(15);  // Научный формат с высокой точностью
-    out << n << "\n";
+    out << n << " ";
+    out << _t << "\n";
     for (size_t i = 0; i < data.columns.size(); ++i) {
         for (double val : data.columns[i]) {
             out << val << " ";
@@ -75,13 +75,14 @@ void generate_txt_file(const std::filesystem::path& path, const GeneratedData& d
 }
 
 // Генерация бинарного файла
-void generate_bin_file(const std::filesystem::path& path, const GeneratedData& data, int n)
+void generate_bin_file(const std::filesystem::path& path, const GeneratedData& data, int n, double _t)
 {
     std::ofstream out(path, std::ios::binary);
     if (!out) {
         throw std::runtime_error("Не удалось создать бинарный файл: " + path.string());
     }
     out.write(reinterpret_cast<const char*>(&n), sizeof(int));
+    out.write(reinterpret_cast<const char*>(&_t), sizeof(double));
     for (size_t i = 0; i < data.columns.size(); ++i) {
         for (double val : data.columns[i]) {
             out.write(reinterpret_cast<const char*>(&val), sizeof(double));
@@ -102,9 +103,9 @@ std::pair<std::vector<std::filesystem::path>, std::vector<GeneratedData>> genera
         std::filesystem::path file_path = test_path / filename;
         auto data = generate_random_data(N);
         if (binary) {
-            generate_bin_file(file_path, data, N);
+            generate_bin_file(file_path, data, N, t);
         } else {
-            generate_txt_file(file_path, data, N);
+            generate_txt_file(file_path, data, N, t);
         }
         files.push_back(file_path);
         generated_data.push_back(data);
@@ -142,6 +143,9 @@ void ReadTXT_Test()
         for (size_t file_idx = current_file_idx; file_idx < current_file_idx + ibuff_size && file_idx < files.size();
              ++file_idx) {
             const auto& data = generated_data[file_idx];
+            if (storage.get_t()[file_idx] != t) {
+                throw std::runtime_error("ошибка чтения времени в файле " + files[file_idx].string());
+            }
             for (size_t i = 0; i < N; ++i) {
                 std::stringstream ss;
                 ss << std::scientific << std::setprecision(15);
@@ -246,6 +250,9 @@ void ReadBIN_Test()
         for (size_t file_idx = current_file_idx; file_idx < current_file_idx + ibuff_size && file_idx < files.size();
              ++file_idx) {
             const auto& data = generated_data[file_idx];
+            if (storage.get_t()[file_idx] != t) {
+                throw std::runtime_error("ошибка чтения времени в файле " + files[file_idx].string());
+            }
             for (size_t i = 0; i < N; ++i) {
                 std::stringstream ss;
                 ss << std::scientific << std::setprecision(15);

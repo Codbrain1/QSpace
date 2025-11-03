@@ -21,7 +21,7 @@ Converter::Converter(DataStorage& _data, ParametrsList::iniConstants& c, count_c
       fy_lim(0, 0),
       hb(c.hb)
 {
-    _hb2 = 1 / (hb * hb);
+    _hb2 = 1.0 / (hb * hb);
     l_v = 65.76 * std::sqrt(c.Km / c.Kr);        //--> km/s
     l_r = 10 * c.Kr;                             //--> kpc
     l_s = c.Km / (c.Kr * c.Kr) * 100.0;          //--> Msun/pc^2

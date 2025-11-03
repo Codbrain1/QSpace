@@ -21,10 +21,11 @@ class DataStorage
     std::vector<int> ind_sph;
     std::vector<double> t_MCYS;
     std::vector<int> Ns;       // число строк в каждом файле
+    std::vector<double> t;     // время в модели(записано в файлах вторым числом)
     size_t ibuff_size;         // число читаемых за раз файлов
     size_t current_cursor;     // номер читаемого в данный момент файла
     size_t ifile_buffer_size;  // размер буфера для чтения одного файла
-    size_t capacity;
+    // size_t capacity; - не используется
     std::vector<size_t> offsets;  // вектор с смещениями
     void read_parallel_txt();
     void read_consistent_txt();
@@ -48,6 +49,7 @@ class DataStorage
     std::vector<double>& get_t_MCYS();
     std::vector<int>& get_Ns();
     std::vector<size_t>& get_offsets();
+    std::vector<double>& get_t();
     std::vector<std::filesystem::path> get_last_file_names();
     size_t get_ibuff_size();
     void set_buff_size(const size_t size);

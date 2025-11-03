@@ -1,106 +1,62 @@
 #минимальная версия cmake
 cmake_minimum_required(VERSION 3.16)
 
-set(TEST_COMPILE_FLAGS_DEBUG -Wall;-Wextra;-Wpedantic;-g;-O0;-fno-omit-frame-pointer)
-set(TEST_COMPILE_FLAGS_RELEASE "-Wall -Wextra -Wpedantic -O2")
-set(TEST_LINK_FLAGS_DEBUG -fsanitize=address;-fsanitize=undefined)
-#тест для хранилища данных
-add_executable(test_datastorage
-test_datastorage.cpp
-${CONVERTER_SOURCES})
-target_include_directories(test_datastorage PRIVATE ${CMAKE_SOURCE_DIR}/includes)
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_options(test_datastorage PRIVATE ${TEST_COMPILE_FLAGS_DEBUG})
-    target_link_options(test_datastorage PRIVATE ${TEST_LINK_FLAGS_DEBUG})
-else()
-    target_compile_options(test_datastorage PRIVATE ${TEST_COMPILE_FLAGS_RELEASE})
-endif()
+#все исходные тестируемые файлы компилируются в статическую библиотеку а после используются
+add_library(test_common STATIC 
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Converter/DataStorage/DataStorage_file_func.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Converter/DataStorage/DataStorage_gets.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Converter/DataStorage/DataStorage_sets.cpp
 
-#тест для конвертера темной материи
-add_executable(test_converter_darkmatter
-test_converter_darkmatter.cpp
-${CONVERTER_SOURCES})
-target_include_directories(test_converter_darkmatter PRIVATE ${CMAKE_SOURCE_DIR}/includes)
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_options(test_converter_darkmatter PRIVATE ${TEST_COMPILE_FLAGS_DEBUG})
-    target_link_options(test_converter_darkmatter PRIVATE ${TEST_LINK_FLAGS_DEBUG})
-else()
-    target_compile_options(test_converter_darkmatter PRIVATE ${TEST_COMPILE_FLAGS_RELEASE})
-endif()
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Converter/Converter/Converter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Converter/Converter/Converter_DarkMatter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Converter/Converter/Converter_Gas.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Converter/Converter/Converter_MolecularClouds.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Converter/Converter/Converter_Stars.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Converter/Converter/Converter_YoungStars.cpp
+)   
 
-#тест для конвертера газа
-add_executable(test_converter_gas
-test_converter_gas.cpp
-${CONVERTER_SOURCES})
-target_include_directories(test_converter_gas PRIVATE ${CMAKE_SOURCE_DIR}/includes)
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_options(test_converter_gas PRIVATE ${TEST_COMPILE_FLAGS_DEBUG})
-    target_link_options(test_converter_gas PRIVATE ${TEST_LINK_FLAGS_DEBUG})
-else()
-    target_compile_options(test_converter_gas PRIVATE ${TEST_COMPILE_FLAGS_RELEASE})
-endif()
-
-#тест для конвертера молекулярных облаков
-add_executable(test_converter_molecularclouds
-test_converter_molecularclouds.cpp
-${CONVERTER_SOURCES})
-target_include_directories(test_converter_molecularclouds PRIVATE ${CMAKE_SOURCE_DIR}/includes)
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_options(test_converter_molecularclouds PRIVATE ${TEST_COMPILE_FLAGS_DEBUG})
-    target_link_options(test_converter_molecularclouds PRIVATE ${TEST_LINK_FLAGS_DEBUG})
-else()
-    target_compile_options(test_converter_molecularclouds PRIVATE ${TEST_COMPILE_FLAGS_RELEASE})
-endif()
-
-#тест для конвертера звезд
-add_executable(test_converter_stars
-test_converter_stars.cpp
-${CONVERTER_SOURCES})
-target_include_directories(test_converter_stars PRIVATE ${CMAKE_SOURCE_DIR}/includes)
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_options(test_converter_stars PRIVATE ${TEST_COMPILE_FLAGS_DEBUG})
-    target_link_options(test_converter_stars PRIVATE ${TEST_LINK_FLAGS_DEBUG})
-else()
-    target_compile_options(test_converter_stars PRIVATE ${TEST_COMPILE_FLAGS_RELEASE})
-endif()
-
-# тест для конвертера молодых звезд
-add_executable(test_converter_youngstars
-test_converter_youngstars.cpp
-${CONVERTER_SOURCES})
-target_include_directories(test_converter_youngstars PRIVATE ${CMAKE_SOURCE_DIR}/includes)
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_options(test_converter_youngstars PRIVATE ${TEST_COMPILE_FLAGS_DEBUG})
-    target_link_options(test_converter_youngstars PRIVATE ${TEST_LINK_FLAGS_DEBUG})
-else()
-    target_compile_options(test_converter_youngstars PRIVATE ${TEST_COMPILE_FLAGS_RELEASE})
-endif()
-
-#добавление тестов в CTest
-add_test(NAME DataStorageTests COMMAND test_datastorage)
-add_test(NAME Converter_DarkMatterTests COMMAND test_converter_darkmatter)
-add_test(NAME Converter_GasTests COMMAND test_converter_gas)
-add_test(NAME Converter_MolecularCloudsTests COMMAND test_converter_molecularclouds)
-add_test(NAME Converter_StarsTests COMMAND test_converter_stars)
-add_test(NAME Converter_YoungStarsTests COMMAND test_converter_youngstars)
-
-#групируем тесты по категориям
-set_tests_properties(DataStorageTests PROPERTIES LABELS "DataStorage")
-set_tests_properties(Converter_DarkMatterTests PROPERTIES LABELS "Converter")
-set_tests_properties(Converter_GasTests PROPERTIES LABELS "Converter")
-set_tests_properties(Converter_MolecularCloudsTests PROPERTIES LABELS "Converter")
-set_tests_properties(Converter_StarsTests PROPERTIES LABELS "Converter")
-set_tests_properties(Converter_YoungStarsTests PROPERTIES LABELS "Converter")
-
-set_target_properties(
-    test_datastorage
-    test_converter_darkmatter
-    test_converter_gas
-    test_converter_molecularclouds
-    test_converter_stars
-    test_converter_youngstars
-    PROPERTIES
-    CXX_STANDARD 23
-    CXX_STANDARD_REQUIRED ON
+#все кто линкуется видят общие заголовки
+target_include_directories(test_common PUBLIC
+${CMAKE_CURRENT_SOURCE_DIR}/../includes
 )
 
+#требование 23-го стандарта с++
+target_compile_features(test_common PUBLIC cxx_std_23)
+
+#генератор выражения: если debug то флаги для отладки, если release то флаги для release
+target_compile_options(test_common PRIVATE
+    $<$<CONFIG:Debug>: -Wall -Wextra -Wpedantic -g -O0 -fno-omit-frame-pointer>
+    $<$<CONFIG:Release>: -Wall -Wextra -Wpedantic -O2>
+)
+
+#санитайзеры только для отладки
+target_link_options(test_common PRIVATE
+    $<$<CONFIG:Debug>: -fsanitize=address -fsanitize=undefined>
+)
+
+# === Функция для создания теста ===
+function(add_unit_test name test_source)
+    add_executable(${name} ${test_source})
+    target_link_libraries(${name} PRIVATE test_common)
+    target_include_directories(${name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../includes)
+    target_compile_features(${name} PRIVATE cxx_std_23)
+
+    add_test(NAME ${name} COMMAND ${name})
+    set_tests_properties(${name} PROPERTIES LABELS "UnitTest")
+endfunction()
+
+# === Добавляем тесты ===
+add_unit_test(test_datastorage test_datastorage.cpp)
+add_unit_test(test_converter_darkmatter test_converter_darkmatter.cpp)
+add_unit_test(test_converter_gas test_converter_gas.cpp)
+add_unit_test(test_converter_molecularclouds test_converter_molecularclouds.cpp)
+add_unit_test(test_converter_stars test_converter_stars.cpp)
+add_unit_test(test_converter_youngstars test_converter_youngstars.cpp)
+
+# Явные метки
+set_tests_properties(test_datastorage PROPERTIES LABELS "DataStorage")
+set_tests_properties(test_converter_darkmatter PROPERTIES LABELS "Converter_DarkMatter")
+set_tests_properties(test_converter_gas PROPERTIES LABELS "Converter_Gas")
+set_tests_properties(test_converter_molecularclouds PROPERTIES LABELS "Converter_MolecularClouds")
+set_tests_properties(test_converter_stars PROPERTIES LABELS "Converter_Stars")
+set_tests_properties(test_converter_youngstars PROPERTIES LABELS "Converter_YoungStars")

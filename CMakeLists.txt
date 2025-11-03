@@ -1,15 +1,20 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.16) #минимальная версия cmake
 
-project(TxtToGrdConvert VERSION 0.1 LANGUAGES CXX)
-option(ENABLE_TESTS "Build Convert library tests" OFF)
+project(TxtToGrdConvert VERSION 0.3 LANGUAGES CXX) # название проекта его версия и язык на котором написан проект
+option(ENABLE_TESTS "Build Convert library tests" ON) #опция переключения между тестами
 
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC ON)
+set(CMAKE_CXX_STANDARD 23) # стандарт языка 23
+set(CMAKE_CXX_STANDARD_REQUIRED ON)#обязательный стандарт языка
 
-if(WIN32)
+#автоматическая генерация для qt
+#------------------------------------
+set(CMAKE_AUTOMOC ON) # создает moc_*.cpp из .h c Q_Object
+set(CMAKE_AUTORCC ON) #встраивает qrc ресурсы
+set(CMAKE_AUTOUIC ON) #обработка .ui файлов
+#------------------------------------
+
+#=========== Настройки для виндовс ==============
+if(WIN32) 
     # Путь к статическому Qt6
     set(CMAKE_PREFIX_PATH "C:/Qt/Qt-6.9.2")
     # Отключение Vulkan
@@ -20,10 +25,13 @@ if(WIN32)
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -static-libstdc++ -static-libgcc")
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -flto")
 
+#общие флаги компиляции
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra") #строгие предупреждения
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g") # для отладки без оптимизации
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -flto") # для запуска с оптимизацией O2 и оптимизация линковки
+
+# выбор папки сборки в зависимости от типа сборки
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(OUTPUT_SUBDIR "Debug")
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -34,18 +42,21 @@ else()
     set(OUTPUT_SUBDIR "default")  # Fallback
 endif()
 
-
+#исполняемые файлы помещают в bin, библиотеки в lib
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${OUTPUT_SUBDIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${OUTPUT_SUBDIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${OUTPUT_SUBDIR}/lib)
 
 # Поиск Qt6, включая LinguistTools
+# Core - базовые классы
+# Gui - графика
+# Widgets - различные виджеты(окна, кнопки и т.д.)
+# LinguistTools - модуль с переводами
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets LinguistTools)
 
 # Файлы переводов
 set(TS_FILES
     translates/TxtToGrdConvert_ru.ts
-    # Добавьте ваши .ts файлы
 )
 #добавление файлов перевода
 qt6_add_translations(
@@ -56,10 +67,13 @@ qt6_add_translations(
 #добавляем таргет библиотеки
 # add_library(Convert includes/Converter/Converter.h)
 
+#списиок всех исходных файлов
 set(PROJECT_SOURCES
 src/main.cpp
 src/UI/mainwindow.cpp
 includes/mainwindow.h
+src/UI/mainwindow_slots.cpp
+src/UI/mainwindow_private_methods.cpp
 includes/ConstantsParametrs.h
 includes/Converter/DataStorage.h
 includes/Converter/Converter.h
@@ -81,15 +95,17 @@ src/UI/mainwindow.ui
 
 ${QM_FILES}
 )
+
+#создание исполнимого qt файла
 qt_add_executable(TxtToGrdConvert
 MANUAL_FINALIZATION
 ${PROJECT_SOURCES}
 )
 
-target_include_directories(TxtToGrdConvert PRIVATE ${CMAKE_SOURCE_DIR}/includes)
-target_link_libraries(TxtToGrdConvert PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets)
+target_include_directories(TxtToGrdConvert PRIVATE ${CMAKE_SOURCE_DIR}/includes) #добавление путей к заголовкам
+target_link_libraries(TxtToGrdConvert PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets) #линковка с qt
 
-if(WIN32)
+if(WIN32) # на виндовс только gui
 set_target_properties(TxtToGrdConvert PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
@@ -106,17 +122,5 @@ qt_finalize_executable(TxtToGrdConvert)
 
 if(ENABLE_TESTS)
     enable_testing()
-
-    set(CONVERTER_SOURCES
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/Converter/Converter/Converter.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/Converter/Converter/Converter_DarkMatter.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/Converter/Converter/Converter_Gas.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/Converter/Converter/Converter_MolecularClouds.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/Converter/Converter/Converter_Stars.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/Converter/Converter/Converter_YoungStars.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/Converter/DataStorage/DataStorage_file_func.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/Converter/DataStorage/DataStorage_gets.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/Converter/DataStorage/DataStorage_sets.cpp
-    )
     add_subdirectory(tests)
 endif()
