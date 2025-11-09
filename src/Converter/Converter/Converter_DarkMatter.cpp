@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstddef>
 #include <filesystem>
+#include <string>
 #include <vector>
 Converter_DarkMatter::Converter_DarkMatter(DataStorage& _data, ParametrsList::iniConstants& c, count_cell _Nbxy,
                                            std::filesystem::path _output_path)
@@ -63,24 +64,13 @@ void Converter_DarkMatter::convert()
             return data->get_vz();
         }
     }();
-    std::vector<double>& v_projection3 = [xy = &XY, data = &data]() -> std::vector<double>& {  // проекция для z
-        if ((xy->first == ParametrsList::X && xy->second == ParametrsList::Y) ||
-            (xy->first == ParametrsList::Y && xy->second == ParametrsList::X)) {
-            return data->get_vz();
-        } else if ((xy->first == ParametrsList::X && xy->second == ParametrsList::Z) ||
-                   (xy->first == ParametrsList::Z && xy->second == ParametrsList::X)) {
-            return data->get_vy();
-        } else {
-            return data->get_vx();
-        }
-    }();
     auto file_pathes = data.get_last_file_names();
+    std::string xy = extract_upper_axis(std::string(XY.first)) + extract_upper_axis(std::string(XY.second));
     std::vector<std::string> file_names;
     file_names.reserve(file_pathes.size());
     for (const auto& i : file_pathes) {
         file_names.push_back(i.stem());
     }
-
     for (size_t file_type = 0; file_type < Z_grd_list.size(); ++file_type) {
         if (Z_grd_list[file_type] == ParametrsList::Z_outParams_Rho) {
             //-----------------------Вычисление значений--------------------------
@@ -91,7 +81,8 @@ void Converter_DarkMatter::convert()
             std::string dir = "Rho";
             std::filesystem::create_directory(output_directory / dir);
             for (size_t i = 0; i < file_names.size(); ++i) {
-                ofiles_names.push_back(output_directory / dir / (dir + file_names[i] + ".grd"));
+                ofiles_names.push_back(output_directory / dir /
+                                       ("DM_" + xy + "_" + dir + "_t_" + std::to_string(data.get_t()[i] * l_t) + ".grd"));
             }
         } else if (Z_grd_list[file_type] == ParametrsList::Z_outParams_LgRho) {
             //-----------------------Вычисление значений--------------------------
@@ -102,7 +93,8 @@ void Converter_DarkMatter::convert()
             std::string dir = "LgRho";
             std::filesystem::create_directory(output_directory / dir);
             for (size_t i = 0; i < file_names.size(); ++i) {
-                ofiles_names.push_back(output_directory / dir / (dir + file_names[i] + ".grd"));
+                ofiles_names.push_back(output_directory / dir /
+                                       ("DM_" + xy + "_" + dir + "_t_" + std::to_string(data.get_t()[i] * l_t) + ".grd"));
             }
 
         } else if (Z_grd_list[file_type] == ParametrsList::Z_outParams_LgSigma) {
@@ -114,7 +106,8 @@ void Converter_DarkMatter::convert()
             std::string dir = "LgSigma";
             std::filesystem::create_directory(output_directory / dir);
             for (size_t i = 0; i < file_names.size(); ++i) {
-                ofiles_names.push_back(output_directory / dir / (dir + file_names[i] + ".grd"));
+                ofiles_names.push_back(output_directory / dir /
+                                       ("DM_" + xy + "_" + dir + "_t_" + std::to_string(data.get_t()[i] * l_t) + ".grd"));
             }
 
         } else if (Z_grd_list[file_type] == ParametrsList::Z_outParams_Sigma) {
@@ -126,10 +119,11 @@ void Converter_DarkMatter::convert()
             std::string dir = "Sigma";
             std::filesystem::create_directory(output_directory / dir);
             for (size_t i = 0; i < file_names.size(); ++i) {
-                ofiles_names.push_back(output_directory / dir / (dir + file_names[i] + ".grd"));
+                ofiles_names.push_back(output_directory / dir /
+                                       ("DM_" + xy + "_" + dir + "_t_" + std::to_string(data.get_t()[i] * l_t) + ".grd"));
             }
 
-        } else if (Z_grd_list[file_type] == ParametrsList::Z_outParams_Vfi) {
+        } else if (Z_grd_list[file_type] == ParametrsList::Z_outParams_Vfi) {  // TODO: неправильное преобразование
             //-----------------------Вычисление значений--------------------------
             Z.push_back(std::vector<double>());
             calculate_Vfi(projection1, projection2, projection3, v_projection1, v_projection2);
@@ -138,7 +132,8 @@ void Converter_DarkMatter::convert()
             std::string dir = "Vfi";
             std::filesystem::create_directory(output_directory / dir);
             for (size_t i = 0; i < file_names.size(); ++i) {
-                ofiles_names.push_back(output_directory / dir / (dir + file_names[i] + ".grd"));
+                ofiles_names.push_back(output_directory / dir /
+                                       ("DM_" + xy + "_" + dir + "_t_" + std::to_string(data.get_t()[i] * l_t) + ".grd"));
             }
 
         } else if (Z_grd_list[file_type] == ParametrsList::Z_outParams_Vr) {
@@ -150,52 +145,46 @@ void Converter_DarkMatter::convert()
             std::string dir = "Vr";
             std::filesystem::create_directory(output_directory / dir);
             for (size_t i = 0; i < file_names.size(); ++i) {
-                ofiles_names.push_back(output_directory / dir / (dir + file_names[i] + ".grd"));
+                ofiles_names.push_back(output_directory / dir /
+                                       ("DM_" + xy + "_" + dir + "_t_" + std::to_string(data.get_t()[i] * l_t) + ".grd"));
             }
 
         } else if (Z_grd_list[file_type] == ParametrsList::Z_outParams_Vx) {
             //-----------------------Вычисление значений--------------------------
             Z.push_back(std::vector<double>());
-            calculate_V_projection(projection1, projection2, projection3, v_projection1);
+            calculate_V_projection(projection1, projection2, projection3, data.get_vx());
             //-----------------------создание поддиректории--------------------------
             ofiles_names.reserve(file_names.size());
-            std::string dir = std::string(XY.first);
+            std::string dir = "Vx";
             std::filesystem::create_directory(output_directory / dir);
             for (size_t i = 0; i < file_names.size(); ++i) {
-                ofiles_names.push_back(output_directory / dir / (dir + file_names[i] + ".grd"));
+                ofiles_names.push_back(output_directory / dir /
+                                       ("DM_" + xy + "_" + dir + "_t_" + std::to_string(data.get_t()[i] * l_t) + ".grd"));
             }
 
         } else if (Z_grd_list[file_type] == ParametrsList::Z_outParams_Vy) {
             //-----------------------Вычисление значений--------------------------
             Z.push_back(std::vector<double>());
-            calculate_V_projection(projection1, projection2, projection3, v_projection2);
+            calculate_V_projection(projection1, projection2, projection3, data.get_vy());
             //-----------------------создание поддиректории--------------------------
             ofiles_names.reserve(file_names.size());
-            std::string dir = std::string(XY.second);
+            std::string dir = "Vy";
             std::filesystem::create_directory(output_directory / dir);
             for (size_t i = 0; i < file_names.size(); ++i) {
-                ofiles_names.push_back(output_directory / dir / (dir + file_names[i] + ".grd"));
+                ofiles_names.push_back(output_directory / dir /
+                                       ("DM_" + xy + "_" + dir + "_t_" + std::to_string(data.get_t()[i] * l_t) + ".grd"));
             }
         } else if (Z_grd_list[file_type] == ParametrsList::Z_outParams_Vz) {
             //-----------------------Вычисление значений--------------------------
             Z.push_back(std::vector<double>());
-            calculate_V_projection(projection1, projection2, projection3, v_projection3);
+            calculate_V_projection(projection1, projection2, projection3, data.get_vz());
             //-----------------------создание поддиректории--------------------------
             ofiles_names.reserve(file_names.size());
-            std::string dir = [xy = &XY]() {  // проекция для z
-                if ((xy->first == ParametrsList::X && xy->second == ParametrsList::Y) ||
-                    (xy->first == ParametrsList::Y && xy->second == ParametrsList::X)) {
-                    return std::string(ParametrsList::Z_outParams_Vz);
-                } else if ((xy->first == ParametrsList::X && xy->second == ParametrsList::Z) ||
-                           (xy->first == ParametrsList::Z && xy->second == ParametrsList::X)) {
-                    return std::string(ParametrsList::Z_outParams_Vy);
-                } else {
-                    return std::string(ParametrsList::Z_outParams_Vx);
-                }
-            }();
+            std::string dir = "Vz";
             std::filesystem::create_directory(output_directory / dir);
             for (size_t i = 0; i < file_names.size(); ++i) {
-                ofiles_names.push_back(output_directory / dir / (dir + file_names[i] + ".grd"));
+                ofiles_names.push_back(output_directory / dir /
+                                       ("DM_" + xy + "_" + dir + "_t_" + std::to_string(data.get_t()[i] * l_t) + ".grd"));
             }
         } else {
             // TODO: добавить логи
@@ -436,8 +425,8 @@ void Converter_DarkMatter::calculate_Vfi(std::vector<double>& projection1, std::
             double pr3 = projection3[index];
             if (pr1 >= limits_x.min && pr1 <= limits_x.max && pr2 >= limits_y.min && pr2 <= limits_y.max &&
                 pr3 >= limits_z.min && pr3 <= limits_z.max) {
-                int ib = (int)((pr1 - limits_x.min) / hb);
-                int jb = (int)((pr2 - limits_y.min) / hb);
+                int ib = static_cast<int>(((pr1 - limits_x.min) / hb));
+                int jb = static_cast<int>(((pr2 - limits_y.min) / hb));
                 double vpr1 = v_projection1[index];
                 double vpr2 = v_projection2[index];
                 double r = std::sqrt(pr1 * pr1 + pr2 * pr2);

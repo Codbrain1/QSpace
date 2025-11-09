@@ -377,13 +377,13 @@ void loadmetadateBINTest()
 int main()
 {
     try {
-        std::cout << "Run ReadTXT_Test";
+        std::cout << "=== ТЕСТ: Run ReadTXT_Test\n";
         ReadTXT_Test();
-        std::cout << "Run ReadBIN_Test";
+        std::cout << "=== ТЕСТ: Run ReadBIN_Test\n";
         ReadBIN_Test();
-        std::cout << "Run loadmetadateTXTTest";
+        std::cout << "=== ТЕСТ: Run loadmetadateTXTTest\n";
         loadmetadateTXTTest();
-        std::cout << "Run loadmetadateBINTest";
+        std::cout << "=== ТЕСТ: Run loadmetadateBINTest\n";
         loadmetadateBINTest();
 
         std::cout << "Все тесты пройдены успешно!" << std::endl;

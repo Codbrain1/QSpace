@@ -1,5 +1,6 @@
 #include "Converter/Converter.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
@@ -19,7 +20,8 @@ Converter::Converter(DataStorage& _data, ParametrsList::iniConstants& c, count_c
       Nb_XY(_Nbxy),
       fx_lim(0, 0),
       fy_lim(0, 0),
-      hb(c.hb)
+      hb(c.hb),
+      all_files_cursor(0)
 {
     _hb2 = 1.0 / (hb * hb);
     l_v = 65.76 * std::sqrt(c.Km / c.Kr);        //--> km/s
@@ -63,7 +65,13 @@ void Converter::setup_output_data(const std::vector<std::string>& Z_grd_list_col
                                   const std::pair<std::string, std::string>& _XY)
 {
     for (const auto& i : Z_grd_list_columns) {
-        Z_grd_list.push_back(i);
+        if (std::find(ParametrsList::Z_outParams.begin(), ParametrsList::Z_outParams.end(), i) !=
+                ParametrsList::Z_outParams.end() ||
+            i == ParametrsList::Z_outParamT || i == ParametrsList::Z_outParamLgT)
+            Z_grd_list.push_back(i);
+        else {
+            throw std::invalid_argument("неразрешенный тип выходных данных в списке");
+        }
     }
     XY = _XY;
 }
@@ -89,6 +97,7 @@ void Converter::save_grd_txt()
                 consistent_save_txt(current_cursor, col);
             }
             current_cursor += obuff_size;
+            all_files_cursor += obuff_size;
         }
     }
     Z.clear();
@@ -118,6 +127,7 @@ void Converter::save_grd_bin()
                 consistent_save_bin(current_cursor, col);
             }
             current_cursor += obuff_size;
+            all_files_cursor += obuff_size;
         }
     }
     Z.clear();
@@ -131,7 +141,7 @@ void Converter::parallel_save_bin(size_t current_cursor, size_t col)
     for (size_t i = 0; i < obuff_size; ++i) {  // шаг по файлам
         size_t cursor_i = current_cursor + i;
         // открытие и настройка файла
-        ofiles[cursor_i] = fopen(ofiles_names[cursor_i].c_str(), "wb");
+        ofiles[cursor_i] = fopen(ofiles_names[all_files_cursor + i].c_str(), "wb");
         if (!ofiles[cursor_i]) {
             // TODO: добавить логи
         } else {
@@ -165,7 +175,7 @@ void Converter::parallel_save_txt(size_t current_cursor, size_t col)
     for (size_t i = 0; i < obuff_size; ++i) {  // шаг по файлам
         size_t cursor_i = current_cursor + i;
         //  открытие и настройка файла
-        ofiles[cursor_i] = fopen(ofiles_names[cursor_i].c_str(), "w");
+        ofiles[cursor_i] = fopen(ofiles_names[all_files_cursor + i].c_str(), "w");
         if (!ofiles[cursor_i]) {
             // TODO: добавить логи
         } else {
@@ -207,7 +217,7 @@ void Converter::consistent_save_bin(size_t current_cursor, size_t col)
     for (size_t i = 0; i < obuff_size; ++i) {  // шаг по файлам
         size_t cursor_i = current_cursor + i;
         // открытие и настройка файла
-        ofiles[cursor_i] = fopen(ofiles_names[cursor_i].c_str(), "wb");
+        ofiles[cursor_i] = fopen(ofiles_names[all_files_cursor + i].c_str(), "wb");
         if (!ofiles[cursor_i]) {
             // TODO: добавить логи
         } else {
@@ -227,8 +237,8 @@ void Converter::consistent_save_bin(size_t current_cursor, size_t col)
 
             for (int ib = 0; ib < Nb_XY.Ny; ++ib) {
                 for (int jb = 0; jb < Nb_XY.Nx; ++jb) {
-                    fwrite(&Z[col][Nb_XY.Ny * ib + jb + Nb_XY.Nx * Nb_XY.Ny * (cursor_i)], sizeof(double), 1,
-                           ofiles[cursor_i]);
+                    float z = static_cast<float>(Z[col][Nb_XY.Ny * ib + jb + Nb_XY.Nx * Nb_XY.Ny * (cursor_i)]);
+                    fwrite(&z, sizeof(float), 1, ofiles[cursor_i]);
                 }
             }
             fclose(ofiles[cursor_i]);
@@ -239,9 +249,8 @@ void Converter::consistent_save_txt(size_t current_cursor, size_t col)
 {
     for (size_t i = 0; i < obuff_size; ++i) {  // шаг по файлам
         size_t cursor_i = current_cursor + i;
-
         // открытие и настройка файла
-        ofiles[cursor_i] = fopen(ofiles_names[cursor_i].c_str(), "w");
+        ofiles[cursor_i] = fopen(ofiles_names[all_files_cursor + i].c_str(), "w");
         if (!ofiles[cursor_i]) {
             // TODO: добавить логи
         } else {
@@ -278,3 +287,19 @@ void Converter::consistent_save_txt(size_t current_cursor, size_t col)
         }
     }
 }
+std::string Converter::extract_upper_axis(const std::string& input)  //"x (текст)" → "X", "y (любой текст)" → "Y"
+{
+    if (input.empty()) return "";
+
+    // Ищем первую букву (a-z, A-Z)
+    auto it = std::find_if(input.begin(), input.end(), [](unsigned char c) { return std::isalpha(c); });
+
+    if (it == input.end()) return "";  // нет букв
+
+    char c = std::toupper(static_cast<unsigned char>(*it));
+    if (c != 'X' && c != 'Y' && c != 'Z') {
+        return "";  // или throw, если нужно
+    }
+
+    return std::string(1, c);
+};

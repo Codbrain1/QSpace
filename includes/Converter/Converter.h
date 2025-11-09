@@ -36,7 +36,7 @@ class Converter
     double l_t;                                       // l_t = l_r / l_v * 1000.0 * 0.9784;    --> Myr
     double _dV;                                       //_hb2 / (zmax - zmin);
     static constexpr double eps_lg = 1e-15;           // логарифмирование входных значений
-
+    size_t all_files_cursor;
     Converter(DataStorage& _data, ParametrsList::iniConstants& c, count_cell _Nbxy, std::filesystem::path _output_path);
     Converter() = delete;
     void parallel_save_txt(size_t current_cursor, size_t col);
@@ -52,4 +52,5 @@ class Converter
     void set_ofile_buff_size(const size_t size);
     void setup_output_data(const std::vector<std::string>& Z_grd_list_columns,
                            const std::pair<std::string, std::string>& _XY);
+    std::string extract_upper_axis(const std::string& input);  //"x (текст)" → "X", "y (любой текст)" → "Y"
 };

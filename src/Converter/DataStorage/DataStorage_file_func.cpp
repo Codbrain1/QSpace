@@ -27,6 +27,8 @@ DataStorage::DataStorage(const std::vector<std::filesystem::path>& pathes)
         ifiles.assign(ibuff_size, nullptr);  // скользящее окно
         Ns.reserve(ifile_names.size());      // размеры для всех загружаемых файлов
         t.reserve(ifile_names.size());       // времена для всех загружаемых файлов
+    } else {
+        throw std::invalid_argument("file names is empty");
     }
 }
 void DataStorage::load_file_metadate_txt()
