@@ -141,7 +141,11 @@ void Converter::parallel_save_bin(size_t current_cursor, size_t col)
     for (size_t i = 0; i < obuff_size; ++i) {  // шаг по файлам
         size_t cursor_i = current_cursor + i;
         // открытие и настройка файла
-        ofiles[cursor_i] = fopen(ofiles_names[all_files_cursor + i].c_str(), "wb");
+#ifdef _WIN32
+            ofiles[cursor_i] = _wfopen(ofiles_names[all_files_cursor + i].wstring().c_str(), L"wb");
+        #else
+            ofiles[cursor_i] = fopen(ofiles_names[all_files_cursor + i].c_str(), "wb");
+        #endif
         if (!ofiles[cursor_i]) {
             // TODO: добавить логи
         } else {
@@ -175,8 +179,12 @@ void Converter::parallel_save_txt(size_t current_cursor, size_t col)
     for (size_t i = 0; i < obuff_size; ++i) {  // шаг по файлам
         size_t cursor_i = current_cursor + i;
         //  открытие и настройка файла
-        ofiles[cursor_i] = fopen(ofiles_names[all_files_cursor + i].c_str(), "w");
-        if (!ofiles[cursor_i]) {
+#ifdef _WIN32
+            ofiles[cursor_i] = _wfopen(ofiles_names[all_files_cursor + i].wstring().c_str(), L"w");
+        #else
+            ofiles[cursor_i] = fopen(ofiles_names[all_files_cursor + i].c_str(), "w");
+        #endif
+                if (!ofiles[cursor_i]) {
             // TODO: добавить логи
         } else {
             std::vector<char> buffer(ofile_buff_size);
@@ -217,8 +225,12 @@ void Converter::consistent_save_bin(size_t current_cursor, size_t col)
     for (size_t i = 0; i < obuff_size; ++i) {  // шаг по файлам
         size_t cursor_i = current_cursor + i;
         // открытие и настройка файла
-        ofiles[cursor_i] = fopen(ofiles_names[all_files_cursor + i].c_str(), "wb");
-        if (!ofiles[cursor_i]) {
+ #ifdef _WIN32
+            ofiles[cursor_i] = _wfopen(ofiles_names[all_files_cursor + i].wstring().c_str(), L"wb");
+        #else
+            ofiles[cursor_i] = fopen(ofiles_names[all_files_cursor + i].c_str(), "wb");
+        #endif
+                if (!ofiles[cursor_i]) {
             // TODO: добавить логи
         } else {
             std::vector<char> buffer(ofile_buff_size);
@@ -250,8 +262,12 @@ void Converter::consistent_save_txt(size_t current_cursor, size_t col)
     for (size_t i = 0; i < obuff_size; ++i) {  // шаг по файлам
         size_t cursor_i = current_cursor + i;
         // открытие и настройка файла
-        ofiles[cursor_i] = fopen(ofiles_names[all_files_cursor + i].c_str(), "w");
-        if (!ofiles[cursor_i]) {
+#ifdef _WIN32
+            ofiles[cursor_i] = _wfopen(ofiles_names[all_files_cursor + i].wstring().c_str(), L"wb");
+        #else
+            ofiles[cursor_i] = fopen(ofiles_names[all_files_cursor + i].c_str(), "w");
+        #endif
+                if (!ofiles[cursor_i]) {
             // TODO: добавить логи
         } else {
             std::vector<char> buffer(ofile_buff_size);

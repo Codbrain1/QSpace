@@ -1,5 +1,17 @@
+#include <qcoreevent.h>
+#include <qmainwindow.h>
+#include <qmenu.h>
+#include <qmessagebox.h>
+#include <qobject.h>
+#include <qpoint.h>
+#include <qsettings.h>
+#include <qwidget.h>
+
 #include <QFileDialog>
+#include <QKeyEvent>
 #include <QMessageBox>
+#include <QProcess>
+#include <QSettings>
 #include <algorithm>
 #include <filesystem>
 #include <string>
@@ -15,6 +27,7 @@
 #include "Converter/Converter_YoungStars.h"
 #include "mainwindow.h"
 
+// отвечает за установку проецируемой области
 void MainWindow::on_lineEdit_Slice_changed(const QString &)
 {
     statusBar()->clearMessage();
@@ -112,7 +125,8 @@ void MainWindow::on_checkbox_column_customise_change(Qt::CheckState state)
         ui->lineEdit_numbers_columns_ifiles->setEnabled(false);
     }
 }
-void MainWindow::on_pushButton_txt_clicked()
+// слот выбора входных файлов (удаляет предыдущие)
+void MainWindow::on_pushButton_input_files_clicked()
 {
     try {
         std::string filter = "";
@@ -146,14 +160,20 @@ void MainWindow::on_pushButton_txt_clicked()
         }
         QFileInfo file(inputfileNames.back());
         QString parentDir = QDir::toNativeSeparators(file.absolutePath());
-
         ui->lineEdit_input->setText(parentDir);
+
+        ui->listWidget_input_file_names->clear();
+        for (auto file_name : inputfileNames) {
+            ui->listWidget_input_file_names->addItem(file_name);
+        }
+        inputfiles_names.clear();
         inputfiles_names = inputfileNames;
     } catch (const char *ex) {
         QMessageBox::warning(this, tr("Ошибка"), tr(ex));
         return;
     }
 }
+// слот выбора выходной директории (по умолчанию создает output)
 void MainWindow::on_pushButtongrd_clicked()
 {
     QString outputfolderName = QFileDialog::getExistingDirectory(nullptr,  // Родительский виджет (nullptr для модального
@@ -172,7 +192,7 @@ void MainWindow::on_pushButtongrd_clicked()
         QMessageBox::warning(this, tr("Ошибка"), tr("Не удалось создать папку. Проверь права доступа."));
     }
 }
-
+// конвертация файлов в grd
 void MainWindow::on_pushButtonconvert_clicked()
 {
     if (inputfiles_names.isEmpty()) {
@@ -412,4 +432,130 @@ void MainWindow::on_pushButtonconvert_clicked()
     } catch (const std::exception &e) {
         QMessageBox::critical(this, tr("Ошибка"), QString("Конвертация не удалась: %1").arg(e.what()));
     }
+}
+// обработка кнопки delete для удаления файлов которые были выбраны
+bool MainWindow::eventFilter(QObject *obj, QEvent *event)
+{
+    if (obj == ui->listWidget_input_file_names && event->type() == QEvent::KeyPress) {
+        QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+        if (keyEvent->key() == Qt::Key_Delete || keyEvent->key() == Qt::Key_Backspace) {
+            delete_selected_files();
+            return true;
+        }
+    }
+    return QMainWindow::eventFilter(obj, event);
+}
+// обработка нажатия правой кнопки мыши
+void MainWindow::on_listWidget_right_mouse_clicked(const QPoint &pos)
+{
+    QMenu menu;
+    menu.addAction("Удалить", this, &MainWindow::delete_selected_files);
+    menu.exec(ui->listWidget_input_file_names->mapToGlobal(pos));
+}
+// добавление входных файлов
+void MainWindow::on_pushButton_add_input_file_clicked()
+{
+    try {
+        std::string filter = "";
+        if (ui->comboBox_type_structures_ifiles->currentText() == ParametrsList::is_txt_ifiles) {
+            filter = "(*.txt)";
+        } else {
+            filter = "(*.bin)";
+        }
+        QStringList inputfileNames =
+            QFileDialog::getOpenFileNames(this, tr("Select TXT Files"), "", tr(("Text Files " + filter).c_str()));
+
+        if (inputfileNames.isEmpty()) {
+            return;
+        }
+        // если выходной путь не выбран автоматически выбирается корневая директория входных файлов/output
+        if (ui->lineEdit_output->text().toStdString().empty()) {
+            QDir current_dir = QDir::currentPath();
+            QString outputfileName = "output";
+            QString new_output_folder_name = current_dir.absolutePath() + "/" + outputfileName;
+            outputDir = new_output_folder_name;
+            ui->lineEdit_output->setText(outputDir);
+        }
+
+        // проверяем что все файлы существуют
+        for (const auto &file_name : inputfileNames) {
+            QFileInfo file;
+            if (!file.exists(file_name)) {
+                QMessageBox::warning(this, tr("Ошибка"), tr("Файл не существует"));
+                return;
+            }
+        }
+
+        QFileInfo file(inputfileNames.back());
+        QString parentDir = QDir::toNativeSeparators(file.absolutePath());
+        ui->lineEdit_input->setText(parentDir);
+
+        for (auto file_name : inputfileNames) {
+            ui->listWidget_input_file_names->addItem(file_name);
+        }
+        for (auto i : inputfileNames) {
+            inputfiles_names.push_back(i);
+        }
+    } catch (const char *ex) {
+        QMessageBox::warning(this, tr("Ошибка"), tr(ex));
+        return;
+    }
+}
+void MainWindow::on_action_reset_settings()
+{
+    if (QMessageBox::question(this, tr("Сброс"), tr("Сбросить все настройки и перезапустить приложение?")) ==
+        QMessageBox::Yes) {
+        QSettings(QCoreApplication::applicationDirPath() + "/config.ini", QSettings::IniFormat).clear();
+        loadSettings();
+    }
+}
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    QSettings settings(QCoreApplication::applicationDirPath() + "/config.ini", QSettings::IniFormat);
+
+    // === 1. Окно ===
+    settings.setValue("window/geometry", saveGeometry());
+    settings.setValue("window/state", saveState());
+    // === 2. Вкладки ===
+    settings.setValue("tabs/current", ui->tabWidget->currentIndex());
+
+    // === 3. Пути ===
+    settings.setValue("files/input", inputfiles_names);
+    settings.setValue("files/output_dir", outputDir);
+
+    // === 4. ComboBox'ы ===
+    settings.setValue("combos/output_type", ui->comboBox->currentIndex());
+    settings.setValue("combos/data_type", ui->comboBox_output_data_params->currentIndex());
+    settings.setValue("combos/X", ui->comboBox_X->currentIndex());
+    settings.setValue("combos/Y", ui->comboBox_Y->currentIndex());
+    settings.setValue("combos/Z", ui->comboBox_Z->currentIndex());
+    settings.setValue("combos/file_structure", ui->comboBox_type_structures_ifiles->currentIndex());
+
+    // === 5. Параметры сетки ===
+    settings.setValue("grid/min_x", ui->lineEdit_min_x->text());
+    settings.setValue("grid/max_x", ui->lineEdit_max_x->text());
+    settings.setValue("grid/min_y", ui->lineEdit_min_y->text());
+    settings.setValue("grid/max_y", ui->lineEdit_max_y->text());
+    settings.setValue("grid/min_z", ui->lineEdit_min_z->text());
+    settings.setValue("grid/max_z", ui->lineEdit_max_z->text());
+    settings.setValue("grid/hb", ui->lineEdit_hb->text());
+
+    // === 6. Константы ===
+    settings.setValue("const/gamma", ui->lineEdit_gamma->text());
+    settings.setValue("const/Km", ui->lineEdit_Km->text());
+    settings.setValue("const/Kr", ui->lineEdit_Kr->text());
+    settings.setValue("lineedits/input", ui->lineEdit_input->text());
+    settings.setValue("lineedits/output", ui->lineEdit_output->text());
+    // TODO: добавить все константы из программы
+
+    // === 7. QListWidget ===
+    settings.beginWriteArray("files/input");
+    for (int i = 0; i < ui->listWidget_input_file_names->count(); ++i) {
+        settings.setArrayIndex(i);
+        settings.setValue("path", ui->listWidget_input_file_names->item(i)->text());
+    }
+    settings.endArray();
+    // === 8. CheckBox ===
+    settings.setValue("checkbox/custom_columns", ui->checkBox_column_customize->isChecked());
+    event->accept();
 }

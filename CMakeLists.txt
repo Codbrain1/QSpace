@@ -16,7 +16,7 @@ set(CMAKE_AUTOUIC ON) #обработка .ui файлов
 #=========== Настройки для виндовс ==============
 if(WIN32) 
     # Путь к статическому Qt6
-    set(CMAKE_PREFIX_PATH "C:/Qt/Qt-6.9.2")
+    set(CMAKE_PREFIX_PATH "C:/Qt/Qt-6.9.2-ninja")
     # Отключение Vulkan
     set(QT_NO_VULKAN ON)
     set(CMAKE_CXX_COMPILER "C:/Qt/Tools/mingw1310_64/bin/g++.exe")
@@ -29,7 +29,7 @@ endif()
 #общие флаги компиляции
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra") #строгие предупреждения
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g") # для отладки без оптимизации
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -flto") # для запуска с оптимизацией O2 и оптимизация линковки
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -flto -fopenmp") # для запуска с оптимизацией O2 и оптимизация линковки
 
 # выбор папки сборки в зависимости от типа сборки
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")

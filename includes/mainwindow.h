@@ -2,8 +2,10 @@
 #define MAINWINDOW_H
 
 #include <qcontainerfwd.h>
+#include <qcoreevent.h>
 #include <qnamespace.h>
 #include <qobject.h>
+#include <qpoint.h>
 
 #include <QComboBox>
 #include <QMainWindow>
@@ -27,14 +29,20 @@ class MainWindow : public QMainWindow
    private slots:
     void on_comboBox_output_data_params_changed(int index);
 
-    void on_pushButton_txt_clicked();
+    void on_pushButton_input_files_clicked();
 
     void on_pushButtongrd_clicked();
-
+    void on_listWidget_right_mouse_clicked(const QPoint &pos);
+    bool eventFilter(QObject *obj, QEvent *event) override;
     void on_pushButtonconvert_clicked();
     void on_lineEdit_numbers_columns_files_changed(const QString &changed_line);
     void on_checkbox_column_customise_change(Qt::CheckState state);
     void on_lineEdit_Slice_changed(const QString &);  // все QLineEdit отвечающие за изменение слоя отображения
+    void on_pushButton_add_input_file_clicked();
+    void on_action_reset_settings();
+
+   protected:
+    void closeEvent(QCloseEvent *event) override;
 
    private:
     // -----------------------------------------------------поля-----------------------------------------------------
@@ -49,5 +57,8 @@ class MainWindow : public QMainWindow
     void setup_columns_comboBoxes_G_MC_YS(const int num_col);
     void setup_columns_comboBoxes(const int num_col);
     bool is_correct_data_QLineEdit();
+    void delete_selected_files();
+    void loadSettings();
+    void connectSlots();
 };
 #endif  // MAINWINDOW_H

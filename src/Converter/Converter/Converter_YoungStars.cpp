@@ -7,7 +7,7 @@ Converter_YoungStars::Converter_YoungStars(DataStorage& _data, ParametrsList::in
 {
     gamma = c.gamma;
     gamma1 = c.gamma - 1.0;
-    l_Te = l_Te = gamma * gamma1 * 10000 / (100.0 / (l_v * l_v));
+    l_Te = gamma * gamma1 * 10000 / (100.0 / (l_v * l_v));
 }
 void Converter_YoungStars::convert()
 {
@@ -69,7 +69,7 @@ void Converter_YoungStars::convert()
     std::vector<std::string> file_names;
     file_names.reserve(file_pathes.size());
     for (const auto& i : file_pathes) {
-        file_names.push_back(i.stem());
+        file_names.push_back(i.stem().string());
     }
 
     for (size_t file_type = 0; file_type < Z_grd_list.size(); ++file_type) {

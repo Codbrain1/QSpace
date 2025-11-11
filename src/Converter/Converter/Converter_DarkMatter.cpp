@@ -69,7 +69,7 @@ void Converter_DarkMatter::convert()
     std::vector<std::string> file_names;
     file_names.reserve(file_pathes.size());
     for (const auto& i : file_pathes) {
-        file_names.push_back(i.stem());
+        file_names.push_back(i.stem().string());
     }
     for (size_t file_type = 0; file_type < Z_grd_list.size(); ++file_type) {
         if (Z_grd_list[file_type] == ParametrsList::Z_outParams_Rho) {

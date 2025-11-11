@@ -36,7 +36,7 @@ void DataStorage::load_file_metadate_txt()
     for (size_t i = 0; i < ifile_names.size(); ++i) {
         FILE* file = nullptr;
 #ifdef _WIN32
-        file = _wfopen(ifile_names[i].wstring(), L"r");
+        file = _wfopen(ifile_names[i].wstring().c_str(), L"r");
 #else
         file = fopen(ifile_names[i].c_str(), "r");
 #endif
@@ -61,7 +61,7 @@ void DataStorage::load_file_metadate_bin()
     for (size_t i = 0; i < ifile_names.size(); ++i) {
         FILE* file = nullptr;
 #ifdef _WIN32
-        file = _wfopen(ifile_names[i].wstring(), L"rb");
+        file = _wfopen(ifile_names[i].wstring().c_str(), L"rb");
 #else
         file = fopen(ifile_names[i].c_str(), "rb");
 #endif
@@ -154,7 +154,7 @@ void DataStorage::read_consistent_bin()
 {
     for (size_t i = 0; i < ibuff_size; ++i) {
 #ifdef _WIN32
-        ifiles[i] = _wfopen(ifile_names[current_cursor + i].wstring().c_str(), "rb");
+        ifiles[i] = _wfopen(ifile_names[current_cursor + i].wstring().c_str(), L"rb");
 #else
         ifiles[i] = fopen(ifile_names[current_cursor + i].c_str(), "rb");
 #endif
@@ -193,7 +193,7 @@ void DataStorage::read_consistent_txt()
 {
     for (size_t i = 0; i < ibuff_size; ++i) {
 #ifdef _WIN32
-        ifiles[i] = _wfopen(ifile_names[current_cursor + i].wstring().c_str(), "r");
+        ifiles[i] = _wfopen(ifile_names[current_cursor + i].wstring().c_str(), L"r");
 #else
         ifiles[i] = fopen(ifile_names[current_cursor + i].c_str(), "r");
 #endif
@@ -264,7 +264,7 @@ void DataStorage::read_parallel_bin()
 #pragma omp parallel for schedule(dynamic)
     for (size_t i = 0; i < ibuff_size; ++i) {
 #ifdef _WIN32
-        ifiles[i] = _wfopen(ifile_names[current_cursor + i].wstring().c_str(), "rb");
+        ifiles[i] = _wfopen(ifile_names[current_cursor + i].wstring().c_str(), L"rb");
 #else
         ifiles[i] = fopen(ifile_names[current_cursor + i].c_str(), "rb");
 #endif
@@ -301,10 +301,10 @@ void DataStorage::read_parallel_bin()
 }
 void DataStorage::read_parallel_txt()
 {
-#pragma omp parallel for schedule(dinamic)
+#pragma omp parallel for schedule(dynamic)
     for (size_t i = 0; i < ibuff_size; ++i) {
 #ifdef _WIN32
-        ifiles[i] = _wfopen(ifile_names[current_cursor + i].wstring().c_str(), "r");
+        ifiles[i] = _wfopen(ifile_names[current_cursor + i].wstring().c_str(), L"r");
 #else
         ifiles[i] = fopen(ifile_names[current_cursor + i].c_str(), "r");
 #endif
