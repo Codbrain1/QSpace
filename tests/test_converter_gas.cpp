@@ -115,7 +115,8 @@ void CONVERT(DataStorage& datastorage, std::string_view ofile_type, std::vector<
     using namespace GAS_TEST;
     std::filesystem::create_directories(TEMP_OUTPUT_DIR / proj_path);
     Converter_Gas cg(datastorage, c, Nbxy, TEMP_OUTPUT_DIR / proj_path);
-    cg.set_limits(x, y, z);
+    cg.set_limits(x, y);
+    cg.set_boundary(x, y, z);
     cg.setup_output_data(Z_col_list, projection);
     cg.convert();
     if (ofile_type == ParametrsList::is_bin_grd)  // запись (в бинарный файл)

@@ -4,13 +4,21 @@
 
 #include "mainwindow.h"  //заголовок класса отображаемого окна
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
+    // ВКЛЮЧАЕМ GL_PROGRAM_POINT_SIZE (работает везде, без прав root)
+    QSurfaceFormat format;
+    format.setVersion(3, 3);
+    format.setProfile(QSurfaceFormat::CoreProfile);  // ← КРИТИЧНО для Mesa
+    format.setDepthBufferSize(24);
+    format.setSamples(0);  // Без MSAA для скорости
+    QSurfaceFormat::setDefaultFormat(format);
+
     QApplication a(argc, argv);  // создание экземпляра приложения
 
     QTranslator translator;                                           // создание экземпляра переводчика на разные языки
     const QStringList uiLanguages = QLocale::system().uiLanguages();  // вытаскиваем доступные в системе языки
-    for (const QString &locale : uiLanguages) {
+    for (const QString& locale : uiLanguages) {
         const QString baseName = "testProject_" + QLocale(locale).name();  // задаем имя приложения в состветствии с
                                                                            // локализацией
         if (translator.load(":/i18n/" + baseName)) {                       // загрузка переводов

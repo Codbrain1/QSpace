@@ -1,6 +1,7 @@
 #include "Converter/Converter.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
@@ -16,7 +17,9 @@ Converter::Converter(DataStorage& _data, ParametrsList::iniConstants& c, count_c
       ofile_buff_size(16384),
       limits_x(0, 0),
       limits_y(0, 0),
-      limits_z(0, 0),
+      bound_x(0, 0),
+      bound_y(0, 0),
+      bound_z(0, 0),
       Nb_XY(_Nbxy),
       fx_lim(0, 0),
       fy_lim(0, 0),
@@ -31,19 +34,28 @@ Converter::Converter(DataStorage& _data, ParametrsList::iniConstants& c, count_c
     l_t = l_r / l_v * 1000.0 * 0.9784;           //--> Myr
     _dV = 0;
 }
-void Converter::set_limits(lim<double> x, lim<double> y, lim<double> z)
+void Converter::set_limits(lim<double> x, lim<double> y, double teta, double psi)
 {
-    limits_x = x;
-    limits_y = y;
-    limits_z = z;
-    fx_lim.min = limits_x.min * l_r;
-    fy_lim.min = limits_y.min * l_r;
-    fx_lim.max = limits_x.max * l_r;
-    fy_lim.max = limits_y.max * l_r;
-    limits_x = x;
-    limits_y = y;
-    limits_z = z;
+    double wx = 0.5 * (x.max - x.min);
+    double wy = 0.5 * (y.max - y.min);
+    limits_x = {wx, -wx};
+    limits_y = {wy, -wy};
+    fx_lim.min = x.min * l_r;
+    fy_lim.min = y.min * l_r;
+    fx_lim.max = x.max * l_r;
+    fy_lim.max = y.max * l_r;
+    SC_Area.setup_SC(x, y, teta, psi);
+}
+void Converter::set_boundary(lim<double> x, lim<double> y, lim<double> z, double alpha, double beta, double phi)
+{
+    double wx = 0.5 * (x.max - x.min);
+    double wy = 0.5 * (y.max - y.min);
+    double wz = 0.5 * (z.max - z.min);
+    bound_x = {wx, -wx};
+    bound_y = {wy, -wy};
+    bound_z = {wz, -wz};
     _dV = _hb2 / (z.max - z.min);
+    SC_rectangle.setup_SC(x, y, z, alpha, beta, phi);
 }
 void Converter::set_obuff_size(size_t size)
 {
@@ -142,10 +154,10 @@ void Converter::parallel_save_bin(size_t current_cursor, size_t col)
         size_t cursor_i = current_cursor + i;
         // открытие и настройка файла
 #ifdef _WIN32
-            ofiles[cursor_i] = _wfopen(ofiles_names[all_files_cursor + i].wstring().c_str(), L"wb");
-        #else
-            ofiles[cursor_i] = fopen(ofiles_names[all_files_cursor + i].c_str(), "wb");
-        #endif
+        ofiles[cursor_i] = _wfopen(ofiles_names[all_files_cursor + i].wstring().c_str(), L"wb");
+#else
+        ofiles[cursor_i] = fopen(ofiles_names[all_files_cursor + i].c_str(), "wb");
+#endif
         if (!ofiles[cursor_i]) {
             // TODO: добавить логи
         } else {
@@ -180,11 +192,11 @@ void Converter::parallel_save_txt(size_t current_cursor, size_t col)
         size_t cursor_i = current_cursor + i;
         //  открытие и настройка файла
 #ifdef _WIN32
-            ofiles[cursor_i] = _wfopen(ofiles_names[all_files_cursor + i].wstring().c_str(), L"w");
-        #else
-            ofiles[cursor_i] = fopen(ofiles_names[all_files_cursor + i].c_str(), "w");
-        #endif
-                if (!ofiles[cursor_i]) {
+        ofiles[cursor_i] = _wfopen(ofiles_names[all_files_cursor + i].wstring().c_str(), L"w");
+#else
+        ofiles[cursor_i] = fopen(ofiles_names[all_files_cursor + i].c_str(), "w");
+#endif
+        if (!ofiles[cursor_i]) {
             // TODO: добавить логи
         } else {
             std::vector<char> buffer(ofile_buff_size);
@@ -225,12 +237,12 @@ void Converter::consistent_save_bin(size_t current_cursor, size_t col)
     for (size_t i = 0; i < obuff_size; ++i) {  // шаг по файлам
         size_t cursor_i = current_cursor + i;
         // открытие и настройка файла
- #ifdef _WIN32
-            ofiles[cursor_i] = _wfopen(ofiles_names[all_files_cursor + i].wstring().c_str(), L"wb");
-        #else
-            ofiles[cursor_i] = fopen(ofiles_names[all_files_cursor + i].c_str(), "wb");
-        #endif
-                if (!ofiles[cursor_i]) {
+#ifdef _WIN32
+        ofiles[cursor_i] = _wfopen(ofiles_names[all_files_cursor + i].wstring().c_str(), L"wb");
+#else
+        ofiles[cursor_i] = fopen(ofiles_names[all_files_cursor + i].c_str(), "wb");
+#endif
+        if (!ofiles[cursor_i]) {
             // TODO: добавить логи
         } else {
             std::vector<char> buffer(ofile_buff_size);
@@ -263,11 +275,11 @@ void Converter::consistent_save_txt(size_t current_cursor, size_t col)
         size_t cursor_i = current_cursor + i;
         // открытие и настройка файла
 #ifdef _WIN32
-            ofiles[cursor_i] = _wfopen(ofiles_names[all_files_cursor + i].wstring().c_str(), L"wb");
-        #else
-            ofiles[cursor_i] = fopen(ofiles_names[all_files_cursor + i].c_str(), "w");
-        #endif
-                if (!ofiles[cursor_i]) {
+        ofiles[cursor_i] = _wfopen(ofiles_names[all_files_cursor + i].wstring().c_str(), L"wb");
+#else
+        ofiles[cursor_i] = fopen(ofiles_names[all_files_cursor + i].c_str(), "w");
+#endif
+        if (!ofiles[cursor_i]) {
             // TODO: добавить логи
         } else {
             std::vector<char> buffer(ofile_buff_size);
@@ -319,3 +331,69 @@ std::string Converter::extract_upper_axis(const std::string& input)  //"x (те�
 
     return std::string(1, c);
 };
+void Converter::create_output_directory(std::string first_part, std::string second_part, std::string thrid_part,
+                                        size_t files_size)
+{
+    //-----------------------создание поддиректории--------------------------
+    std::filesystem::create_directory(output_directory / thrid_part);
+    for (size_t i = 0; i < files_size; ++i) {
+        ofiles_names.push_back(
+            output_directory / thrid_part /
+            (first_part + "_" + second_part + "_" + thrid_part + "_t_" + std::to_string(data.get_t()[i] * l_t) + ".grd"));
+    }
+}
+Converter::ProjectionRefs Converter::get_projection()
+{
+    std::vector<double>& projection1 = [xy = &XY, data = &data]() -> std::vector<double>& {  // проекция для x
+        if (xy->first == ParametrsList::X) {
+            return data->get_x();
+        } else if (xy->first == ParametrsList::Y) {
+            return data->get_y();
+        } else {
+            return data->get_z();
+        }
+    }();
+
+    std::vector<double>& projection2 = [xy = &XY, data = &data]() -> std::vector<double>& {  // проекция для y
+        if (xy->second == ParametrsList::X) {
+            return data->get_x();
+        } else if (xy->second == ParametrsList::Y) {
+            return data->get_y();
+        } else {
+            return data->get_z();
+        }
+    }();
+    std::vector<double>& projection3 = [xy = &XY, data = &data]() -> std::vector<double>& {  // проекция для z
+        if ((xy->first == ParametrsList::X && xy->second == ParametrsList::Y) ||
+            (xy->first == ParametrsList::Y && xy->second == ParametrsList::X)) {
+            return data->get_z();
+        } else if ((xy->first == ParametrsList::X && xy->second == ParametrsList::Z) ||
+                   (xy->first == ParametrsList::Z && xy->second == ParametrsList::X)) {
+            return data->get_y();
+        } else {
+            return data->get_x();
+        }
+    }();
+
+    std::vector<double>& v_projection1 = [xy = &XY, data = &data]() -> std::vector<double>& {  // проекция для x
+        if (xy->first == ParametrsList::X) {
+            return data->get_vx();
+        } else if (xy->first == ParametrsList::Y) {
+            return data->get_vy();
+        } else {
+            return data->get_vz();
+        }
+    }();
+
+    std::vector<double>& v_projection2 = [xy = &XY, data = &data]() -> std::vector<double>& {  // проекция для y
+        if (xy->second == ParametrsList::X) {
+            return data->get_vx();
+        } else if (xy->second == ParametrsList::Y) {
+            return data->get_vy();
+        } else {
+            return data->get_vz();
+        }
+    }();
+    return {std::ref(projection1), std::ref(projection2), std::ref(projection3), std::ref(v_projection1),
+            std::ref(v_projection2)};
+}

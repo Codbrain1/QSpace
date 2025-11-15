@@ -1,28 +1,19 @@
 #pragma once
 #include <filesystem>
 
-#include "Converter.h"
-class Converter_DarkMatter : public Converter
+#include "IConverter_NbodyOnly.h"
+class Converter_DarkMatter : public IConverter_NbodyOnly
 {
    protected:
-    double _hb3;  // 1/hb^3
-
-    void calculate_LgSigma(std::vector<double>& projection1, std::vector<double>& projection2);
-    void calculate_Sigma(std::vector<double>& projection1, std::vector<double>& projection2);
-    void calculate_LgRho(std::vector<double>& projection1, std::vector<double>& projection2,
-                         std::vector<double>& projection3);
-    void calculate_Rho(std::vector<double>& projection1, std::vector<double>& projection2, std::vector<double>& projection3);
-
     void calculate_Vr(std::vector<double>& projection1, std::vector<double>& projection2, std::vector<double>& projection3,
                       std::vector<double>& v_projection1, std::vector<double>& v_projection2);
     void calculate_Vfi(std::vector<double>& projection1, std::vector<double>& projection2, std::vector<double>& projection3,
                        std::vector<double>& v_projection1, std::vector<double>& v_projection2);
-    void calculate_V_projection(std::vector<double>& projection1, std::vector<double>& projection2,
-                                std::vector<double>& projection3, std::vector<double>& v_projection);
 
    public:
     Converter_DarkMatter(DataStorage& _data, ParametrsList::iniConstants& c, count_cell _Nbxy,
-                         std::filesystem::path _output_path);
+                         std::filesystem::path _output_path)
+        : IConverter_NbodyOnly(_data, c, _Nbxy, _output_path) {};
     void convert();  // функция конвертации
     // lg означает десятичный логарифм
 };

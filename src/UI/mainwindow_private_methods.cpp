@@ -1,8 +1,25 @@
+#include <q3dscatter.h>
+#include <qabstract3dgraph.h>
+#include <qabstract3dseries.h>
+#include <qabstractitemmodel.h>
+#include <qabstractitemview.h>
 #include <qcontainerfwd.h>
+#include <qlayoutitem.h>
+#include <qlist.h>
 #include <qlistwidget.h>
+#include <qnamespace.h>
+#include <qpushbutton.h>
+#include <qscatter3dseries.h>
+#include <qscatterdataproxy.h>
+#include <qvectornd.h>
+#include <qwidget.h>
 
 #include <QMessageBox>
 #include <QSettings>
+#include <QtDataVisualization/Q3DScatter>
+#include <QtDataVisualization/QScatter3DSeries>
+#include <cstddef>
+#include <memory>
 
 #include "./ui_mainwindow.h"
 #include "ConstantsParametrs.h"
@@ -23,56 +40,152 @@ bool MainWindow::is_correct_data_QLineEdit()
     }
     statusBar()->clearMessage();
     // считываем ограничения для X
-    double xmin = ui->lineEdit_min_x->text().toDouble(&ok);
+    double xmin = ui->lineEdit_min_x_bound->text().toDouble(&ok);
     if (!ok) {
         statusBar()->setStyleSheet("QStatusBar { color: red; }");
-        statusBar()->showMessage(tr("нужно ввести минимальное значение по оси X"));
+        statusBar()->showMessage(tr("нужно ввести минимальное значение по оси X для области ограничения"));
         return false;
     }
-    double xmax = ui->lineEdit_max_x->text().toDouble(&ok);
+    double xmax = ui->lineEdit_max_x_bound->text().toDouble(&ok);
     if (!ok) {
         statusBar()->setStyleSheet("QStatusBar { color: red; }");
-        statusBar()->showMessage(tr("нужно ввести максимальное значение по оси X"));
+        statusBar()->showMessage(tr("нужно ввести максимальное значение по оси X для области ограничения"));
         return false;
     }
     if (xmin >= xmax) {
         statusBar()->setStyleSheet("QStatusBar { color: red; }");
-        statusBar()->showMessage(tr("минимальное значение по оси X не может быть больше или равно максимальному"));
+        statusBar()->showMessage(
+            tr("минимальное значение по оси X  для области ограничения не может быть больше или равно максимальному"));
         return false;
     }
     // считываем ограничения для Y
-    double ymin = ui->lineEdit_min_y->text().toDouble(&ok);
+    double ymin = ui->lineEdit_min_y_bound->text().toDouble(&ok);
     if (!ok) {
         statusBar()->setStyleSheet("QStatusBar { color: red; }");
-        statusBar()->showMessage(tr("нужно ввести минимальное значение по оси Y"));
+        statusBar()->showMessage(tr("нужно ввести минимальное значение по оси Y для области ограничения"));
         return false;
     }
-    double ymax = ui->lineEdit_max_y->text().toDouble(&ok);
+    double ymax = ui->lineEdit_max_y_bound->text().toDouble(&ok);
     if (!ok) {
         statusBar()->setStyleSheet("QStatusBar { color: red; }");
-        statusBar()->showMessage(tr("нужно ввести максимальное значение по оси Y"));
+        statusBar()->showMessage(tr("нужно ввести максимальное значение по оси Y для области ограничения"));
         return false;
     }
     if (ymin >= ymax) {
         statusBar()->setStyleSheet("QStatusBar { color: red; }");
-        statusBar()->showMessage(tr("минимальное значение по оси Y не может быть больше или равно максимальному"));
+        statusBar()->showMessage(
+            tr("минимальное значение по оси Y для области ограничения не может быть больше или равно максимальному"));
         return false;
     }
-    double zmin = ui->lineEdit_min_z->text().toDouble(&ok);
+    double zmin = ui->lineEdit_min_z_bound->text().toDouble(&ok);
     if (!ok) {
         statusBar()->setStyleSheet("QStatusBar { color: red; }");
-        statusBar()->showMessage(tr("нужно ввести минимальное значение по оси Z"));
+        statusBar()->showMessage(tr("нужно ввести минимальное значение по оси Z для области ограничения"));
         return false;
     }
-    double zmax = ui->lineEdit_max_z->text().toDouble(&ok);
+    double zmax = ui->lineEdit_max_z_bound->text().toDouble(&ok);
     if (!ok) {
         statusBar()->setStyleSheet("QStatusBar { color: red; }");
-        statusBar()->showMessage(tr("нужно ввести максимальное значение по оси Z"));
+        statusBar()->showMessage(tr("нужно ввести максимальное значение по оси Z для области ограничения"));
         return false;
     }
     if (zmin >= zmax) {
         statusBar()->setStyleSheet("QStatusBar { color: red; }");
-        statusBar()->showMessage(tr("минимальное значение по оси Z не может быть больше или равно максимальному"));
+        statusBar()->showMessage(
+            tr("минимальное значение по оси Z для области ограничения не может быть больше или равно максимальному"));
+        return false;
+    }
+    // считываем ограничения для X
+    double xmin_area = ui->lineEdit_min_x_lim->text().toDouble(&ok);
+    if (!ok) {
+        statusBar()->setStyleSheet("QStatusBar { color: red; }");
+        statusBar()->showMessage(tr("нужно ввести минимальное значение по оси X для отображаемой области"));
+        return false;
+    }
+    double xmax_area = ui->lineEdit_max_x_lim->text().toDouble(&ok);
+    if (!ok) {
+        statusBar()->setStyleSheet("QStatusBar { color: red; }");
+        statusBar()->showMessage(tr("нужно ввести максимальное значение по оси X для отображаемой области"));
+        return false;
+    }
+    if (xmin_area >= xmax_area) {
+        statusBar()->setStyleSheet("QStatusBar { color: red; }");
+        statusBar()->showMessage(
+            tr("минимальное значение по оси X для отображаемой области не может быть больше или равно максимальному"));
+        return false;
+    }
+    // считываем ограничения для Y
+    double ymin_area = ui->lineEdit_min_y_lim->text().toDouble(&ok);
+    if (!ok) {
+        statusBar()->setStyleSheet("QStatusBar { color: red; }");
+        statusBar()->showMessage(tr("нужно ввести минимальное значение по оси Y для отображаемой области"));
+        return false;
+    }
+    double ymax_area = ui->lineEdit_max_y_lim->text().toDouble(&ok);
+    if (!ok) {
+        statusBar()->setStyleSheet("QStatusBar { color: red; }");
+        statusBar()->showMessage(tr("нужно ввести максимальное значение по оси Y для отображаемой области"));
+        return false;
+    }
+    if (ymin_area >= ymax_area) {
+        statusBar()->setStyleSheet("QStatusBar { color: red; }");
+        statusBar()->showMessage(
+            tr("минимальное значение по оси Y для отображаемой области не может быть больше или равно максимальному"));
+        return false;
+    }
+    double alpha = ui->lineEdit_angle_alpha->text().toDouble(&ok);
+    if (!ok) {
+        statusBar()->setStyleSheet("QStatusBar { color: red; }");
+        statusBar()->showMessage(tr("нужно ввести угол поворота вокруг оси X для области ограничения - alpha"));
+        return false;
+    }
+    double beta = ui->lineEdit_angle_beta->text().toDouble(&ok);
+    if (!ok) {
+        statusBar()->setStyleSheet("QStatusBar { color: red; }");
+        statusBar()->showMessage(tr("нужно ввести угол поворота вокруг оси Y для области ограничения - beta"));
+        return false;
+    }
+    double phi = ui->lineEdit_angle_phi->text().toDouble(&ok);
+    if (!ok) {
+        statusBar()->setStyleSheet("QStatusBar { color: red; }");
+        statusBar()->showMessage(tr("нужно ввести угол поворота вокруг оси Z для области ограничения - phi"));
+        return false;
+    }
+    double teta = ui->lineEdit_angle_teta->text().toDouble(&ok);
+    if (!ok) {
+        statusBar()->setStyleSheet("QStatusBar { color: red; }");
+        statusBar()->showMessage(tr("нужно ввести угол наклона проекции - teta"));
+        return false;
+    }
+    double psi = ui->lineEdit_angle_psi->text().toDouble(&ok);
+    if (!ok) {
+        statusBar()->setStyleSheet("QStatusBar { color: red; }");
+        statusBar()->showMessage(tr("нужно ввести угол поворота проекции - psi"));
+        return false;
+    }
+    if (alpha < -180 || alpha > 180) {
+        statusBar()->setStyleSheet("QStatusBar { color: red; }");
+        statusBar()->showMessage(tr("некорректное значение угла alpha, должно быть от -180 до 180"));
+        return false;
+    }
+    if (beta < -180 || beta > 180) {
+        statusBar()->setStyleSheet("QStatusBar { color: red; }");
+        statusBar()->showMessage(tr("некорректное значение угла beta, должно быть от -180 до 180"));
+        return false;
+    }
+    if (phi < -180 || phi > 180) {
+        statusBar()->setStyleSheet("QStatusBar { color: red; }");
+        statusBar()->showMessage(tr("некорректное значение угла phi, должно быть от -180 до 180"));
+        return false;
+    }
+    if (teta < -180 || teta > 180) {
+        statusBar()->setStyleSheet("QStatusBar { color: red; }");
+        statusBar()->showMessage(tr("некорректное значение угла teta, должно быть от -180 до 180"));
+        return false;
+    }
+    if (psi < -180 || psi > 180) {
+        statusBar()->setStyleSheet("QStatusBar { color: red; }");
+        statusBar()->showMessage(tr("некорректное значение угла psi, должно быть от -180 до 180"));
         return false;
     }
     return true;
@@ -104,7 +217,7 @@ void MainWindow::setup_columns_comboBoxes(const int num_col)
 {
     if (num_col <= 0 || num_col > 100) throw std::invalid_argument("число колонок должно быть от 1 до 100");
 
-    QLayoutItem *item;
+    QLayoutItem* item;
     if (ui->formLayout->rowCount() > 0) {
         while ((item = ui->formLayout_names_columns_ifile->takeAt(0)) != nullptr) {
             if (item->widget()) {
@@ -117,9 +230,9 @@ void MainWindow::setup_columns_comboBoxes(const int num_col)
     columnCombos.clear();
     columnCombos.reserve(num_col);
     for (int i = 0; i < num_col; ++i) {
-        QLabel *label = new QLabel(tr(("Колонка " + std::to_string(i)).c_str()), ui->scrolContent_names_columns_ifile);
-        QComboBox *combo = new QComboBox(ui->scrolContent_names_columns_ifile);
-        for (const auto &i : ParametrsList::Columns_names) {
+        QLabel* label = new QLabel(tr(("Колонка " + std::to_string(i)).c_str()), ui->scrolContent_names_columns_ifile);
+        QComboBox* combo = new QComboBox(ui->scrolContent_names_columns_ifile);
+        for (const auto& i : ParametrsList::Columns_names) {
             combo->addItem(QString::fromStdString(i.data()));
         }
         combo->setCurrentIndex(i % ParametrsList::Columns_names.size());
@@ -134,9 +247,9 @@ void MainWindow::setup_columns_comboBoxes_DM_S(const int num_col)
 
     if (ui->formLayout_names_columns_ifile->rowCount() > 0) {
         while (ui->formLayout_names_columns_ifile->count() > 0) {
-            QLayoutItem *item = ui->formLayout_names_columns_ifile->takeAt(0);
+            QLayoutItem* item = ui->formLayout_names_columns_ifile->takeAt(0);
             if (item != nullptr) {
-                if (QWidget *widget = item->widget()) {
+                if (QWidget* widget = item->widget()) {
                     widget->deleteLater();
                 }
                 delete item;
@@ -148,9 +261,9 @@ void MainWindow::setup_columns_comboBoxes_DM_S(const int num_col)
     columnCombos.reserve(num_col);
 
     for (int i = 0; i < num_col; ++i) {
-        QLabel *label = new QLabel(tr(("Колонка " + std::to_string(i)).c_str()), ui->scrolContent_names_columns_ifile);
-        QComboBox *combo = new QComboBox(ui->scrolContent_names_columns_ifile);
-        for (const auto &i : ParametrsList::Columns_names_DM_S) {
+        QLabel* label = new QLabel(tr(("Колонка " + std::to_string(i)).c_str()), ui->scrolContent_names_columns_ifile);
+        QComboBox* combo = new QComboBox(ui->scrolContent_names_columns_ifile);
+        for (const auto& i : ParametrsList::Columns_names_DM_S) {
             combo->addItem(QString::fromStdString(i.data()));
         }
         combo->setCurrentIndex(i % ParametrsList::Columns_names_DM_S.size());
@@ -166,9 +279,9 @@ void MainWindow::setup_columns_comboBoxes_G_MC_YS(const int num_col)
 
     if (ui->formLayout_names_columns_ifile->rowCount() > 0) {
         while (ui->formLayout_names_columns_ifile->count() > 0) {
-            QLayoutItem *item = ui->formLayout_names_columns_ifile->takeAt(0);
+            QLayoutItem* item = ui->formLayout_names_columns_ifile->takeAt(0);
             if (item != nullptr) {
-                if (QWidget *widget = item->widget()) {
+                if (QWidget* widget = item->widget()) {
                     widget->deleteLater();
                 }
                 delete item;
@@ -179,9 +292,9 @@ void MainWindow::setup_columns_comboBoxes_G_MC_YS(const int num_col)
     columnCombos.clear();
     columnCombos.reserve(num_col);
     for (int i = 0; i < num_col; ++i) {
-        QLabel *label = new QLabel(tr(("Колонка " + std::to_string(i)).c_str()), ui->scrolContent_names_columns_ifile);
-        QComboBox *combo = new QComboBox(ui->scrolContent_names_columns_ifile);
-        for (const auto &i : ParametrsList::Columns_names) {
+        QLabel* label = new QLabel(tr(("Колонка " + std::to_string(i)).c_str()), ui->scrolContent_names_columns_ifile);
+        QComboBox* combo = new QComboBox(ui->scrolContent_names_columns_ifile);
+        for (const auto& i : ParametrsList::Columns_names) {
             combo->addItem(QString::fromStdString(i.data()));
         }
         combo->setCurrentIndex(i % ParametrsList::Columns_names.size());
@@ -192,17 +305,32 @@ void MainWindow::setup_columns_comboBoxes_G_MC_YS(const int num_col)
 }
 void MainWindow::delete_selected_files()
 {
-    auto selected_items = ui->listWidget_input_file_names->selectedItems();
-    if (selected_items.isEmpty()) {
+    QListWidget* activeList = nullptr;
+    if (ui->tabWidget->currentWidget() == ui->tab_3) {
+        activeList = ui->listWidget_input_file_names;
+    } else if (ui->tabWidget->currentWidget() == ui->tab_6) {
+        activeList = ui->listWidget_input_files;
+    }
+    if (!activeList || activeList->selectedItems().isEmpty()) {
         QMessageBox::information(this, "Удаление", "Выберите файл для удаления.");
         return;
     }
+    QStringList toRemove;
+    for (QListWidgetItem* item : activeList->selectedItems()) {
+        toRemove << item->text();
+    }
 
-    for (int i = selected_items.size() - 1; i >= 0; --i) {
-        QListWidgetItem *item = selected_items[i];
-        QString file_path = item->text();
-        inputfiles_names.removeOne(file_path);
-        delete item;
+    for (const QString& path : toRemove) {
+        inputfiles_names.removeOne(path);
+    }
+
+    QList<QListWidget*> allLists = {ui->listWidget_input_file_names, ui->listWidget_input_files};
+    for (QListWidget* list : allLists) {
+        for (int i = list->count() - 1; i >= 0; --i) {
+            if (toRemove.contains(list->item(i)->text())) {
+                delete list->takeItem(i);
+            }
+        }
     }
 }
 void MainWindow::loadSettings()
@@ -233,16 +361,27 @@ void MainWindow::loadSettings()
     ui->comboBox_Z->setCurrentIndex(settings.value("combos/Z", 0).toInt());
     ui->comboBox_type_structures_ifiles->setCurrentIndex(settings.value("combos/file_structure", 0).toInt());
 
-    // === 5. Параметры сетки ===
-    ui->lineEdit_min_x->setText(settings.value("grid/min_x", "-3").toString());
-    ui->lineEdit_max_x->setText(settings.value("grid/max_x", "3").toString());
-    ui->lineEdit_min_y->setText(settings.value("grid/min_y", "-3").toString());
-    ui->lineEdit_max_y->setText(settings.value("grid/max_y", "3").toString());
-    ui->lineEdit_min_z->setText(settings.value("grid/min_z", "-3").toString());
-    ui->lineEdit_max_z->setText(settings.value("grid/max_z", "3").toString());
-    ui->lineEdit_hb->setText(settings.value("grid/hb", "0.01").toString());
+    // === 5. Параметры области ограничения ===
+    ui->lineEdit_min_x_bound->setText(settings.value("boundary/min_x", "-3").toString());
+    ui->lineEdit_max_x_bound->setText(settings.value("boundary/max_x", "3").toString());
+    ui->lineEdit_min_y_bound->setText(settings.value("boundary/min_y", "-3").toString());
+    ui->lineEdit_max_y_bound->setText(settings.value("boundary/max_y", "3").toString());
+    ui->lineEdit_min_z_bound->setText(settings.value("boundary/min_z", "-3").toString());
+    ui->lineEdit_max_z_bound->setText(settings.value("boundary/max_z", "3").toString());
+    ui->lineEdit_angle_alpha->setText(settings.value("boundary/alpha", "0").toString());
+    ui->lineEdit_angle_beta->setText(settings.value("boundary/beta", "0").toString());
+    ui->lineEdit_angle_phi->setText(settings.value("boundary/phi", "0").toString());
 
-    // === 6. Константы (вкладка "Настройка Констант") ===
+    // === 6. Параметры сетки ===
+    ui->lineEdit_min_x_lim->setText(settings.value("grid/min_x", "-3").toString());
+    ui->lineEdit_max_x_lim->setText(settings.value("grid/max_x", "3").toString());
+    ui->lineEdit_min_y_lim->setText(settings.value("grid/min_y", "-3").toString());
+    ui->lineEdit_max_y_lim->setText(settings.value("grid/max_y", "3").toString());
+    ui->lineEdit_angle_teta->setText(settings.value("grid/teta", "0").toString());
+    ui->lineEdit_angle_psi->setText(settings.value("grid/psi", "0").toString());
+
+    ui->lineEdit_hb->setText(settings.value("grid/hb", "0.01").toString());
+    // === 7. Константы (вкладка "Настройка Констант") ===
     ui->lineEdit_gamma->setText(settings.value("const/gamma", "1.666667").toString());
     ui->lineEdit_Km->setText(settings.value("const/Km", "3.72").toString());
     ui->lineEdit_Kr->setText(settings.value("const/Kr", "0.9").toString());
@@ -250,30 +389,41 @@ void MainWindow::loadSettings()
     ui->lineEdit_output->setText(settings.value("lineedits/output", "").toString());
     // TODO: ... и так далее для всех lineEdit
 
-    // === 7. QListWidget (выбранные файлы) ===
+    // === 8. QListWidget (выбранные файлы) ===
     ui->listWidget_input_file_names->clear();
+    ui->listWidget_input_files->clear();
     int fileCount = settings.beginReadArray("files/input");
     for (int i = 0; i < fileCount; ++i) {
         settings.setArrayIndex(i);
         ui->listWidget_input_file_names->addItem(settings.value("path").toString());
+        ui->listWidget_input_files->addItem(settings.value("path").toString());
     }
     settings.endArray();
 
-    // === 8. CheckBox ===
+    // === 9. CheckBox ===
     ui->checkBox_column_customize->setChecked(settings.value("checkbox/custom_columns", false).toBool());
 
     ui->listWidget_input_file_names->setSelectionMode(QAbstractItemView::ExtendedSelection);
     ui->listWidget_input_file_names->setContextMenuPolicy(Qt::CustomContextMenu);
+    ui->listWidget_input_files->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    ui->listWidget_input_files->setContextMenuPolicy(Qt::CustomContextMenu);
 
     // настройка listWidget
     ui->listWidget_input_file_names->installEventFilter(this);
-
+    ui->listWidget_input_files->installEventFilter(this);
     on_comboBox_output_data_params_changed(ui->comboBox_output_data_params->currentIndex());  // устанавливаем начальное
                                                                                               // состояние выходных
     on_lineEdit_Slice_changed("");                                                            // параметров
+    on_lineEdit_projection_area_changed("");
 }
 void MainWindow::connectSlots()
 {
+    connect(ui->pushButton_add_files, &QPushButton::clicked, this, &MainWindow::on_pushButton_add_input_file_clicked);
+    connect(ui->pushButton_variable_files, &QPushButton::clicked, this, &MainWindow::on_pushButton_input_files_clicked);
+
+    connect(ui->pushButtonconvert_1, &QPushButton::clicked, this, &MainWindow::on_pushButtonconvert_clicked);
+    connect(ui->pushButtonconvert_2, &QPushButton::clicked, this, &MainWindow::on_pushButtonconvert_clicked);
+    connect(ui->pushButtonconvert_3, &QPushButton::clicked, this, &MainWindow::on_pushButtonconvert_clicked);
     connect(ui->action_reset_settings, &QAction::triggered, this, &MainWindow::on_action_reset_settings);
     // настройка сигнала кнопки входных файлов
     connect(ui->pushButton_input_files1, &QPushButton::clicked, this, &MainWindow::on_pushButton_input_files_clicked);
@@ -292,14 +442,47 @@ void MainWindow::connectSlots()
     connect(ui->checkBox_column_customize, &QCheckBox::checkStateChanged, this,
             &MainWindow::on_checkbox_column_customise_change);
     connect(ui->lineEdit_hb, &QLineEdit::textChanged, this, &MainWindow::on_lineEdit_Slice_changed);
-    /*--x min--*/ connect(ui->lineEdit_min_x, &QLineEdit::textChanged, this, &MainWindow::on_lineEdit_Slice_changed);
-    /*--x max--*/ connect(ui->lineEdit_max_x, &QLineEdit::textChanged, this, &MainWindow::on_lineEdit_Slice_changed);
-    /*--y min--*/ connect(ui->lineEdit_min_y, &QLineEdit::textChanged, this, &MainWindow::on_lineEdit_Slice_changed);
-    /*--x max--*/ connect(ui->lineEdit_max_y, &QLineEdit::textChanged, this, &MainWindow::on_lineEdit_Slice_changed);
-    /*--z min--*/ connect(ui->lineEdit_min_z, &QLineEdit::textChanged, this, &MainWindow::on_lineEdit_Slice_changed);
-    /*--z max--*/ connect(ui->lineEdit_max_z, &QLineEdit::textChanged, this, &MainWindow::on_lineEdit_Slice_changed);
+
+    /*--x min_bound--*/ connect(ui->lineEdit_min_x_bound, &QLineEdit::textChanged, this,
+                                &MainWindow::on_lineEdit_Slice_changed);
+    /*--x max_bound--*/ connect(ui->lineEdit_max_x_bound, &QLineEdit::textChanged, this,
+                                &MainWindow::on_lineEdit_Slice_changed);
+    /*--y min_bound--*/ connect(ui->lineEdit_min_y_bound, &QLineEdit::textChanged, this,
+                                &MainWindow::on_lineEdit_Slice_changed);
+    /*--y max_bound--*/ connect(ui->lineEdit_max_y_bound, &QLineEdit::textChanged, this,
+                                &MainWindow::on_lineEdit_Slice_changed);
+    /*--z min_bound--*/ connect(ui->lineEdit_min_z_bound, &QLineEdit::textChanged, this,
+                                &MainWindow::on_lineEdit_Slice_changed);
+    /*--z max_bound--*/ connect(ui->lineEdit_max_z_bound, &QLineEdit::textChanged, this,
+                                &MainWindow::on_lineEdit_Slice_changed);
+
+    /*--x min_lim--*/ connect(ui->lineEdit_min_x_lim, &QLineEdit::textChanged, this,
+                              &MainWindow::on_lineEdit_projection_area_changed);
+    /*--x max_lim--*/ connect(ui->lineEdit_max_x_lim, &QLineEdit::textChanged, this,
+                              &MainWindow::on_lineEdit_projection_area_changed);
+    /*--y min_lim--*/ connect(ui->lineEdit_min_y_lim, &QLineEdit::textChanged, this,
+                              &MainWindow::on_lineEdit_projection_area_changed);
+    /*--y max_lim--*/ connect(ui->lineEdit_max_y_lim, &QLineEdit::textChanged, this,
+                              &MainWindow::on_lineEdit_projection_area_changed);
+
+    /*-- alpha --*/ connect(ui->lineEdit_angle_alpha, &QLineEdit::textChanged, this, &MainWindow::on_lineEdit_Slice_changed);
+    /*-- beta --*/ connect(ui->lineEdit_angle_beta, &QLineEdit::textChanged, this, &MainWindow::on_lineEdit_Slice_changed);
+    /*-- phi --*/ connect(ui->lineEdit_angle_phi, &QLineEdit::textChanged, this, &MainWindow::on_lineEdit_Slice_changed);
+
+    /*-- teta --*/ connect(ui->lineEdit_angle_teta, &QLineEdit::textChanged, this, &MainWindow::on_lineEdit_Slice_changed);
+    /*-- teta --*/ connect(ui->lineEdit_angle_psi, &QLineEdit::textChanged, this, &MainWindow::on_lineEdit_Slice_changed);
 
     // редактирование выбранных файлов
     connect(ui->listWidget_input_file_names, &QListWidget::customContextMenuRequested, this,
             &MainWindow::on_listWidget_right_mouse_clicked);
+    connect(ui->listWidget_input_files, &QListWidget::customContextMenuRequested, this,
+            &MainWindow::on_listWidget_right_mouse_clicked);
+    // connect(ui->listWidget_input_files, &QListWidget::itemClicked, this,
+    //         &MainWindow::on_list_widget_input_files_item_clicked);
 }
+// void MainWindow::DrawFile(std::vector<double>& x, std::vector<double>& y, std::vector<double>& z, std::vector<double>&
+// value,
+//                           int Ns_i, int offset)
+// {
+// }
+// void MainWindow::init3D() {}

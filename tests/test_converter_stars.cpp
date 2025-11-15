@@ -104,7 +104,8 @@ void CONVERT(DataStorage& datastorage, std::string_view ofile_type, std::vector<
 {
     std::filesystem::create_directories(STARS_TEST::TEMP_OUTPUT_DIR / proj_path);
     Converter_Stars cs(datastorage, STARS_TEST::c, STARS_TEST::Nbxy, STARS_TEST::TEMP_OUTPUT_DIR / proj_path);
-    cs.set_limits(STARS_TEST::x, STARS_TEST::y, STARS_TEST::z);
+    cs.set_limits(STARS_TEST::x, STARS_TEST::y);
+    cs.set_boundary(STARS_TEST::x, STARS_TEST::y, STARS_TEST::z);
     cs.setup_output_data(Z_col_list, projection);
     cs.convert();
     if (ofile_type == ParametrsList::is_bin_grd)  // запись (в бинарный файл)

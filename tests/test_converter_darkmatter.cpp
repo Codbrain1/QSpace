@@ -104,7 +104,8 @@ void CONVERT(DataStorage& datastorage, std::string_view ofile_type, std::vector<
 {
     std::filesystem::create_directories(DM_TEST::TEMP_OUTPUT_DIR / proj_path);
     Converter_DarkMatter cdm(datastorage, DM_TEST::c, DM_TEST::Nbxy, DM_TEST::TEMP_OUTPUT_DIR / proj_path);
-    cdm.set_limits(DM_TEST::x, DM_TEST::y, DM_TEST::z);
+    cdm.set_limits(DM_TEST::x, DM_TEST::y);
+    cdm.set_boundary(DM_TEST::x, DM_TEST::y, DM_TEST::z);
     cdm.setup_output_data(Z_col_list, projection);
     cdm.convert();
     if (ofile_type == ParametrsList::is_bin_grd)  // запись (в бинарный файл)

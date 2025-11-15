@@ -47,13 +47,22 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${OUTPUT_SUBDIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${OUTPUT_SUBDIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${OUTPUT_SUBDIR}/lib)
 
+
 # Поиск Qt6, включая LinguistTools
 # Core - базовые классы
 # Gui - графика
 # Widgets - различные виджеты(окна, кнопки и т.д.)
 # LinguistTools - модуль с переводами
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets LinguistTools)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets LinguistTools DataVisualization)
+# 2. ТЕПЕРЬ — отключаем QML-плагины
+set(QT_NO_QML_PLUGINS ON)
+set(QT6_NO_IMPORT_PLUGINS ON)
+set(QT_NO_VIRTUALKEYBOARD ON)
 
+# 3. Отключаем ненужные фичи
+set(QT_FEATURE_multimedia OFF CACHE BOOL "Disable multimedia" FORCE)
+set(QT_FEATURE_texttospeech OFF CACHE BOOL "Disable text-to-speech" FORCE)
+set(QT_FEATURE_qt3d OFF CACHE BOOL "Disable Qt3D" FORCE)
 # Файлы переводов
 set(TS_FILES
     translates/TxtToGrdConvert_ru.ts
@@ -82,7 +91,10 @@ includes/Converter/Converter_Gas.h
 includes/Converter/Converter_MolecularClouds.h
 includes/Converter/Converter_Stars.h
 includes/Converter/Converter_YoungStars.h
+includes/Converter/IConverter_Hydrodinamics.h
+includes/Converter/IConverter_NbodyOnly.h
 src/Converter/Converter/Converter.cpp
+src/Converter/Converter/IConverter_NbodyOnly.cpp
 src/Converter/Converter/Converter_DarkMatter.cpp
 src/Converter/Converter/Converter_Gas.cpp
 src/Converter/Converter/Converter_MolecularClouds.cpp
@@ -92,7 +104,6 @@ src/Converter/DataStorage/DataStorage_file_func.cpp
 src/Converter/DataStorage/DataStorage_gets.cpp
 src/Converter/DataStorage/DataStorage_sets.cpp
 src/UI/mainwindow.ui
-
 ${QM_FILES}
 )
 
@@ -103,7 +114,7 @@ ${PROJECT_SOURCES}
 )
 
 target_include_directories(TxtToGrdConvert PRIVATE ${CMAKE_SOURCE_DIR}/includes) #добавление путей к заголовкам
-target_link_libraries(TxtToGrdConvert PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets) #линковка с qt
+target_link_libraries(TxtToGrdConvert PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::DataVisualization) #линковка с qt
 
 if(WIN32) # на виндовс только gui
 set_target_properties(TxtToGrdConvert PROPERTIES

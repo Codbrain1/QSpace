@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1102</width>
-    <height>699</height>
+    <width>1118</width>
+    <height>886</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -24,8 +24,240 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
+      <widget class="QWidget" name="tab_6">
+       <attribute name="title">
+        <string>Визуализация данных</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout">
+          <property name="sizeConstraint">
+           <enum>QLayout::SizeConstraint::SetMaximumSize</enum>
+          </property>
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <item alignment="Qt::AlignmentFlag::AlignLeft">
+           <widget class="QToolBox" name="toolBox">
+            <property name="currentIndex">
+             <number>0</number>
+            </property>
+            <widget class="QWidget" name="page_5">
+             <property name="geometry">
+              <rect>
+               <x>0</x>
+               <y>0</y>
+               <width>353</width>
+               <height>672</height>
+              </rect>
+             </property>
+             <attribute name="label">
+              <string>Page 1</string>
+             </attribute>
+             <layout class="QVBoxLayout" name="verticalLayout_13">
+              <item>
+               <widget class="QWidget" name="widget_3" native="true">
+                <layout class="QVBoxLayout" name="verticalLayout_9">
+                 <item>
+                  <widget class="QListWidget" name="listWidget_input_files"/>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="label_3">
+                   <property name="text">
+                    <string>цветовая гамма</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="comboBox_4">
+                   <item>
+                    <property name="text">
+                     <string>Sunset</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>Ocean</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>Night Fade</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>Candy</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>Hot Summer</string>
+                    </property>
+                   </item>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="label_4">
+                   <property name="text">
+                    <string>тип файла</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="comboBox_5">
+                   <item>
+                    <property name="text">
+                     <string>бинарный</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>текстовый</string>
+                    </property>
+                   </item>
+                  </widget>
+                 </item>
+                 <item>
+                  <layout class="QGridLayout" name="gridLayout_3">
+                   <item row="2" column="0">
+                    <widget class="QComboBox" name="comboBox_2">
+                     <item>
+                      <property name="text">
+                       <string>Dark matter</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>Gas</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>Molecular clouds</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>Stars</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>Young stars</string>
+                      </property>
+                     </item>
+                    </widget>
+                   </item>
+                   <item row="1" column="1">
+                    <widget class="QLabel" name="label_6">
+                     <property name="text">
+                      <string>отображаемое значение</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_5">
+                     <property name="text">
+                      <string>тип данных</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="1">
+                    <widget class="QComboBox" name="comboBox_3">
+                     <item>
+                      <property name="text">
+                       <string>без цветовой градации</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>V (модуль скорости)</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string/>
+                      </property>
+                     </item>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+            <widget class="QWidget" name="page_6">
+             <property name="geometry">
+              <rect>
+               <x>0</x>
+               <y>0</y>
+               <width>100</width>
+               <height>30</height>
+              </rect>
+             </property>
+             <attribute name="label">
+              <string>Page 2</string>
+             </attribute>
+            </widget>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="groupBox_graphic">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>80</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="title">
+             <string>График</string>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout_10">
+             <item>
+              <widget class="QWidget" name="widget_graphic" native="true">
+               <layout class="QVBoxLayout" name="verticalLayout_11">
+                <item>
+                 <layout class="QVBoxLayout" name="verticalLayout_graphic"/>
+                </item>
+               </layout>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_2">
+          <item>
+           <widget class="QPushButton" name="pushButton_add_files">
+            <property name="text">
+             <string>добавить файлы</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButton_variable_files">
+            <property name="text">
+             <string>выбрать файлы</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
       <widget class="QWidget" name="tab">
        <attribute name="title">
         <string>Выбор набора данных</string>
@@ -104,6 +336,160 @@
          </widget>
         </item>
         <item>
+         <widget class="QLabel" name="label_7">
+          <property name="text">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Область ограничения&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="groupBox_grid_param_2">
+          <property name="layoutDirection">
+           <enum>Qt::LayoutDirection::LeftToRight</enum>
+          </property>
+          <property name="title">
+           <string/>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_4">
+           <item row="1" column="3">
+            <widget class="QLineEdit" name="lineEdit_max_y_bound">
+             <property name="text">
+              <string>3</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="2">
+            <widget class="QLabel" name="x_grid_max_lable_2">
+             <property name="text">
+              <string>макс. X:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="z_grid_min_lable_2">
+             <property name="text">
+              <string>мин. Z:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLineEdit" name="lineEdit_min_x_bound">
+             <property name="text">
+              <string>-3</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="3">
+            <widget class="QLineEdit" name="lineEdit_max_x_bound">
+             <property name="text">
+              <string>3</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="x_grid_min_lable_2">
+             <property name="text">
+              <string>мин. X:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="y_grid_min_lable_2">
+             <property name="text">
+              <string>мин. Y:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QLineEdit" name="lineEdit_min_z_bound">
+             <property name="text">
+              <string>-3</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="3">
+            <widget class="QLineEdit" name="lineEdit_max_z_bound">
+             <property name="text">
+              <string>3</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="2">
+            <widget class="QLabel" name="z_grid_max_lable_2">
+             <property name="text">
+              <string>макс. Z:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="2">
+            <widget class="QLabel" name="y_grid_max_lable_2">
+             <property name="text">
+              <string>макс. Y:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLineEdit" name="lineEdit_min_y_bound">
+             <property name="text">
+              <string>-3</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="label_hbx_2">
+             <property name="text">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;alpha&lt;/span&gt; - угол поворота вокруг оси X (в градусах):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QLineEdit" name="lineEdit_angle_alpha">
+             <property name="text">
+              <string>0</string>
+             </property>
+             <property name="readOnly">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="2">
+            <widget class="QLabel" name="Nx_lable_2">
+             <property name="text">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;beta&lt;/span&gt; - угол поворота вокруг оси Y (в градусах):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="3">
+            <widget class="QLineEdit" name="lineEdit_angle_beta">
+             <property name="text">
+              <string>0</string>
+             </property>
+             <property name="readOnly">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="0">
+            <widget class="QLabel" name="Ny_lable_2">
+             <property name="text">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;phi&lt;/span&gt; - угол поворота вокруг оси Z (в градусах):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="1">
+            <widget class="QLineEdit" name="lineEdit_angle_phi">
+             <property name="text">
+              <string>0</string>
+             </property>
+             <property name="readOnly">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
          <widget class="QLabel" name="label">
           <property name="text">
            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Параметры сетки:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -130,7 +516,7 @@
             </widget>
            </item>
            <item row="0" column="1">
-            <widget class="QLineEdit" name="lineEdit_min_x">
+            <widget class="QLineEdit" name="lineEdit_min_x_lim">
              <property name="text">
               <string>-3</string>
              </property>
@@ -139,7 +525,7 @@
            <item row="0" column="2">
             <widget class="QLabel" name="x_grid_max_lable">
              <property name="text">
-              <string>макс. X:</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;макс. X&lt;span style=&quot; font-size:12pt; vertical-align:sub;&quot;&gt;pr&lt;/span&gt;:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
             </widget>
            </item>
@@ -156,12 +542,12 @@
            <item row="2" column="0">
             <widget class="QLabel" name="z_grid_min_lable">
              <property name="text">
-              <string>мин. Z:</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;teta&lt;/span&gt; - угол наклона (в градусах):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
             </widget>
            </item>
            <item row="0" column="3">
-            <widget class="QLineEdit" name="lineEdit_max_x">
+            <widget class="QLineEdit" name="lineEdit_max_x_lim">
              <property name="text">
               <string>3</string>
              </property>
@@ -170,21 +556,21 @@
            <item row="0" column="0">
             <widget class="QLabel" name="x_grid_min_lable">
              <property name="text">
-              <string>мин. X:</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;мин. X&lt;span style=&quot; font-size:12pt; vertical-align:sub;&quot;&gt;pr&lt;/span&gt;:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
             </widget>
            </item>
            <item row="1" column="2">
             <widget class="QLabel" name="y_grid_max_lable">
              <property name="text">
-              <string>макс. Y:</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;макс. Y&lt;span style=&quot; font-size:12pt; vertical-align:sub;&quot;&gt;pr&lt;/span&gt;:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
             </widget>
            </item>
            <item row="2" column="2">
             <widget class="QLabel" name="z_grid_max_lable">
              <property name="text">
-              <string>макс. Z:</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;psi&lt;/span&gt; - угол поворота (в градусах):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
             </widget>
            </item>
@@ -198,12 +584,12 @@
            <item row="1" column="0">
             <widget class="QLabel" name="y_grid_min_lable">
              <property name="text">
-              <string>мин. Y:</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;мин. Y&lt;span style=&quot; font-size:12pt; vertical-align:sub;&quot;&gt;pr&lt;/span&gt;:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
             </widget>
            </item>
            <item row="1" column="3">
-            <widget class="QLineEdit" name="lineEdit_max_y">
+            <widget class="QLineEdit" name="lineEdit_max_y_lim">
              <property name="text">
               <string>3</string>
              </property>
@@ -217,23 +603,23 @@
             </widget>
            </item>
            <item row="1" column="1">
-            <widget class="QLineEdit" name="lineEdit_min_y">
+            <widget class="QLineEdit" name="lineEdit_min_y_lim">
              <property name="text">
               <string>-3</string>
              </property>
             </widget>
            </item>
            <item row="2" column="3">
-            <widget class="QLineEdit" name="lineEdit_max_z">
+            <widget class="QLineEdit" name="lineEdit_angle_psi">
              <property name="text">
-              <string>3</string>
+              <string>0</string>
              </property>
             </widget>
            </item>
            <item row="2" column="1">
-            <widget class="QLineEdit" name="lineEdit_min_z">
+            <widget class="QLineEdit" name="lineEdit_angle_teta">
              <property name="text">
-              <string>-3</string>
+              <string>0</string>
              </property>
             </widget>
            </item>
@@ -441,6 +827,13 @@
           </layout>
          </widget>
         </item>
+        <item>
+         <widget class="QPushButton" name="pushButtonconvert">
+          <property name="text">
+           <string>конвертировать в grd файл</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </widget>
       <widget class="QWidget" name="tab_3">
@@ -457,7 +850,7 @@
            <item>
             <widget class="QPushButton" name="pushButton_add_input_file">
              <property name="text">
-              <string>добавить файл</string>
+              <string>добавить файлы</string>
              </property>
             </widget>
            </item>
@@ -469,6 +862,13 @@
             </widget>
            </item>
           </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pushButtonconvert_1">
+          <property name="text">
+           <string>конвертировать в grd файл</string>
+          </property>
          </widget>
         </item>
        </layout>
@@ -526,8 +926,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>1060</width>
-             <height>241</height>
+             <width>1076</width>
+             <height>334</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_5">
@@ -542,6 +942,13 @@
             </item>
            </layout>
           </widget>
+         </widget>
+        </item>
+        <item row="4" column="0" colspan="2">
+         <widget class="QPushButton" name="pushButtonconvert_2">
+          <property name="text">
+           <string>конвертировать в grd файл</string>
+          </property>
          </widget>
         </item>
        </layout>
@@ -561,8 +968,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>1046</width>
-             <height>727</height>
+             <width>1076</width>
+             <height>738</height>
             </rect>
            </property>
            <layout class="QFormLayout" name="formLayout_2">
@@ -923,6 +1330,13 @@ li.checked::marker { content: &quot;\2612&quot;; }
           </widget>
          </widget>
         </item>
+        <item>
+         <widget class="QPushButton" name="pushButtonconvert_3">
+          <property name="text">
+           <string>конвертировать в grd файл</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </widget>
       <widget class="QWidget" name="tab_5">
@@ -930,13 +1344,6 @@ li.checked::marker { content: &quot;\2612&quot;; }
         <string>Руководство пользователя</string>
        </attribute>
       </widget>
-     </widget>
-    </item>
-    <item>
-     <widget class="QPushButton" name="pushButtonconvert">
-      <property name="text">
-       <string>конвертировать в grd файл</string>
-      </property>
      </widget>
     </item>
    </layout>
@@ -947,7 +1354,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1102</width>
+     <width>1118</width>
      <height>23</height>
     </rect>
    </property>

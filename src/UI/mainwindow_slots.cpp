@@ -1,4 +1,6 @@
+#include <qcompare.h>
 #include <qcoreevent.h>
+#include <qlistwidget.h>
 #include <qmainwindow.h>
 #include <qmenu.h>
 #include <qmessagebox.h>
@@ -17,6 +19,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include "./ui_mainwindow.h"
 #include "ConstantsParametrs.h"
@@ -28,17 +31,17 @@
 #include "mainwindow.h"
 
 // отвечает за установку проецируемой области
-void MainWindow::on_lineEdit_Slice_changed(const QString &)
+void MainWindow::on_lineEdit_projection_area_changed(const QString&)
 {
     statusBar()->clearMessage();
     statusBar()->setStyleSheet("");
 
     if (is_correct_data_QLineEdit()) {
         double hb = ui->lineEdit_hb->text().toDouble();
-        double xmin = ui->lineEdit_min_x->text().toDouble();
-        double xmax = ui->lineEdit_max_x->text().toDouble();
-        double ymin = ui->lineEdit_min_y->text().toDouble();
-        double ymax = ui->lineEdit_max_y->text().toDouble();
+        double xmin = ui->lineEdit_min_x_lim->text().toDouble();
+        double xmax = ui->lineEdit_max_x_lim->text().toDouble();
+        double ymin = ui->lineEdit_min_y_lim->text().toDouble();
+        double ymax = ui->lineEdit_max_y_lim->text().toDouble();
         // вычисляем точки
         int Nbx = static_cast<int>((xmax - xmin + hb) / hb + 0.5);
         int Nby = static_cast<int>((ymax - ymin + hb) / hb + 0.5);
@@ -54,12 +57,12 @@ void MainWindow::on_comboBox_output_data_params_changed(int index)  // упра�
 {
     QString curent_param = ui->comboBox_output_data_params->itemText(index);  // получаем значение типа выходных данных
     ui->comboBox_Z->clear();                                                  // очищаем список выбора типа выходных данных
-    for (const auto &item : ParametrsList::Z_outParams) {  // цикл по списку разрешенных параметров записи в файл
+    for (const auto& item : ParametrsList::Z_outParams) {  // цикл по списку разрешенных параметров записи в файл
         ui->comboBox_Z->addItem(QString(item.data()));
     }
     ui->comboBox_Z->addItem(QString(ParametrsList::Z_outParamKit.data()));  // пользовательский набор записываемых выходных
                                                                             // параметров
-    const auto &PL_NoTermal = ParametrsList::NoTermal_odata_t;
+    const auto& PL_NoTermal = ParametrsList::NoTermal_odata_t;
     if (std::find(PL_NoTermal.begin(), PL_NoTermal.end(), curent_param) == PL_NoTermal.end()) {  // добавление параметров
                                                                                                  // связанных с газом если
                                                                                                  // соответствет типы
@@ -88,7 +91,7 @@ void MainWindow::on_comboBox_output_data_params_changed(int index)  // упра�
     }
 }
 // проверяем что записано разрешенное число колонок в lineEdit_numbers_columns_files
-void MainWindow::on_lineEdit_numbers_columns_files_changed(const QString &changed_line)
+void MainWindow::on_lineEdit_numbers_columns_files_changed(const QString& changed_line)
 {
     if (!changed_line.isEmpty()) {
         bool ok = true;
@@ -151,7 +154,7 @@ void MainWindow::on_pushButton_input_files_clicked()
         }
 
         // проверяем что все файлы существуют
-        for (const auto &file_name : inputfileNames) {
+        for (const auto& file_name : inputfileNames) {
             QFileInfo file;
             if (!file.exists(file_name)) {
                 QMessageBox::warning(this, tr("Ошибка"), tr("Файл не существует"));
@@ -163,12 +166,14 @@ void MainWindow::on_pushButton_input_files_clicked()
         ui->lineEdit_input->setText(parentDir);
 
         ui->listWidget_input_file_names->clear();
+        ui->listWidget_input_files->clear();
         for (auto file_name : inputfileNames) {
             ui->listWidget_input_file_names->addItem(file_name);
+            ui->listWidget_input_files->addItem(file_name);
         }
         inputfiles_names.clear();
         inputfiles_names = inputfileNames;
-    } catch (const char *ex) {
+    } catch (const char* ex) {
         QMessageBox::warning(this, tr("Ошибка"), tr(ex));
         return;
     }
@@ -212,7 +217,7 @@ void MainWindow::on_pushButtonconvert_clicked()
         // преобразование QString в filesystem::path
         std::vector<std::filesystem::path> ifiles_names;
         ifiles_names.reserve(inputfiles_names.size());
-        for (const auto &ifile_name : inputfiles_names) {
+        for (const auto& ifile_name : inputfiles_names) {
             ifiles_names.push_back(ifile_name.toStdString());
         }
 
@@ -222,7 +227,7 @@ void MainWindow::on_pushButtonconvert_clicked()
         // преобразование combobox в vector<int> для колонок
         std::vector<std::string> columns;
         columns.reserve(columnCombos.size());
-        for (const auto &col : columnCombos) {
+        for (const auto& col : columnCombos) {
             columns.push_back(col->currentText().toStdString());
         }
 
@@ -239,15 +244,33 @@ void MainWindow::on_pushButtonconvert_clicked()
         //---------------задание размеров сетки--------------
         Nbxy.Nx = ui->lineEdit_Nx->text().toInt();
         Nbxy.Ny = ui->lineEdit_Ny->text().toInt();
-        lim<double> x;
-        lim<double> y;
-        lim<double> z;
-        x.max = ui->lineEdit_max_x->text().toDouble();
-        x.min = ui->lineEdit_min_x->text().toDouble();
-        y.max = ui->lineEdit_max_y->text().toDouble();
-        y.min = ui->lineEdit_min_y->text().toDouble();
-        z.max = ui->lineEdit_max_z->text().toDouble();
-        z.min = ui->lineEdit_min_z->text().toDouble();
+
+        lim<double> x_lim;
+        lim<double> y_lim;
+        x_lim.max = ui->lineEdit_max_x_lim->text().toDouble();
+        x_lim.min = ui->lineEdit_min_x_lim->text().toDouble();
+        y_lim.max = ui->lineEdit_max_y_lim->text().toDouble();
+        y_lim.min = ui->lineEdit_min_y_lim->text().toDouble();
+        //---------------------задание проекции на сетку-------------------
+        double angle_teta = ui->lineEdit_angle_teta->text().toDouble();
+        double angle_psi = ui->lineEdit_angle_psi->text().toDouble();
+
+        //------------задание области ограничения---------------------------
+
+        lim<double> x_bound;
+        lim<double> y_bound;
+        lim<double> z_bound;
+        x_bound.max = ui->lineEdit_max_x_bound->text().toDouble();
+        x_bound.min = ui->lineEdit_min_x_bound->text().toDouble();
+        y_bound.max = ui->lineEdit_max_y_bound->text().toDouble();
+        y_bound.min = ui->lineEdit_min_y_bound->text().toDouble();
+        z_bound.max = ui->lineEdit_max_z_bound->text().toDouble();
+        z_bound.min = ui->lineEdit_min_z_bound->text().toDouble();
+
+        //------------задание углов области ограничения---------------------------
+        double angle_alpha = ui->lineEdit_angle_alpha->text().toDouble();
+        double angle_beta = ui->lineEdit_angle_beta->text().toDouble();
+        double angle_phi = ui->lineEdit_angle_phi->text().toDouble();
 
         auto X = ui->comboBox_X->currentText().toStdString();
         auto Y = ui->comboBox_Y->currentText().toStdString();
@@ -257,7 +280,9 @@ void MainWindow::on_pushButtonconvert_clicked()
         //------------------------------создание конвертера------------------------------------------
         if (ui->comboBox_output_data_params->currentText() == ParametrsList::DarkMatter_type) {  // Темная Материя
             Converter_DarkMatter cdm(datastorage, c, Nbxy, outputDir.toStdString());
-            cdm.set_limits(x, y, z);
+            cdm.set_limits(x_lim, y_lim, angle_teta, angle_psi);
+            cdm.set_boundary(x_bound, y_bound, z_bound, angle_alpha, angle_beta, angle_phi);
+
             cdm.setup_output_data(Z_col_list, XY);
             if (ui->comboBox_type_structures_ifiles->currentText() == ParametrsList::is_bin_ifiles) {  // если файлы бинарные
                 datastorage.load_file_metadate_bin();
@@ -291,7 +316,9 @@ void MainWindow::on_pushButtonconvert_clicked()
             }
         } else if (ui->comboBox_output_data_params->currentText() == ParametrsList::Gas_type) {  // газовые облака
             Converter_Gas cg(datastorage, c, Nbxy, outputDir.toStdString());
-            cg.set_limits(x, y, z);
+            cg.set_limits(x_lim, y_lim, angle_teta, angle_psi);
+            cg.set_boundary(x_bound, y_bound, z_bound, angle_alpha, angle_beta, angle_phi);
+
             cg.setup_output_data(Z_col_list, XY);
             if (ui->comboBox_type_structures_ifiles->currentText() == ParametrsList::is_bin_ifiles) {
                 datastorage.load_file_metadate_bin();
@@ -327,7 +354,9 @@ void MainWindow::on_pushButtonconvert_clicked()
                                                                                                              // облака
             // создание конвертера
             Converter_MolecularClouds cmc(datastorage, c, Nbxy, outputDir.toStdString());
-            cmc.set_limits(x, y, z);
+            cmc.set_limits(x_lim, y_lim, angle_teta, angle_psi);
+            cmc.set_boundary(x_bound, y_bound, z_bound, angle_alpha, angle_beta, angle_phi);
+
             cmc.setup_output_data(Z_col_list, XY);
             if (ui->comboBox_type_structures_ifiles->currentText() == ParametrsList::is_bin_ifiles) {
                 datastorage.load_file_metadate_bin();
@@ -361,7 +390,8 @@ void MainWindow::on_pushButtonconvert_clicked()
             }
         } else if (ui->comboBox_output_data_params->currentText() == ParametrsList::Stars_type) {  // Звезды
             Converter_Stars cs(datastorage, c, Nbxy, outputDir.toStdString());
-            cs.set_limits(x, y, z);
+            cs.set_limits(x_lim, y_lim, angle_teta, angle_psi);
+            cs.set_boundary(x_bound, y_bound, z_bound, angle_alpha, angle_beta, angle_phi);
             cs.setup_output_data(Z_col_list, XY);
             if (ui->comboBox_type_structures_ifiles->currentText() == ParametrsList::is_bin_ifiles) {
                 datastorage.load_file_metadate_bin();
@@ -395,7 +425,9 @@ void MainWindow::on_pushButtonconvert_clicked()
             }
         } else if (ui->comboBox_output_data_params->currentText() == ParametrsList::YongStars_type) {  // Молодые звезды
             Converter_YoungStars cys(datastorage, c, Nbxy, outputDir.toStdString());
-            cys.set_limits(x, y, z);
+            cys.set_limits(x_lim, y_lim, angle_teta, angle_psi);
+            cys.set_boundary(x_bound, y_bound, z_bound, angle_alpha, angle_beta, angle_phi);
+
             cys.setup_output_data(Z_col_list, XY);
             if (ui->comboBox_type_structures_ifiles->currentText() == ParametrsList::is_bin_ifiles) {
                 datastorage.load_file_metadate_bin();
@@ -429,15 +461,15 @@ void MainWindow::on_pushButtonconvert_clicked()
             }
         }
         QMessageBox::information(this, tr("Уведомление"), tr("Конвертация файлов завершена"));
-    } catch (const std::exception &e) {
+    } catch (const std::exception& e) {
         QMessageBox::critical(this, tr("Ошибка"), QString("Конвертация не удалась: %1").arg(e.what()));
     }
 }
 // обработка кнопки delete для удаления файлов которые были выбраны
-bool MainWindow::eventFilter(QObject *obj, QEvent *event)
+bool MainWindow::eventFilter(QObject* obj, QEvent* event)
 {
-    if (obj == ui->listWidget_input_file_names && event->type() == QEvent::KeyPress) {
-        QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+    if ((obj == ui->listWidget_input_file_names || obj == ui->listWidget_input_files) && event->type() == QEvent::KeyPress) {
+        QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
         if (keyEvent->key() == Qt::Key_Delete || keyEvent->key() == Qt::Key_Backspace) {
             delete_selected_files();
             return true;
@@ -446,11 +478,14 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
     return QMainWindow::eventFilter(obj, event);
 }
 // обработка нажатия правой кнопки мыши
-void MainWindow::on_listWidget_right_mouse_clicked(const QPoint &pos)
+void MainWindow::on_listWidget_right_mouse_clicked(const QPoint& pos)
 {
+    QListWidget* clickedWidget = qobject_cast<QListWidget*>(sender());
+    if (!clickedWidget) return;
+
     QMenu menu;
     menu.addAction("Удалить", this, &MainWindow::delete_selected_files);
-    menu.exec(ui->listWidget_input_file_names->mapToGlobal(pos));
+    menu.exec(clickedWidget->mapToGlobal(pos));
 }
 // добавление входных файлов
 void MainWindow::on_pushButton_add_input_file_clicked()
@@ -478,7 +513,7 @@ void MainWindow::on_pushButton_add_input_file_clicked()
         }
 
         // проверяем что все файлы существуют
-        for (const auto &file_name : inputfileNames) {
+        for (const auto& file_name : inputfileNames) {
             QFileInfo file;
             if (!file.exists(file_name)) {
                 QMessageBox::warning(this, tr("Ошибка"), tr("Файл не существует"));
@@ -492,11 +527,13 @@ void MainWindow::on_pushButton_add_input_file_clicked()
 
         for (auto file_name : inputfileNames) {
             ui->listWidget_input_file_names->addItem(file_name);
+            ui->listWidget_input_files->addItem(file_name);
         }
+
         for (auto i : inputfileNames) {
             inputfiles_names.push_back(i);
         }
-    } catch (const char *ex) {
+    } catch (const char* ex) {
         QMessageBox::warning(this, tr("Ошибка"), tr(ex));
         return;
     }
@@ -509,7 +546,7 @@ void MainWindow::on_action_reset_settings()
         loadSettings();
     }
 }
-void MainWindow::closeEvent(QCloseEvent *event)
+void MainWindow::closeEvent(QCloseEvent* event)
 {
     QSettings settings(QCoreApplication::applicationDirPath() + "/config.ini", QSettings::IniFormat);
 
@@ -532,12 +569,23 @@ void MainWindow::closeEvent(QCloseEvent *event)
     settings.setValue("combos/file_structure", ui->comboBox_type_structures_ifiles->currentIndex());
 
     // === 5. Параметры сетки ===
-    settings.setValue("grid/min_x", ui->lineEdit_min_x->text());
-    settings.setValue("grid/max_x", ui->lineEdit_max_x->text());
-    settings.setValue("grid/min_y", ui->lineEdit_min_y->text());
-    settings.setValue("grid/max_y", ui->lineEdit_max_y->text());
-    settings.setValue("grid/min_z", ui->lineEdit_min_z->text());
-    settings.setValue("grid/max_z", ui->lineEdit_max_z->text());
+    settings.setValue("boundary/min_x", ui->lineEdit_min_x_bound->text());
+    settings.setValue("boundary/max_x", ui->lineEdit_max_x_bound->text());
+    settings.setValue("boundary/min_y", ui->lineEdit_min_y_bound->text());
+    settings.setValue("boundary/max_y", ui->lineEdit_max_y_bound->text());
+    settings.setValue("boundary/min_z", ui->lineEdit_min_z_bound->text());
+    settings.setValue("boundary/max_z", ui->lineEdit_max_z_bound->text());
+    settings.setValue("boundary/alpha", ui->lineEdit_angle_alpha->text());
+    settings.setValue("boundary/beta", ui->lineEdit_angle_beta->text());
+    settings.setValue("boundary/phi", ui->lineEdit_angle_phi->text());
+
+    // === 5. Параметры сетки ===
+    settings.setValue("grid/min_x", ui->lineEdit_min_x_lim->text());
+    settings.setValue("grid/max_x", ui->lineEdit_max_x_lim->text());
+    settings.setValue("grid/min_y", ui->lineEdit_min_y_lim->text());
+    settings.setValue("grid/max_y", ui->lineEdit_max_y_lim->text());
+    settings.setValue("grid/teta", ui->lineEdit_angle_teta->text());
+    settings.setValue("grid/psi", ui->lineEdit_angle_psi->text());
     settings.setValue("grid/hb", ui->lineEdit_hb->text());
 
     // === 6. Константы ===
@@ -559,3 +607,41 @@ void MainWindow::closeEvent(QCloseEvent *event)
     settings.setValue("checkbox/custom_columns", ui->checkBox_column_customize->isChecked());
     event->accept();
 }
+void MainWindow::on_lineEdit_Slice_changed(const QString&)
+{
+    is_correct_data_QLineEdit();
+}
+// void MainWindow::on_list_widget_input_files_item_clicked(QListWidgetItem* item)
+// {
+//     if (item->text().isEmpty()) {
+//         QMessageBox::warning(this, tr("Ошибка"), tr("выбран некорректный файл"));
+//         return;
+//     }
+//     std::filesystem::path file = item->text().toStdString();
+//     DataStorage storage({file});
+//     // преобразование combobox в vector<int> для колонок
+//     std::vector<std::string> columns;
+//     columns.reserve(columnCombos.size());
+//     for (const auto& col : columnCombos) {
+//         columns.push_back(col->currentText().toStdString());
+//     }
+//     storage.set_buff_size(1);
+//     storage.setup_columns(columns);
+//     if (ui->comboBox_type_structures_ifiles->currentText() == ParametrsList::is_bin_ifiles) {
+//         storage.load_file_metadate_bin();
+//         storage.readw_bin();
+//     } else if (ui->comboBox_type_structures_ifiles->currentText() == ParametrsList::is_txt_ifiles) {
+//         storage.load_file_metadate_txt();
+//         storage.readw_txt();
+//     } else {
+//         QMessageBox::warning(this, tr("Ошибка"), tr("выбран неверный тип файлов"));
+//     }
+
+//     auto& x = storage.get_x();
+//     auto& y = storage.get_y();
+//     auto& z = storage.get_z();
+//     auto& rho = storage.get_rho();
+//     size_t Ns_i = storage.get_Ns()[0];
+//     size_t offset = storage.get_offsets()[0];
+//     DrawFile(x, y, z, rho, Ns_i, offset);
+// }

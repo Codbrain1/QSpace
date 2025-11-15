@@ -8,6 +8,7 @@ add_library(test_common STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Converter/DataStorage/DataStorage_sets.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Converter/Converter/Converter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Converter/Converter/IConverter_NbodyOnly.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Converter/Converter/Converter_DarkMatter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Converter/Converter/Converter_Gas.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Converter/Converter/Converter_MolecularClouds.cpp
