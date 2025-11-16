@@ -5,6 +5,7 @@
 #include <qabstractitemview.h>
 #include <qcontainerfwd.h>
 #include <qlayoutitem.h>
+#include <qlineedit.h>
 #include <qlist.h>
 #include <qlistwidget.h>
 #include <qnamespace.h>
@@ -464,6 +465,7 @@ void MainWindow::connectSlots()
                               &MainWindow::on_lineEdit_projection_area_changed);
     /*--y max_lim--*/ connect(ui->lineEdit_max_y_lim, &QLineEdit::textChanged, this,
                               &MainWindow::on_lineEdit_projection_area_changed);
+    /*--hb --*/ connect(ui->lineEdit_hb, &QLineEdit::textChanged, this, &MainWindow::on_lineEdit_projection_area_changed);
 
     /*-- alpha --*/ connect(ui->lineEdit_angle_alpha, &QLineEdit::textChanged, this, &MainWindow::on_lineEdit_Slice_changed);
     /*-- beta --*/ connect(ui->lineEdit_angle_beta, &QLineEdit::textChanged, this, &MainWindow::on_lineEdit_Slice_changed);
@@ -471,7 +473,6 @@ void MainWindow::connectSlots()
 
     /*-- teta --*/ connect(ui->lineEdit_angle_teta, &QLineEdit::textChanged, this, &MainWindow::on_lineEdit_Slice_changed);
     /*-- teta --*/ connect(ui->lineEdit_angle_psi, &QLineEdit::textChanged, this, &MainWindow::on_lineEdit_Slice_changed);
-
     // редактирование выбранных файлов
     connect(ui->listWidget_input_file_names, &QListWidget::customContextMenuRequested, this,
             &MainWindow::on_listWidget_right_mouse_clicked);

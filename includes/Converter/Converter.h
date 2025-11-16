@@ -14,7 +14,6 @@ class Converter
    protected:
     using ProjectionRefs =
         std::tuple<std::reference_wrapper<std::vector<double>>, std::reference_wrapper<std::vector<double>>,
-                   std::reference_wrapper<std::vector<double>>, std::reference_wrapper<std::vector<double>>,
                    std::reference_wrapper<std::vector<double>>>;
 
     std::vector<std::string_view> Z_grd_list;  // колонки которые следует записывать в файлы
@@ -78,6 +77,21 @@ class Converter
     template <class Predicate>
     void calculate_Sigma(std::vector<double>& projection1, std::vector<double>& projection2,
                          std::vector<double>& projection3, const Predicate& condition);
+    template <class Predicate>
+    std::array<double, 3> calculate_Center_of_Mass(int i_file, const Predicate& condition);  // центр масс
+
+    template <class Predicate>
+    std::vector<std::array<double, 3>> calculate_P(const Predicate& condition);  // полный импульс
+
+    template <class Predicate>
+    std::vector<std::array<double, 3>> calculate_L(const Predicate& condition);  // момент импульса
+
+    template <class Predicate>
+    void calculate_Vr(std::vector<double>& projection1, std::vector<double>& projection2, std::vector<double>& projection3,
+                      const Predicate& condition);
+    template <class Predicate>
+    void calculate_Vfi(std::vector<double>& projection1, std::vector<double>& projection2, std::vector<double>& projection3,
+                       const Predicate& condition);
 };
 
 #include "Converter.tpp"

@@ -28,7 +28,7 @@ endif()
 
 #общие флаги компиляции
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra") #строгие предупреждения
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g") # для отладки без оптимизации
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -fopenmp") # для отладки без оптимизации
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -flto -fopenmp") # для запуска с оптимизацией O2 и оптимизация линковки
 
 # выбор папки сборки в зависимости от типа сборки

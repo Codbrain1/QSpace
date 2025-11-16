@@ -1,4 +1,7 @@
 #pragma once
+#include <array>
+#include <vector>
+
 #include "Converter.h"
 class IConverter_Hydrodinamics : public Converter
 {
@@ -10,6 +13,18 @@ class IConverter_Hydrodinamics : public Converter
     template <class Predicate>
     void calculate_LgSigma(std::vector<double>& projection1, std::vector<double>& projection2,
                            std::vector<double>& projection3, const Predicate& condition);
+    template <class Predicate>
+    void calculate_LgRho(std::vector<double>& projection1, std::vector<double>& projection2,
+                         std::vector<double>& projection3, const Predicate& condiditon);
+    template <class Predicate>
+    void calculate_Rho(std::vector<double>& projection1, std::vector<double>& projection2, std::vector<double>& projection3,
+                       const Predicate& condiditon);
+    template <class Predicate>
+    void calculate_T(std::vector<double>& projection1, std::vector<double>& projection2, std::vector<double>& projection3,
+                     const Predicate& condiditon);
+    template <class Predicate>
+    void calculate_LgT(std::vector<double>& projection1, std::vector<double>& projection2, std::vector<double>& projection3,
+                       const Predicate& condiditon);
 
    public:
     IConverter_Hydrodinamics(DataStorage& _data, ParametrsList::iniConstants& c, count_cell _Nbxy,

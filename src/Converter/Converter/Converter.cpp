@@ -375,25 +375,5 @@ Converter::ProjectionRefs Converter::get_projection()
         }
     }();
 
-    std::vector<double>& v_projection1 = [xy = &XY, data = &data]() -> std::vector<double>& {  // проекция для x
-        if (xy->first == ParametrsList::X) {
-            return data->get_vx();
-        } else if (xy->first == ParametrsList::Y) {
-            return data->get_vy();
-        } else {
-            return data->get_vz();
-        }
-    }();
-
-    std::vector<double>& v_projection2 = [xy = &XY, data = &data]() -> std::vector<double>& {  // проекция для y
-        if (xy->second == ParametrsList::X) {
-            return data->get_vx();
-        } else if (xy->second == ParametrsList::Y) {
-            return data->get_vy();
-        } else {
-            return data->get_vz();
-        }
-    }();
-    return {std::ref(projection1), std::ref(projection2), std::ref(projection3), std::ref(v_projection1),
-            std::ref(v_projection2)};
+    return {std::ref(projection1), std::ref(projection2), std::ref(projection3)};
 }
