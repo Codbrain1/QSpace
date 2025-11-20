@@ -111,6 +111,7 @@ void Converter::save_grd_txt()
             current_cursor += obuff_size;
             all_files_cursor += obuff_size;
         }
+        all_files_cursor = 0;
     }
     Z.clear();
     ofiles.clear();
@@ -141,6 +142,7 @@ void Converter::save_grd_bin()
             current_cursor += obuff_size;
             all_files_cursor += obuff_size;
         }
+        all_files_cursor = 0;
     }
     Z.clear();
     ofiles.clear();
@@ -177,8 +179,45 @@ void Converter::parallel_save_bin(size_t current_cursor, size_t col)
 
             for (int ib = 0; ib < Nb_XY.Ny; ++ib) {
                 for (int jb = 0; jb < Nb_XY.Nx; ++jb) {
-                    fwrite(&Z[col][Nb_XY.Ny * ib + jb + Nb_XY.Nx * Nb_XY.Ny * (cursor_i)], sizeof(double), 1,
-                           ofiles[cursor_i]);
+                    float z = static_cast<float>(Z[col][Nb_XY.Ny * ib + jb + Nb_XY.Nx * Nb_XY.Ny * (cursor_i)]);
+                    fwrite(&z, sizeof(float), 1, ofiles[cursor_i]);
+                }
+            }
+            fclose(ofiles[cursor_i]);
+        }
+    }
+}
+void Converter::consistent_save_bin(size_t current_cursor, size_t col)
+{
+    for (size_t i = 0; i < obuff_size; ++i) {  // шаг по файлам
+        size_t cursor_i = current_cursor + i;
+        // открытие и настройка файла
+#ifdef _WIN32
+        ofiles[cursor_i] = _wfopen(ofiles_names[all_files_cursor + i].wstring().c_str(), L"wb");
+#else
+        ofiles[cursor_i] = fopen(ofiles_names[all_files_cursor + i].c_str(), "wb");
+#endif
+        if (!ofiles[cursor_i]) {
+            // TODO: добавить логи
+        } else {
+            std::vector<char> buffer(ofile_buff_size);
+            setvbuf(ofiles[cursor_i], buffer.data(), _IOFBF, buffer.size());
+
+            //------------------------------запись данных в файл---------------------------
+            fwrite("DSBB", sizeof(char), 4, ofiles[cursor_i]);
+            fwrite(&Nb_XY.Nx, sizeof(short), 1, ofiles[cursor_i]);
+            fwrite(&Nb_XY.Ny, sizeof(short), 1, ofiles[cursor_i]);
+            fwrite(&fx_lim.min, sizeof(double), 1, ofiles[cursor_i]);
+            fwrite(&fx_lim.max, sizeof(double), 1, ofiles[cursor_i]);
+            fwrite(&fy_lim.min, sizeof(double), 1, ofiles[cursor_i]);
+            fwrite(&fy_lim.max, sizeof(double), 1, ofiles[cursor_i]);
+            fwrite(&limits_f[col][cursor_i].min, sizeof(double), 1, ofiles[cursor_i]);
+            fwrite(&limits_f[col][cursor_i].max, sizeof(double), 1, ofiles[cursor_i]);
+
+            for (int ib = 0; ib < Nb_XY.Ny; ++ib) {
+                for (int jb = 0; jb < Nb_XY.Nx; ++jb) {
+                    float z = static_cast<float>(Z[col][Nb_XY.Ny * ib + jb + Nb_XY.Nx * Nb_XY.Ny * (cursor_i)]);
+                    fwrite(&z, sizeof(float), 1, ofiles[cursor_i]);
                 }
             }
             fclose(ofiles[cursor_i]);
@@ -232,43 +271,7 @@ void Converter::parallel_save_txt(size_t current_cursor, size_t col)
         }
     }
 }
-void Converter::consistent_save_bin(size_t current_cursor, size_t col)
-{
-    for (size_t i = 0; i < obuff_size; ++i) {  // шаг по файлам
-        size_t cursor_i = current_cursor + i;
-        // открытие и настройка файла
-#ifdef _WIN32
-        ofiles[cursor_i] = _wfopen(ofiles_names[all_files_cursor + i].wstring().c_str(), L"wb");
-#else
-        ofiles[cursor_i] = fopen(ofiles_names[all_files_cursor + i].c_str(), "wb");
-#endif
-        if (!ofiles[cursor_i]) {
-            // TODO: добавить логи
-        } else {
-            std::vector<char> buffer(ofile_buff_size);
-            setvbuf(ofiles[cursor_i], buffer.data(), _IOFBF, buffer.size());
 
-            //------------------------------запись данных в файл---------------------------
-            fwrite("DSBB", sizeof(char), 4, ofiles[cursor_i]);
-            fwrite(&Nb_XY.Nx, sizeof(short), 1, ofiles[cursor_i]);
-            fwrite(&Nb_XY.Ny, sizeof(short), 1, ofiles[cursor_i]);
-            fwrite(&fx_lim.min, sizeof(double), 1, ofiles[cursor_i]);
-            fwrite(&fx_lim.max, sizeof(double), 1, ofiles[cursor_i]);
-            fwrite(&fy_lim.min, sizeof(double), 1, ofiles[cursor_i]);
-            fwrite(&fy_lim.max, sizeof(double), 1, ofiles[cursor_i]);
-            fwrite(&limits_f[col][cursor_i].min, sizeof(double), 1, ofiles[cursor_i]);
-            fwrite(&limits_f[col][cursor_i].max, sizeof(double), 1, ofiles[cursor_i]);
-
-            for (int ib = 0; ib < Nb_XY.Ny; ++ib) {
-                for (int jb = 0; jb < Nb_XY.Nx; ++jb) {
-                    float z = static_cast<float>(Z[col][Nb_XY.Ny * ib + jb + Nb_XY.Nx * Nb_XY.Ny * (cursor_i)]);
-                    fwrite(&z, sizeof(float), 1, ofiles[cursor_i]);
-                }
-            }
-            fclose(ofiles[cursor_i]);
-        }
-    }
-}
 void Converter::consistent_save_txt(size_t current_cursor, size_t col)
 {
     for (size_t i = 0; i < obuff_size; ++i) {  // шаг по файлам
@@ -336,10 +339,11 @@ void Converter::create_output_directory(std::string first_part, std::string seco
 {
     //-----------------------создание поддиректории--------------------------
     std::filesystem::create_directory(output_directory / thrid_part);
+    auto cur_curs = data.get_curent_cursor() - data.get_ibuff_size();
     for (size_t i = 0; i < files_size; ++i) {
-        ofiles_names.push_back(
-            output_directory / thrid_part /
-            (first_part + "_" + second_part + "_" + thrid_part + "_t_" + std::to_string(data.get_t()[i] * l_t) + ".grd"));
+        ofiles_names.push_back(output_directory / thrid_part /
+                               (first_part + "_" + second_part + "_" + thrid_part + "_t_" +
+                                std::to_string(data.get_t()[cur_curs + i] * l_t) + ".grd"));
     }
 }
 Converter::ProjectionRefs Converter::get_projection()

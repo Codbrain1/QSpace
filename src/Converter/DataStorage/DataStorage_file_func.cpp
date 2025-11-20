@@ -51,6 +51,7 @@ void DataStorage::load_file_metadate_txt()
             } else {
                 throw std::runtime_error("invalid content in file: " + ifile_names[i].string());
             }
+            fclose(file);
         } else {
             throw std::runtime_error("file: " + ifile_names[i].string() + "was not open");
         }
@@ -76,6 +77,7 @@ void DataStorage::load_file_metadate_bin()
             } else {
                 throw std::runtime_error("invalid content in file: " + ifile_names[i].string());
             }
+            fclose(file);
         } else {
             throw std::runtime_error("file: " + ifile_names[i].string() + "was not open");
         }

@@ -14,9 +14,9 @@
 namespace test_file
 {
 std::filesystem::path test_path("/home/mask/Desktop/nir5semester/TxtToGrdConverter/tests/Datasets/");
-const size_t NUM_FILES = 10;  // Генерируем 10 файлов (≥8) для теста параллельной обработки
-const int N = 5;              // Количество строк в каждом файле
-const double t = 0.5;         // время (внутри модели) в каждом файле
+const size_t NUM_FILES = 1000;  // Генерируем 10 файлов (≥8) для теста параллельной обработки
+const int N = 1000;             // Количество строк в каждом файле
+const double t = 0.5;           // время (внутри модели) в каждом файле
 // Структура для хранения сгенерированных данных
 struct GeneratedData {
     std::vector<std::vector<double>> columns;  // 9 столбцов: x, y, z, rho, vx, vy, vz, e, m
@@ -127,7 +127,7 @@ void ReadTXT_Test()
                            std::string(ParametrsList::VZ), std::string(ParametrsList::e), std::string(ParametrsList::m),
                            std::string(ParametrsList::ind_sph)});
     storage.load_file_metadate_txt();
-
+    storage.set_buff_size(8);
     // Счётчик для отслеживания текущего файла
     size_t current_file_idx = 0;
     while (storage.readw_txt()) {
@@ -234,7 +234,7 @@ void ReadBIN_Test()
                            std::string(ParametrsList::VZ), std::string(ParametrsList::e), std::string(ParametrsList::m),
                            std::string(ParametrsList::ind_sph)});
     storage.load_file_metadate_bin();
-
+    storage.set_buff_size(8);
     // Счётчик для отслеживания текущего файла
     size_t current_file_idx = 0;
     while (storage.readw_bin()) {

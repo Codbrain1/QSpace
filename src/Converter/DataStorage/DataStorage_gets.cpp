@@ -114,3 +114,7 @@ std::vector<double>& DataStorage::get_t()
         throw std::runtime_error("t is not allocated");
     }
 }
+size_t DataStorage::get_curent_cursor()
+{
+    return current_cursor;
+}

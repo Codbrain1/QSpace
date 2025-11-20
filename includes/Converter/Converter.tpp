@@ -314,8 +314,8 @@ void Converter::calculate_Vr(std::vector<double>& projection1, std::vector<doubl
                         int jb = static_cast<int>((pr2_area - limits_y.min) / hb);
                         double new_v_x = ex_x * vx[index] + ex_y * vy[index] + ex_z * vz[index];
                         double new_v_y = ey_x * vx[index] + ey_y * vy[index] + ey_z * vz[index];
-                        double r = std::hypot(pr1_area, pr2_area);
-                        double vfi = (r > 0.0) ? (pr1_area * new_v_x + pr2_area * new_v_y) / r : 0.0;
+                        double r = std::hypot(new_x, new_y);
+                        double vfi = (r > 0.0) ? (new_x * new_v_x + new_y * new_v_y) / r : 0.0;
                         Z.back()[ib + jb * Nb_XY.Ny + Z_offset] += vfi;
                         Nij_b[ib + jb * Nb_XY.Ny + Z_offset]++;
                     }
@@ -446,9 +446,9 @@ void Converter::calculate_Vfi(std::vector<double>& projection1, std::vector<doub
                         int jb = static_cast<int>((pr2_area - limits_y.min) / hb);
                         double new_v_x = ex_x * vx[index] + ex_y * vy[index] + ex_z * vz[index];
                         double new_v_y = ey_x * vx[index] + ey_y * vy[index] + ey_z * vz[index];
-                        double r = std::hypot(pr1_area, pr2_area);
-                        double vfi = (r > 0.0) ? (pr1_area * new_v_y - pr2_area * new_v_x) / r : 0.0;  // возможно не
-                                                                                                       // правильно для YZ
+                        double r = std::hypot(new_x, new_y);
+                        double vfi = (r > 0.0) ? (new_x * new_v_y - new_y * new_v_x) / r : 0.0;  // возможно не
+                                                                                                 // правильно для YZ
                         Z.back()[ib + jb * Nb_XY.Ny + Z_offset] += vfi;
                         Nij_b[ib + jb * Nb_XY.Ny + Z_offset]++;
                     }

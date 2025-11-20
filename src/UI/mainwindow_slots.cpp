@@ -173,6 +173,8 @@ void MainWindow::on_pushButton_input_files_clicked()
         }
         inputfiles_names.clear();
         inputfiles_names = inputfileNames;
+        inputfileNames.clear();
+        inputfileNames.shrink_to_fit();
     } catch (const char* ex) {
         QMessageBox::warning(this, tr("Ошибка"), tr(ex));
         return;
@@ -232,7 +234,7 @@ void MainWindow::on_pushButtonconvert_clicked()
         }
 
         datastorage.setup_columns(columns);  // задаем колонки в входных файлах
-        datastorage.set_buff_size(4);        // устанавливаем число файлов записываемых за раз на диск
+        datastorage.set_buff_size(8);        // устанавливаем число файлов записываемых за раз на диск
         ParametrsList::iniConstants c;
         count_cell Nbxy;
         //---------------задание констант-----------------

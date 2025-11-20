@@ -51,6 +51,7 @@ class DataStorage
     std::vector<size_t>& get_offsets();
     std::vector<double>& get_t();
     std::vector<std::filesystem::path> get_last_file_names();
+    size_t get_curent_cursor();
     size_t get_ibuff_size();
     void set_buff_size(const size_t size);
     void setup_columns(const std::vector<std::string>& columns);
