@@ -63,7 +63,7 @@ class MainWindow : public QMainWindow
     void set_False_Enable_Line_Edit_Constants();
     void setup_columns_comboBoxes_DM_S(const int num_col);
     void setup_columns_comboBoxes_G_MC_YS(const int num_col);
-    void setup_columns_comboBoxes(const int num_col);
+    // void setup_columns_comboBoxes(const int num_col);
     bool is_correct_data_QLineEdit();
     void delete_selected_files();
     void loadSettings();

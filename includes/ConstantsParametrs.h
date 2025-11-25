@@ -22,15 +22,19 @@ class ParametrsList
 
     //-----------------------------------------------------------------------
     // список разрешенных выходных параметров
-    static constexpr std::array<std::string_view, 9> Z_outParams = {"R (объемная плотность)",
-                                                                    "LgR (десятичный логарифм от объемной плотности)",
-                                                                    "LgS (десятичный логарифм от поверхностной плотности)",
-                                                                    "S (поверхностная плотность)",
-                                                                    "Vfi (азимутальная скорость)",
-                                                                    "Vr (радиальная скорость)",
-                                                                    "Vx (X-компонента скорости)",
-                                                                    "Vy (Y-компонента скорости)",
-                                                                    "Vz (Z-компонента скорости)"};
+    static constexpr std::array<std::string_view, 13> Z_outParams = {"R (объемная плотность)",
+                                                                     "LgR (десятичный логарифм от объемной плотности)",
+                                                                     "LgS (десятичный логарифм от поверхностной плотности)",
+                                                                     "S (поверхностная плотность)",
+                                                                     "Vfi (азимутальная скорость)",
+                                                                     "Vr (радиальная скорость)",
+                                                                     "Vx (X-компонента скорости)",
+                                                                     "Vy (Y-компонента скорости)",
+                                                                     "Vz (Z-компонента скорости)",
+                                                                     "|V| (модуль скорости)",
+                                                                     "c_r (X-компонента дисперсии скорости)",
+                                                                     "c_phi (X-компонента дисперсии скорости)",
+                                                                     "c_z (X-компонента дисперсии скорости)"};
     static constexpr std::string_view Z_outParams_Rho = Z_outParams[0];
     static constexpr std::string_view Z_outParams_LgRho = Z_outParams[1];
     static constexpr std::string_view Z_outParams_LgSigma = Z_outParams[2];
@@ -40,6 +44,10 @@ class ParametrsList
     static constexpr std::string_view Z_outParams_Vx = Z_outParams[6];
     static constexpr std::string_view Z_outParams_Vy = Z_outParams[7];
     static constexpr std::string_view Z_outParams_Vz = Z_outParams[8];
+    static constexpr std::string_view Z_outParams_V = Z_outParams[9];
+    static constexpr std::string_view Z_outParams_c_r = Z_outParams[10];
+    static constexpr std::string_view Z_outParams_c_phi = Z_outParams[11];
+    static constexpr std::string_view Z_outParams_c_z = Z_outParams[12];
     static constexpr std::string_view Z_outParamT = "T (температура)";
     static constexpr std::string_view Z_outParamLgT = "LgT (десятичный логарифм от температуры)";
     static constexpr std::string_view Z_outParamKit = "Набор параметров";

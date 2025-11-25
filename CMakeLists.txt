@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16) #минимальная версия cmake
 
-project(TxtToGrdConvert VERSION 0.3 LANGUAGES CXX) # название проекта его версия и язык на котором написан проект
+project(QSpace VERSION 0.3 LANGUAGES CXX) # название проекта его версия и язык на котором написан проект
 option(ENABLE_TESTS "Build Convert library tests" ON) #опция переключения между тестами
 
 set(CMAKE_CXX_STANDARD 23) # стандарт языка 23
@@ -69,7 +69,7 @@ set(TS_FILES
 )
 #добавление файлов перевода
 qt6_add_translations(
-    TxtToGrdConvert
+    QSpace
     TS_FILES ${TS_FILES}
     QM_FILES_OUTPUT_VARIABLE QM_FILES
 )
@@ -108,28 +108,28 @@ ${QM_FILES}
 )
 
 #создание исполнимого qt файла
-qt_add_executable(TxtToGrdConvert
+qt_add_executable(QSpace
 MANUAL_FINALIZATION
 ${PROJECT_SOURCES}
 )
 
-target_include_directories(TxtToGrdConvert PRIVATE ${CMAKE_SOURCE_DIR}/includes) #добавление путей к заголовкам
-target_link_libraries(TxtToGrdConvert PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::DataVisualization) #линковка с qt
+target_include_directories(QSpace PRIVATE ${CMAKE_SOURCE_DIR}/includes) #добавление путей к заголовкам
+target_link_libraries(QSpace PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::DataVisualization) #линковка с qt
 
 if(WIN32) # на виндовс только gui
-set_target_properties(TxtToGrdConvert PROPERTIES
+set_target_properties(QSpace PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
 endif()
 
 include(GNUInstallDirs)
-install(TARGETS TxtToGrdConvert
+install(TARGETS QSpace
     BUNDLE DESTINATION .
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
-qt_finalize_executable(TxtToGrdConvert)
+qt_finalize_executable(QSpace)
 
 if(ENABLE_TESTS)
     enable_testing()

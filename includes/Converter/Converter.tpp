@@ -1,4 +1,8 @@
 #pragma once
+#include <cmath>
+#include <cstddef>
+#include <vector>
+
 #include "Converter.h"
 
 template <class Predicate>
@@ -315,8 +319,8 @@ void Converter::calculate_Vr(std::vector<double>& projection1, std::vector<doubl
                         double new_v_x = ex_x * vx[index] + ex_y * vy[index] + ex_z * vz[index];
                         double new_v_y = ey_x * vx[index] + ey_y * vy[index] + ey_z * vz[index];
                         double r = std::hypot(new_x, new_y);
-                        double vfi = (r > 0.0) ? (new_x * new_v_x + new_y * new_v_y) / r : 0.0;
-                        Z.back()[ib + jb * Nb_XY.Ny + Z_offset] += vfi;
+                        double vr = (r > 0.0) ? (new_x * new_v_x + new_y * new_v_y) / r : 0.0;
+                        Z.back()[ib + jb * Nb_XY.Ny + Z_offset] += vr;
                         Nij_b[ib + jb * Nb_XY.Ny + Z_offset]++;
                     }
                 }
@@ -460,6 +464,503 @@ void Converter::calculate_Vfi(std::vector<double>& projection1, std::vector<doub
     for (size_t i = 0; i < Z.back().size(); ++i) {
         if (Nij_b[i] != 0) {
             Z.back()[i] /= Nij_b[i];
+        }
+    }
+    //----------------------------------вычисление предельных значений---------------------------------
+    limits_f.push_back(std::vector<lim<double>>());
+    limits_f.back().reserve(Nfiles_into_clomun);
+    for (size_t i = 0; i < Nfiles_into_clomun; ++i) {
+        size_t index = Nb_XY.Nx * Nb_XY.Ny * i;
+        double fmax = Z.back()[index];
+        double fmin = Z.back()[index];
+        for (int j = 0; j < Nb_XY.Nx * Nb_XY.Ny; ++j) {
+            fmax = (Z.back()[index + j] > fmax) ? Z.back()[index + j] : fmax;
+            fmin = (Z.back()[index + j] < fmin) ? Z.back()[index + j] : fmin;
+        }
+        limits_f.back().push_back({fmax * l_v, fmin * l_v});
+    }
+    //-----------------------------------перевод к размерным величинам----------------------------------
+#pragma omp parallel for simd
+    for (size_t i = 0; i < Z.back().size(); ++i) {
+        Z.back()[i] = Z.back()[i] * l_v;
+    }
+}
+template <class Predicate>
+void Converter::calculate_V_module(std::vector<double>& projection1, std::vector<double>& projection2,
+                                   std::vector<double>& projection3, const Predicate& condition)
+{
+    const auto& Ns = data.get_Ns();  // число строк в каждом
+                                     // файле
+    const auto& offests = data.get_offsets();
+    const auto& vx = data.get_vx();
+    const auto& vy = data.get_vy();
+    const auto& vz = data.get_vz();
+    std::vector<size_t> Nij_b;
+    //------------------------------------вычисления значений на сетке----------------------------------
+    Nij_b.resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
+    Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun);
+    for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
+        size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
+        for (int j = 0; j < Ns[i]; ++j) {
+            size_t index = offests[i] - offests[0] + j;
+            if (condition(index)) {
+                double pr1 = projection1[index];
+                double pr2 = projection2[index];
+                double pr3 = projection3[index];
+                auto [new_pr1, new_pr2, new_pr3] = SC_rectangle.new_coordinate(pr1, pr2, pr3);
+                if (new_pr1 >= bound_x.min && new_pr1 <= bound_x.max && new_pr2 >= bound_y.min && new_pr2 <= bound_y.max &&
+                    new_pr3 >= bound_z.min && new_pr3 <= bound_z.max) {
+                    auto [pr1_area, pr2_area] = SC_Area.new_coordinate(pr1, pr2, pr3);
+                    if (pr1_area >= limits_x.min && pr1_area <= limits_x.max && pr2_area >= limits_y.min &&
+                        pr2_area <= limits_y.max) {
+                        int ib = static_cast<int>((pr1_area - limits_x.min) / hb);
+                        int jb = static_cast<int>((pr2_area - limits_y.min) / hb);
+                        double vx_ind = vx[index];
+                        double vy_ind = vy[index];
+                        double vz_ind = vz[index];
+                        Z.back()[ib + jb * Nb_XY.Ny + Z_offset] += std::hypot(vx_ind, vy_ind, vz_ind);
+                        Nij_b[ib + jb * Nb_XY.Ny + Z_offset]++;
+                    }
+                }
+            }
+        }
+    }
+#pragma omp parallel for simd
+    for (size_t i = 0; i < Z.back().size(); ++i) {
+        if (Z.back()[i] != 0) {
+            Z.back()[i] /= Nij_b[i];
+        }
+    }
+    //----------------------------------вычисление предельных значений---------------------------------
+    limits_f.push_back(std::vector<lim<double>>());
+    limits_f.back().reserve(Nfiles_into_clomun);
+    for (size_t i = 0; i < Nfiles_into_clomun; ++i) {
+        size_t index = Nb_XY.Nx * Nb_XY.Ny * i;
+        double fmax = Z.back()[index];
+        double fmin = Z.back()[index];
+        for (int j = 0; j < Nb_XY.Nx * Nb_XY.Ny; ++j) {
+            fmax = (Z.back()[index + j] > fmax) ? Z.back()[index + j] : fmax;
+            fmin = (Z.back()[index + j] < fmin) ? Z.back()[index + j] : fmin;
+        }
+        limits_f.back().push_back({fmax * l_v, fmin * l_v});
+    }
+//-----------------------------------перевод к размерным величинам----------------------------------
+#pragma omp parallel for simd
+    for (size_t i = 0; i < Z.back().size(); ++i) {
+        Z.back()[i] = Z.back()[i] * l_v;
+    }
+}
+template <class Predicate>
+void Converter::calculate_c_r(std::vector<double>& projection1, std::vector<double>& projection2,
+                              std::vector<double>& projection3, const Predicate& condition)
+{
+    const auto& moment_impulse = calculate_L(condition);  // вычисление полного момента импульса системы
+    // число строк в каждом файле
+    const auto& Ns = data.get_Ns();
+    const auto& offests = data.get_offsets();
+    const auto& x = data.get_x();
+    const auto& y = data.get_y();
+    const auto& z = data.get_z();
+    const auto& vx = data.get_vx();
+    const auto& vy = data.get_vy();
+    const auto& vz = data.get_vz();
+    std::vector<double> sum_v_r2;
+    std::vector<double> sum_v_r;
+    std::vector<size_t> Nij_b;
+    sum_v_r.resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun, 0);
+    sum_v_r2.resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun, 0);
+    Nij_b.resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun, 0);
+    //------------------------------------вычисления значений на сетке----------------------------------
+    Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun, 0);
+#pragma omp parallel for schedule(static)
+    for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
+        size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
+        const auto& [Lx, Ly, Lz] = moment_impulse[i];
+
+        constexpr double EPS = 1e-12;
+        constexpr double Unit_Tol = 0.99;
+
+        std::array<double, 3> r0;  // новый центр координат
+        r0 = calculate_Center_of_Mass(i, condition);
+
+        std::array<double, 3> e_z;  // вектор нормали к плоскости диска
+        double L = std::hypot(Lx, Ly, Lz);
+        if (L > EPS) {
+            const double div_L = 1.0 / L;
+            e_z = {Lx * div_L, Ly * div_L, Lz * div_L};
+        } else {
+            e_z = {0, 0, 1};
+        }
+
+        std::array<double, 3> e_x, e_y;
+        const auto [n_x, n_y, n_z] = e_z;
+
+        std::array<double, 3> a;  // вспомогательный вектор для определения новой системы координат
+        if (std::abs(n_z) > Unit_Tol) {
+            a = {1, 0, 0};
+        } else {
+            a = {0, 0, 1};
+        }
+        const auto [ax, ay, az] = a;
+        double na_x = n_y * az - n_z * ay;
+        double na_y = n_z * ax - n_x * az;
+        double na_z = n_x * ay - n_y * ax;
+        double mod_na = std::hypot(na_x, na_y, na_z);
+
+        e_x = {na_x / mod_na, na_y / mod_na, na_z / mod_na};
+
+        const auto [ex_x, ex_y, ex_z] = e_x;
+        e_y = {n_y * ex_z - n_z * ex_y, n_z * ex_x - n_x * ex_z, n_x * ex_y - n_y * ex_x};
+
+        const auto [ey_x, ey_y, ey_z] = e_y;
+        const auto [r0_x, r0_y, r0_z] = r0;
+
+        for (int j = 0; j < Ns[i]; ++j) {
+            size_t index = offests[i] - offests[0] + j;
+            if (condition(index)) {
+                double pr1 = projection1[index];
+                double pr2 = projection2[index];
+                double pr3 = projection3[index];
+                const auto [new_pr1, new_pr2, new_pr3] = SC_rectangle.new_coordinate(pr1, pr2, pr3);
+                if (new_pr1 >= bound_x.min && new_pr1 <= bound_x.max && new_pr2 >= bound_y.min && new_pr2 <= bound_y.max &&
+                    new_pr3 >= bound_z.min && new_pr3 <= bound_z.max) {
+                    double new_x = ex_x * (x[index] - r0_x) + ex_y * (y[index] - r0_y) + ex_z * (z[index] - r0_z);
+                    double new_y = ey_x * (x[index] - r0_x) + ey_y * (y[index] - r0_y) + ey_z * (z[index] - r0_z);
+                    double new_z = n_x * (x[index] - r0_x) + n_y * (y[index] - r0_y) + n_z * (z[index] - r0_z);
+                    double pr1_area = [xy = &XY, new_x, new_y, new_z]() -> double {  // проекция для
+                                                                                     // x
+                        if (xy->first == ParametrsList::X) {
+                            return new_x;
+                        } else if (xy->first == ParametrsList::Y) {
+                            return new_y;
+                        } else {
+                            return new_z;
+                        }
+                    }();
+
+                    double pr2_area = [xy = &XY, new_x, new_y, new_z]() -> double {  // проекция для
+                                                                                     // y
+                        if (xy->second == ParametrsList::X) {
+                            return new_x;
+                        } else if (xy->second == ParametrsList::Y) {
+                            return new_y;
+                        } else {
+                            return new_z;
+                        }
+                    }();
+                    if (pr1_area >= limits_x.min && pr1_area <= limits_x.max && pr2_area >= limits_y.min &&
+                        pr2_area <= limits_y.max) {
+                        int ib = static_cast<int>((pr1_area - limits_x.min) / hb);
+                        int jb = static_cast<int>((pr2_area - limits_y.min) / hb);
+                        double new_v_x = ex_x * vx[index] + ex_y * vy[index] + ex_z * vz[index];
+                        double new_v_y = ey_x * vx[index] + ey_y * vy[index] + ey_z * vz[index];
+                        double r = std::hypot(new_x, new_y);
+                        double vr = (r > 0.0) ? (new_x * new_v_x + new_y * new_v_y) / r : 0.0;
+                        sum_v_r[ib + jb * Nb_XY.Ny + Z_offset] += vr;
+                        sum_v_r2[ib + jb * Nb_XY.Ny + Z_offset] += vr * vr;
+                        Nij_b[ib + jb * Nb_XY.Ny + Z_offset]++;
+                    }
+                }
+            }
+        }
+    }
+#pragma omp parallel for simd
+    for (size_t i = 0; i < sum_v_r.size(); ++i) {
+        if (Nij_b[i] != 0) {
+            sum_v_r[i] /= Nij_b[i];
+        }
+    }
+#pragma omp parallel for simd
+    for (size_t i = 0; i < sum_v_r2.size(); ++i) {
+        if (Nij_b[i] != 0) {
+            Z.back()[i] = std::sqrt(sum_v_r2[i] / Nij_b[i] - sum_v_r[i] * sum_v_r[i]);
+        }
+    }
+    //----------------------------------вычисление предельных значений---------------------------------
+    limits_f.push_back(std::vector<lim<double>>());
+    limits_f.back().reserve(Nfiles_into_clomun);
+    for (size_t i = 0; i < Nfiles_into_clomun; ++i) {
+        size_t index = Nb_XY.Nx * Nb_XY.Ny * i;
+        double fmax = Z.back()[index];
+        double fmin = Z.back()[index];
+        for (int j = 0; j < Nb_XY.Nx * Nb_XY.Ny; ++j) {
+            fmax = (Z.back()[index + j] > fmax) ? Z.back()[index + j] : fmax;
+            fmin = (Z.back()[index + j] < fmin) ? Z.back()[index + j] : fmin;
+        }
+        limits_f.back().push_back({fmax * l_v, fmin * l_v});
+    }
+    //-----------------------------------перевод к размерным величинам----------------------------------
+#pragma omp parallel for simd
+    for (size_t i = 0; i < Z.back().size(); ++i) {
+        Z.back()[i] = Z.back()[i] * l_v;
+    }
+}
+template <class Predicate>
+void Converter::calculate_c_phi(std::vector<double>& projection1, std::vector<double>& projection2,
+                                std::vector<double>& projection3, const Predicate& condition)
+{
+    const auto& moment_impulse = calculate_L(condition);  // вычисление полного момента импульса системы
+    // число строк в каждом файле
+    const auto& Ns = data.get_Ns();
+    const auto& offests = data.get_offsets();
+    const auto& x = data.get_x();
+    const auto& y = data.get_y();
+    const auto& z = data.get_z();
+    const auto& vx = data.get_vx();
+    const auto& vy = data.get_vy();
+    const auto& vz = data.get_vz();
+    std::vector<double> sum_v_phi2;
+    std::vector<double> sum_v_phi;
+    std::vector<size_t> Nij_b;
+    sum_v_phi.resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun, 0);
+    sum_v_phi2.resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun, 0);
+    Nij_b.resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun, 0);
+    //------------------------------------вычисления значений на сетке----------------------------------
+    Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun, 0);
+#pragma omp parallel for schedule(static)
+    for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
+        size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
+        const auto& [Lx, Ly, Lz] = moment_impulse[i];
+
+        constexpr double EPS = 1e-12;
+        constexpr double Unit_Tol = 0.99;
+
+        std::array<double, 3> r0;  // новый центр координат
+        r0 = calculate_Center_of_Mass(i, condition);
+
+        std::array<double, 3> e_z;  // вектор нормали к плоскости диска
+        double L = std::hypot(Lx, Ly, Lz);
+        if (L > EPS) {
+            const double div_L = 1.0 / L;
+            e_z = {Lx * div_L, Ly * div_L, Lz * div_L};
+        } else {
+            e_z = {0, 0, 1};
+        }
+
+        std::array<double, 3> e_x, e_y;
+        const auto [n_x, n_y, n_z] = e_z;
+
+        std::array<double, 3> a;  // вспомогательный вектор для определения новой системы координат
+        if (std::abs(n_z) > Unit_Tol) {
+            a = {1, 0, 0};
+        } else {
+            a = {0, 0, 1};
+        }
+        const auto [ax, ay, az] = a;
+        double na_x = n_y * az - n_z * ay;
+        double na_y = n_z * ax - n_x * az;
+        double na_z = n_x * ay - n_y * ax;
+        double mod_na = std::hypot(na_x, na_y, na_z);
+
+        e_x = {na_x / mod_na, na_y / mod_na, na_z / mod_na};
+
+        const auto [ex_x, ex_y, ex_z] = e_x;
+        e_y = {n_y * ex_z - n_z * ex_y, n_z * ex_x - n_x * ex_z, n_x * ex_y - n_y * ex_x};
+
+        const auto [ey_x, ey_y, ey_z] = e_y;
+        const auto [r0_x, r0_y, r0_z] = r0;
+
+        for (int j = 0; j < Ns[i]; ++j) {
+            size_t index = offests[i] - offests[0] + j;
+            if (condition(index)) {
+                double pr1 = projection1[index];
+                double pr2 = projection2[index];
+                double pr3 = projection3[index];
+                const auto [new_pr1, new_pr2, new_pr3] = SC_rectangle.new_coordinate(pr1, pr2, pr3);
+                if (new_pr1 >= bound_x.min && new_pr1 <= bound_x.max && new_pr2 >= bound_y.min && new_pr2 <= bound_y.max &&
+                    new_pr3 >= bound_z.min && new_pr3 <= bound_z.max) {
+                    double new_x = ex_x * (x[index] - r0_x) + ex_y * (y[index] - r0_y) + ex_z * (z[index] - r0_z);
+                    double new_y = ey_x * (x[index] - r0_x) + ey_y * (y[index] - r0_y) + ey_z * (z[index] - r0_z);
+                    double new_z = n_x * (x[index] - r0_x) + n_y * (y[index] - r0_y) + n_z * (z[index] - r0_z);
+                    double pr1_area = [xy = &XY, new_x, new_y, new_z]() -> double {  // проекция для
+                                                                                     // x
+                        if (xy->first == ParametrsList::X) {
+                            return new_x;
+                        } else if (xy->first == ParametrsList::Y) {
+                            return new_y;
+                        } else {
+                            return new_z;
+                        }
+                    }();
+
+                    double pr2_area = [xy = &XY, new_x, new_y, new_z]() -> double {  // проекция для
+                                                                                     // y
+                        if (xy->second == ParametrsList::X) {
+                            return new_x;
+                        } else if (xy->second == ParametrsList::Y) {
+                            return new_y;
+                        } else {
+                            return new_z;
+                        }
+                    }();
+                    if (pr1_area >= limits_x.min && pr1_area <= limits_x.max && pr2_area >= limits_y.min &&
+                        pr2_area <= limits_y.max) {
+                        int ib = static_cast<int>((pr1_area - limits_x.min) / hb);
+                        int jb = static_cast<int>((pr2_area - limits_y.min) / hb);
+                        double new_v_x = ex_x * vx[index] + ex_y * vy[index] + ex_z * vz[index];
+                        double new_v_y = ey_x * vx[index] + ey_y * vy[index] + ey_z * vz[index];
+                        double r = std::hypot(new_x, new_y);
+                        double vphi = (r > 0.0) ? (new_x * new_v_y - new_y * new_v_x) / r : 0.0;
+                        sum_v_phi[ib + jb * Nb_XY.Ny + Z_offset] += vphi;
+                        sum_v_phi2[ib + jb * Nb_XY.Ny + Z_offset] += vphi * vphi;
+                        Nij_b[ib + jb * Nb_XY.Ny + Z_offset]++;
+                    }
+                }
+            }
+        }
+    }
+#pragma omp parallel for simd
+    for (size_t i = 0; i < sum_v_phi.size(); ++i) {
+        if (Nij_b[i] != 0) {
+            sum_v_phi[i] /= Nij_b[i];
+        }
+    }
+#pragma omp parallel for simd
+    for (size_t i = 0; i < sum_v_phi.size(); ++i) {
+        if (Nij_b[i] != 0) {
+            Z.back()[i] = std::sqrt(sum_v_phi2[i] / Nij_b[i] - sum_v_phi[i] * sum_v_phi[i]);
+        }
+    }
+    //----------------------------------вычисление предельных значений---------------------------------
+    limits_f.push_back(std::vector<lim<double>>());
+    limits_f.back().reserve(Nfiles_into_clomun);
+    for (size_t i = 0; i < Nfiles_into_clomun; ++i) {
+        size_t index = Nb_XY.Nx * Nb_XY.Ny * i;
+        double fmax = Z.back()[index];
+        double fmin = Z.back()[index];
+        for (int j = 0; j < Nb_XY.Nx * Nb_XY.Ny; ++j) {
+            fmax = (Z.back()[index + j] > fmax) ? Z.back()[index + j] : fmax;
+            fmin = (Z.back()[index + j] < fmin) ? Z.back()[index + j] : fmin;
+        }
+        limits_f.back().push_back({fmax * l_v, fmin * l_v});
+    }
+    //-----------------------------------перевод к размерным величинам----------------------------------
+#pragma omp parallel for simd
+    for (size_t i = 0; i < Z.back().size(); ++i) {
+        Z.back()[i] = Z.back()[i] * l_v;
+    }
+}
+template <class Predicate>
+void Converter::calculate_c_z(std::vector<double>& projection1, std::vector<double>& projection2,
+                              std::vector<double>& projection3, const Predicate& condition)
+{
+    const auto& moment_impulse = calculate_L(condition);  // вычисление полного момента импульса системы
+    // число строк в каждом файле
+    const auto& Ns = data.get_Ns();
+    const auto& offests = data.get_offsets();
+    const auto& x = data.get_x();
+    const auto& y = data.get_y();
+    const auto& z = data.get_z();
+    const auto& vx = data.get_vx();
+    const auto& vy = data.get_vy();
+    const auto& vz = data.get_vz();
+    std::vector<double> sum_v_z2;
+    std::vector<double> sum_v_z;
+    std::vector<size_t> Nij_b;
+    sum_v_z.resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun, 0);
+    sum_v_z2.resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun, 0);
+    Nij_b.resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun, 0);
+    //------------------------------------вычисления значений на сетке----------------------------------
+    Z.back().resize(Nb_XY.Nx * Nb_XY.Ny * Nfiles_into_clomun, 0);
+#pragma omp parallel for schedule(static)
+    for (size_t i = 0; i < data.get_ibuff_size(); ++i) {
+        size_t Z_offset = Nb_XY.Nx * Nb_XY.Ny * i;
+        const auto& [Lx, Ly, Lz] = moment_impulse[i];
+
+        constexpr double EPS = 1e-12;
+        constexpr double Unit_Tol = 0.99;
+
+        std::array<double, 3> r0;  // новый центр координат
+        r0 = calculate_Center_of_Mass(i, condition);
+
+        std::array<double, 3> e_z;  // вектор нормали к плоскости диска
+        double L = std::hypot(Lx, Ly, Lz);
+        if (L > EPS) {
+            const double div_L = 1.0 / L;
+            e_z = {Lx * div_L, Ly * div_L, Lz * div_L};
+        } else {
+            e_z = {0, 0, 1};
+        }
+
+        std::array<double, 3> e_x, e_y;
+        const auto [n_x, n_y, n_z] = e_z;
+
+        std::array<double, 3> a;  // вспомогательный вектор для определения новой системы координат
+        if (std::abs(n_z) > Unit_Tol) {
+            a = {1, 0, 0};
+        } else {
+            a = {0, 0, 1};
+        }
+        const auto [ax, ay, az] = a;
+        double na_x = n_y * az - n_z * ay;
+        double na_y = n_z * ax - n_x * az;
+        double na_z = n_x * ay - n_y * ax;
+        double mod_na = std::hypot(na_x, na_y, na_z);
+
+        e_x = {na_x / mod_na, na_y / mod_na, na_z / mod_na};
+
+        const auto [ex_x, ex_y, ex_z] = e_x;
+        e_y = {n_y * ex_z - n_z * ex_y, n_z * ex_x - n_x * ex_z, n_x * ex_y - n_y * ex_x};
+
+        const auto [ey_x, ey_y, ey_z] = e_y;
+        const auto [r0_x, r0_y, r0_z] = r0;
+
+        for (int j = 0; j < Ns[i]; ++j) {
+            size_t index = offests[i] - offests[0] + j;
+            if (condition(index)) {
+                double pr1 = projection1[index];
+                double pr2 = projection2[index];
+                double pr3 = projection3[index];
+                const auto [new_pr1, new_pr2, new_pr3] = SC_rectangle.new_coordinate(pr1, pr2, pr3);
+                if (new_pr1 >= bound_x.min && new_pr1 <= bound_x.max && new_pr2 >= bound_y.min && new_pr2 <= bound_y.max &&
+                    new_pr3 >= bound_z.min && new_pr3 <= bound_z.max) {
+                    double new_x = ex_x * (x[index] - r0_x) + ex_y * (y[index] - r0_y) + ex_z * (z[index] - r0_z);
+                    double new_y = ey_x * (x[index] - r0_x) + ey_y * (y[index] - r0_y) + ey_z * (z[index] - r0_z);
+                    double new_z = n_x * (x[index] - r0_x) + n_y * (y[index] - r0_y) + n_z * (z[index] - r0_z);
+                    double pr1_area = [xy = &XY, new_x, new_y, new_z]() -> double {  // проекция для
+                                                                                     // x
+                        if (xy->first == ParametrsList::X) {
+                            return new_x;
+                        } else if (xy->first == ParametrsList::Y) {
+                            return new_y;
+                        } else {
+                            return new_z;
+                        }
+                    }();
+
+                    double pr2_area = [xy = &XY, new_x, new_y, new_z]() -> double {  // проекция для
+                                                                                     // y
+                        if (xy->second == ParametrsList::X) {
+                            return new_x;
+                        } else if (xy->second == ParametrsList::Y) {
+                            return new_y;
+                        } else {
+                            return new_z;
+                        }
+                    }();
+                    if (pr1_area >= limits_x.min && pr1_area <= limits_x.max && pr2_area >= limits_y.min &&
+                        pr2_area <= limits_y.max) {
+                        int ib = static_cast<int>((pr1_area - limits_x.min) / hb);
+                        int jb = static_cast<int>((pr2_area - limits_y.min) / hb);
+                        double new_v_z = n_x * vx[index] + n_y * vy[index] + n_z * vz[index];
+                        sum_v_z[ib + jb * Nb_XY.Ny + Z_offset] += new_v_z;
+                        sum_v_z2[ib + jb * Nb_XY.Ny + Z_offset] += new_v_z * new_v_z;
+                        Nij_b[ib + jb * Nb_XY.Ny + Z_offset]++;
+                    }
+                }
+            }
+        }
+    }
+#pragma omp parallel for simd
+    for (size_t i = 0; i < sum_v_z.size(); ++i) {
+        if (Nij_b[i] != 0) {
+            sum_v_z[i] /= Nij_b[i];
+        }
+    }
+#pragma omp parallel for simd
+    for (size_t i = 0; i < sum_v_z2.size(); ++i) {
+        if (Nij_b[i] != 0) {
+            Z.back()[i] = std::sqrt(sum_v_z2[i] / Nij_b[i] - sum_v_z[i] * sum_v_z[i]);
         }
     }
     //----------------------------------вычисление предельных значений---------------------------------

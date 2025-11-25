@@ -8,7 +8,7 @@
 class DataStorage
 {
    private:
-    enum Type { Int, Double, NullPtr };
+    // enum Type { Int, Double, NullPtr };
     std::vector<FILE*> ifiles;                       // потоки входных файлов (данных)
     std::vector<std::filesystem::path> ifile_names;  // пути к файлам
     // файлы должны имет одинаковую структуру иначе будет ошибка исполнения

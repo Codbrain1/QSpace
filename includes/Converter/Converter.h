@@ -55,18 +55,6 @@ class Converter
     void consistent_save_bin(size_t current_cursor, size_t col);
     ProjectionRefs get_projection();
 
-   public:
-    void save_grd_txt();  // сохранения в текстовый файл
-    void save_grd_bin();  // сохранения в бинарный файл
-    void set_boundary(lim<double> x, lim<double> y, lim<double> z, double alpha = 0, double beta = 0, double phi = 0);
-    void set_limits(lim<double> x, lim<double> y, double teta = 0, double psi = 0);
-    void set_obuff_size(const size_t size);
-    void set_ofile_buff_size(const size_t size);
-    void setup_output_data(const std::vector<std::string>& Z_grd_list_columns,
-                           const std::pair<std::string, std::string>& _XY);
-    std::string extract_upper_axis(const std::string& input);  //"x (текст)" → "X", "y (любой текст)" → "Y"
-
-   protected:
     void create_output_directory(std::string first_part, std::string second_part, std::string thrid_part, size_t files_size);
     // вычисление проекций скоростей
     template <class Predicate>
@@ -92,6 +80,29 @@ class Converter
     template <class Predicate>
     void calculate_Vfi(std::vector<double>& projection1, std::vector<double>& projection2, std::vector<double>& projection3,
                        const Predicate& condition);
+    template <class Predicate>
+    void calculate_V_module(std::vector<double>& projection1, std::vector<double>& projection2,
+                            std::vector<double>& projection3, const Predicate& condition);
+    template <class Predicate>
+    void calculate_c_r(std::vector<double>& projection1, std::vector<double>& projection2, std::vector<double>& projection3,
+                       const Predicate& condition);
+    template <class Predicate>
+    void calculate_c_phi(std::vector<double>& projection1, std::vector<double>& projection2,
+                         std::vector<double>& projection3, const Predicate& condition);
+    template <class Predicate>
+    void calculate_c_z(std::vector<double>& projection1, std::vector<double>& projection2, std::vector<double>& projection3,
+                       const Predicate& condition);
+
+   public:
+    void save_grd_txt();  // сохранения в текстовый файл
+    void save_grd_bin();  // сохранения в бинарный файл
+    void set_boundary(lim<double> x, lim<double> y, lim<double> z, double alpha = 0, double beta = 0, double phi = 0);
+    void set_limits(lim<double> x, lim<double> y, double teta = 0, double psi = 0);
+    void set_obuff_size(const size_t size);
+    void set_ofile_buff_size(const size_t size);
+    void setup_output_data(const std::vector<std::string>& Z_grd_list_columns,
+                           const std::pair<std::string, std::string>& _XY);
+    std::string extract_upper_axis(const std::string& input);  //"x (текст)" → "X", "y (любой текст)" → "Y"
 };
 
 #include "Converter.tpp"

@@ -91,8 +91,28 @@ void Converter_MolecularClouds::convert()
             calculate_LgT(projection1, projection2, projection3, [&ind_sph](int idx) { return ind_sph[idx] == 1; });
             create_output_directory("MC", xy, "LgTermal", files_size);
 
+        } else if (Z_grd_list[file_type] == ParametrsList::Z_outParams_V) {
+            //-----------------------Вычисление значений |V|--------------------------
+            Z.push_back(std::vector<double>());
+            calculate_V_module(projection1, projection2, projection3, [](int idx) { return true; });
+            create_output_directory("MC", xy, "V_module", files_size);
+        } else if (Z_grd_list[file_type] == ParametrsList::Z_outParams_c_r) {
+            //-----------------------Вычисление значений c_r--------------------------
+            Z.push_back(std::vector<double>());
+            calculate_c_r(projection1, projection2, projection3, [](int idx) { return true; });
+            create_output_directory("MC", xy, "c_r", files_size);
+        } else if (Z_grd_list[file_type] == ParametrsList::Z_outParams_c_phi) {
+            //-----------------------Вычисление значений c_phi--------------------------
+            Z.push_back(std::vector<double>());
+            calculate_c_phi(projection1, projection2, projection3, [](int idx) { return true; });
+            create_output_directory("MC", xy, "c_phi", files_size);
+        } else if (Z_grd_list[file_type] == ParametrsList::Z_outParams_c_z) {
+            //-----------------------Вычисление значений c_z--------------------------
+            Z.push_back(std::vector<double>());
+            calculate_c_z(projection1, projection2, projection3, [](int idx) { return true; });
+            create_output_directory("MC", xy, "c_z", files_size);
         } else {
-            // TODO: добавить логи
+            // TODO: добавить класс логов
             return;
         }
     }

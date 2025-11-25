@@ -57,6 +57,7 @@ void MainWindow::on_comboBox_output_data_params_changed(int index)  // упра�
 {
     QString curent_param = ui->comboBox_output_data_params->itemText(index);  // получаем значение типа выходных данных
     ui->comboBox_Z->clear();                                                  // очищаем список выбора типа выходных данных
+
     for (const auto& item : ParametrsList::Z_outParams) {  // цикл по списку разрешенных параметров записи в файл
         ui->comboBox_Z->addItem(QString(item.data()));
     }
@@ -66,7 +67,7 @@ void MainWindow::on_comboBox_output_data_params_changed(int index)  // упра�
     if (std::find(PL_NoTermal.begin(), PL_NoTermal.end(), curent_param) == PL_NoTermal.end()) {  // добавление параметров
                                                                                                  // связанных с газом если
                                                                                                  // соответствет типы
-                                                                                                 // выхожных данных
+                                                                                                 // выходных данных
         ui->comboBox_Z->addItem(QString(ParametrsList::Z_outParamT.data()));
         ui->comboBox_Z->addItem(QString(ParametrsList::Z_outParamLgT.data()));
     }

@@ -214,34 +214,34 @@ void MainWindow::set_False_Enable_Line_Edit_Constants()
     ui->lineEdit_dt_YS->setEnabled(false);
     ui->lineEdit_Tgas_YS->setEnabled(false);
 }
-void MainWindow::setup_columns_comboBoxes(const int num_col)
-{
-    if (num_col <= 0 || num_col > 100) throw std::invalid_argument("число колонок должно быть от 1 до 100");
+// void MainWindow::setup_columns_comboBoxes(const int num_col)
+// {
+//     if (num_col <= 0 || num_col > 100) throw std::invalid_argument("число колонок должно быть от 1 до 100");
 
-    QLayoutItem* item;
-    if (ui->formLayout->rowCount() > 0) {
-        while ((item = ui->formLayout_names_columns_ifile->takeAt(0)) != nullptr) {
-            if (item->widget()) {
-                item->widget()->deleteLater();  // Удаляем все виджеты (включая QLabel)
-            }
-            delete item;  // Удаляем элемент layout-а
-        }
-    }
+//     QLayoutItem* item;
+//     if (ui->formLayout->rowCount() > 0) {
+//         while ((item = ui->formLayout_names_columns_ifile->takeAt(0)) != nullptr) {
+//             if (item->widget()) {
+//                 item->widget()->deleteLater();  // Удаляем все виджеты (включая QLabel)
+//             }
+//             delete item;  // Удаляем элемент layout-а
+//         }
+//     }
 
-    columnCombos.clear();
-    columnCombos.reserve(num_col);
-    for (int i = 0; i < num_col; ++i) {
-        QLabel* label = new QLabel(tr(("Колонка " + std::to_string(i)).c_str()), ui->scrolContent_names_columns_ifile);
-        QComboBox* combo = new QComboBox(ui->scrolContent_names_columns_ifile);
-        for (const auto& i : ParametrsList::Columns_names) {
-            combo->addItem(QString::fromStdString(i.data()));
-        }
-        combo->setCurrentIndex(i % ParametrsList::Columns_names.size());
-        ui->formLayout_names_columns_ifile->addRow(label, combo);
-        columnCombos.push_back(combo);
-    }
-    ui->formLayout_names_columns_ifile->update();
-}
+//     columnCombos.clear();
+//     columnCombos.reserve(num_col);
+//     for (int i = 0; i < num_col; ++i) {
+//         QLabel* label = new QLabel(tr(("Колонка " + std::to_string(i)).c_str()), ui->scrolContent_names_columns_ifile);
+//         QComboBox* combo = new QComboBox(ui->scrolContent_names_columns_ifile);
+//         for (const auto& i : ParametrsList::Columns_names) {
+//             combo->addItem(QString::fromStdString(i.data()));
+//         }
+//         combo->setCurrentIndex(i % ParametrsList::Columns_names.size());
+//         ui->formLayout_names_columns_ifile->addRow(label, combo);
+//         columnCombos.push_back(combo);
+//     }
+//     ui->formLayout_names_columns_ifile->update();
+// }
 void MainWindow::setup_columns_comboBoxes_DM_S(const int num_col)
 {
     if (num_col <= 0 || num_col > 100) throw std::invalid_argument("число колонок должно быть от 1 до 100");

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1118</width>
-    <height>886</height>
+    <height>910</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -56,7 +56,7 @@
                <x>0</x>
                <y>0</y>
                <width>353</width>
-               <height>672</height>
+               <height>696</height>
               </rect>
              </property>
              <attribute name="label">
@@ -816,7 +816,7 @@
                 </item>
                 <item>
                  <property name="text">
-                  <string>Набор параметров</string>
+                  <string>|V| (модуль скорости)</string>
                  </property>
                 </item>
                </widget>
@@ -927,7 +927,7 @@
              <x>0</x>
              <y>0</y>
              <width>1076</width>
-             <height>334</height>
+             <height>346</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_5">
@@ -969,7 +969,7 @@
              <x>0</x>
              <y>0</y>
              <width>1076</width>
-             <height>738</height>
+             <height>762</height>
             </rect>
            </property>
            <layout class="QFormLayout" name="formLayout_2">
