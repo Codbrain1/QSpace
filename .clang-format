@@ -1,0 +1,81 @@
+# .clang-format
+Language:        Cpp
+BasedOnStyle:    LLVM
+
+# Основные параметры, подогнанные под твой стиль
+IndentWidth:     4
+TabWidth:        4
+UseTab:          Never
+ColumnLimit:     120
+BreakBeforeBraces: Attach          # { сразу после if/for/else/function
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+
+SpaceBeforeParens: Custom
+SpaceAfterCStyleCast: false
+SpaceBeforeCpp11BracedList: false
+
+# Пробелы внутри скобок и лямбд
+SpaceInEmptyParentheses: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+SpacesInAngles: false
+
+# Специально для твоего стиля с лямбдами и захватами
+SpacesInLambda: true
+SpaceBeforeLambdaArrow: true
+
+# Отступ продолжения строк
+ContinuationIndentWidth: 4
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlignTrailingComments: true
+
+# Разрывы строк
+BinPackArguments: false
+BinPackParameters: false
+AllowShortCaseLabelsOnASingleLine: false
+IndentCaseLabels: true
+
+# Пробелы вокруг операторов
+SpaceAroundPointerQualifiers: Default
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeRangeBasedForLoopColon: true
+
+# Специфично для твоего кода
+DerivePointerAlignment: false
+PointerAlignment: Left
+
+# Не ломать длинные строки в некоторых местах (как у тебя в calculate_V_projection)
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowAllArgumentsOnNextLine: false
+AlwaysBreakAfterReturnType: None
+AlwaysBreakAfterDefinitionReturnType: None
+
+# Ключевой момент: не переносить тело функции/цикла на новую строку
+BraceWrapping:
+  AfterClass:      false
+  AfterControlStatement: false   # <--- ВАЖНО: if/for/else { на той же строке
+  AfterEnum:       false
+  AfterFunction:   false
+  AfterNamespace:  false
+  AfterObjCDeclaration: false
+  AfterStruct:     false
+  AfterUnion:      false
+  BeforeCatch:     false
+  BeforeElse:      false
+  IndentBraces:    false
+
+# Дополнительно: не добавлять лишние пустые строки
+KeepEmptyLinesAtTheStartOfBlocks: false
+
+# Комментарии
+CommentPragmas:  '^ IWYU pragma:'
+ReflowComments:  true
+SortIncludes:    false   # у тебя include идут не по алфавиту, оставляем как есть
+
+# Для #pragma omp — не трогать
+Cpp11BracedListStyle: true
+Standard:        Cpp17

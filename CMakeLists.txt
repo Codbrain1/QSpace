@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16) #минимальная версия cmake
 
 project(QSpace VERSION 0.3 LANGUAGES CXX) # название проекта его версия и язык на котором написан проект
-option(ENABLE_TESTS "Build Convert library tests" ON) #опция переключения между тестами
+option(ENABLE_TESTS "Build Convert library tests" OFF) #опция переключения между тестами
 
 set(CMAKE_CXX_STANDARD 23) # стандарт языка 23
 set(CMAKE_CXX_STANDARD_REQUIRED ON)#обязательный стандарт языка
