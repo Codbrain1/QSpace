@@ -1,20 +1,14 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include <q3dscatter.h>
 #include <qcontainerfwd.h>
 #include <qcoreevent.h>
 #include <qlistwidget.h>
 #include <qnamespace.h>
 #include <qobject.h>
 #include <qpoint.h>
-#include <qscatter3dseries.h>
-#include <qscatterdataproxy.h>
-
 #include <QComboBox>
 #include <QMainWindow>
-#include <QtDataVisualization/Q3DScatter>
-#include <QtDataVisualization/QScatter3DSeries>
 #include <cstddef>
 #include <memory>
 #include <vector>

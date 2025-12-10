@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1118</width>
-    <height>910</height>
+    <width>1228</width>
+    <height>1017</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -24,7 +24,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab_6">
        <attribute name="title">
@@ -55,8 +55,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>353</width>
-               <height>696</height>
+               <width>392</width>
+               <height>776</height>
               </rect>
              </property>
              <attribute name="label">
@@ -176,11 +176,6 @@
                      <item>
                       <property name="text">
                        <string>без цветовой градации</string>
-                      </property>
-                     </item>
-                     <item>
-                      <property name="text">
-                       <string>V (модуль скорости)</string>
                       </property>
                      </item>
                      <item>
@@ -926,8 +921,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>1076</width>
-             <height>346</height>
+             <width>59</width>
+             <height>46</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_5">
@@ -968,8 +963,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>1076</width>
-             <height>762</height>
+             <width>520</width>
+             <height>806</height>
             </rect>
            </property>
            <layout class="QFormLayout" name="formLayout_2">
@@ -1354,8 +1349,8 @@ li.checked::marker { content: &quot;\2612&quot;; }
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1118</width>
-     <height>23</height>
+     <width>1228</width>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuMenu">
@@ -1363,8 +1358,8 @@ li.checked::marker { content: &quot;\2612&quot;; }
      <rect>
       <x>258</x>
       <y>88</y>
-      <width>150</width>
-      <height>78</height>
+      <width>173</width>
+      <height>84</height>
      </rect>
     </property>
     <property name="tearOffEnabled">

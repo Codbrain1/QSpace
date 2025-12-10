@@ -27,7 +27,7 @@ endif()
 
 
 #общие флаги компиляции
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra") #строгие предупреждения
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall") #строгие предупреждения
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -fopenmp") # для отладки без оптимизации
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -flto -fopenmp") # для запуска с оптимизацией O2 и оптимизация линковки
 
@@ -53,7 +53,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${OUTPUT_SUBDIR}/lib)
 # Gui - графика
 # Widgets - различные виджеты(окна, кнопки и т.д.)
 # LinguistTools - модуль с переводами
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets LinguistTools DataVisualization)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets LinguistTools OpenGL OpenGLWidgets)
 # 2. ТЕПЕРЬ — отключаем QML-плагины
 set(QT_NO_QML_PLUGINS ON)
 set(QT6_NO_IMPORT_PLUGINS ON)
@@ -114,7 +114,8 @@ ${PROJECT_SOURCES}
 )
 
 target_include_directories(QSpace PRIVATE ${CMAKE_SOURCE_DIR}/includes) #добавление путей к заголовкам
-target_link_libraries(QSpace PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::DataVisualization) #линковка с qt
+target_link_libraries(QSpace PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::OpenGL
+    Qt6::OpenGLWidgets) #линковка с qt
 
 if(WIN32) # на виндовс только gui
 set_target_properties(QSpace PROPERTIES

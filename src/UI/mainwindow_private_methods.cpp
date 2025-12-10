@@ -1,6 +1,3 @@
-#include <q3dscatter.h>
-#include <qabstract3dgraph.h>
-#include <qabstract3dseries.h>
 #include <qabstractitemmodel.h>
 #include <qabstractitemview.h>
 #include <qcontainerfwd.h>
@@ -10,8 +7,6 @@
 #include <qlistwidget.h>
 #include <qnamespace.h>
 #include <qpushbutton.h>
-#include <qscatter3dseries.h>
-#include <qscatterdataproxy.h>
 #include <qvectornd.h>
 #include <qwidget.h>
 
