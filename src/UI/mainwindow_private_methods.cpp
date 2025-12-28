@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <qabstractitemmodel.h>
 #include <qabstractitemview.h>
 #include <qcontainerfwd.h>
@@ -16,6 +17,7 @@
 #include <QtDataVisualization/QScatter3DSeries>
 #include <cstddef>
 #include <memory>
+#include <vector>
 
 #include "./ui_mainwindow.h"
 #include "ConstantsParametrs.h"
@@ -447,4 +449,22 @@ void MainWindow::connectSlots()
             &MainWindow::on_listWidget_right_mouse_clicked);
     // connect(ui->listWidget_input_files, &QListWidget::itemClicked, this,
     //         &MainWindow::on_list_widget_input_files_item_clicked);
+}
+std::vector<std::string> MainWindow::get_columns_for_file_from_UI(){
+    // преобразование combobox в vector<string> для колонок
+    std::vector<std::string> columns;
+        columns.reserve(columnCombos.size());
+        for (const auto& col : columnCombos) {
+            columns.push_back(col->currentText().toStdString());
+        }
+    return columns;
+}
+std::vector<std::filesystem::path> MainWindow::get_ifiles_pathes_from_UI(){
+    // преобразование QString в filesystem::path
+        std::vector<std::filesystem::path> ifiles_names;
+        ifiles_names.reserve(inputfiles_names.size());
+        for (const auto& ifile_name : inputfiles_names) {
+            ifiles_names.push_back(ifile_name.toStdString());
+        }
+        return ifiles_names;
 }

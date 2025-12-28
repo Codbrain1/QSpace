@@ -217,24 +217,11 @@ void MainWindow::on_pushButtonconvert_clicked()
         }
     }
     try {
-        // преобразование QString в filesystem::path
-        std::vector<std::filesystem::path> ifiles_names;
-        ifiles_names.reserve(inputfiles_names.size());
-        for (const auto& ifile_name : inputfiles_names) {
-            ifiles_names.push_back(ifile_name.toStdString());
-        }
+        
 
         //----------------------------------------------------------------------------
-        DataStorage datastorage(ifiles_names);  // создание хранилища данных
-
-        // преобразование combobox в vector<int> для колонок
-        std::vector<std::string> columns;
-        columns.reserve(columnCombos.size());
-        for (const auto& col : columnCombos) {
-            columns.push_back(col->currentText().toStdString());
-        }
-
-        datastorage.setup_columns(columns);  // задаем колонки в входных файлах
+        DataStorage datastorage(get_ifiles_pathes_from_UI());  // создание хранилища данных
+        datastorage.setup_columns(get_columns_for_file_from_UI());  // задаем колонки в входных файлах
         datastorage.set_buff_size(8);        // устанавливаем число файлов записываемых за раз на диск
         ParametrsList::iniConstants c;
         count_cell Nbxy;

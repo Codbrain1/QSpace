@@ -1,6 +1,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include <filesystem>
 #include <qcontainerfwd.h>
 #include <qcoreevent.h>
 #include <qlistwidget.h>
@@ -14,21 +15,19 @@
 #include <vector>
 
 QT_BEGIN_NAMESPACE
-namespace Ui
-{
+namespace Ui {
 class MainWindow;
 }
 QT_END_NAMESPACE
 
-class MainWindow : public QMainWindow
-{
+class MainWindow : public QMainWindow {
     Q_OBJECT
 
-   public:
+  public:
     explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
 
-   private slots:
+  private slots:
     void on_comboBox_output_data_params_changed(int index);
     void on_lineEdit_Slice_changed(const QString&);
     void on_pushButton_input_files_clicked();
@@ -39,19 +38,19 @@ class MainWindow : public QMainWindow
     void on_pushButtonconvert_clicked();
     void on_lineEdit_numbers_columns_files_changed(const QString& changed_line);
     void on_checkbox_column_customise_change(Qt::CheckState state);
-    void on_lineEdit_projection_area_changed(const QString&);  // все QLineEdit отвечающие за изменение слоя отображения
+    void on_lineEdit_projection_area_changed(const QString&); // все QLineEdit отвечающие за изменение слоя отображения
     void on_pushButton_add_input_file_clicked();
     void on_action_reset_settings();
     // void on_list_widget_input_files_item_clicked(QListWidgetItem* item);
 
-   protected:
+  protected:
     void closeEvent(QCloseEvent* event) override;
 
-   private:
+  private:
     // -----------------------------------------------------поля-----------------------------------------------------
-    std::unique_ptr<Ui::MainWindow> ui;  // указатель на основное окно приложения
+    std::unique_ptr<Ui::MainWindow> ui; // указатель на основное окно приложения
     QStringList inputfiles_names;
-    QString outputDir;  // имя выходной директории
+    QString outputDir; // имя выходной директории
     QVector<QComboBox*> columnCombos;
     // -----------------------------------------------------методы-----------------------------------------------------
     void set_False_Enable_Line_Edit_Constants();
@@ -61,5 +60,7 @@ class MainWindow : public QMainWindow
     void delete_selected_files();
     void loadSettings();
     void connectSlots();
+    std::vector<std::string> get_columns_for_file_from_UI();
+    std::vector<std::filesystem::path> get_ifiles_pathes_from_UI();
 };
-#endif  // MAINWINDOW_H
+#endif // MAINWINDOW_H

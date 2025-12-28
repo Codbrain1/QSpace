@@ -25,9 +25,8 @@
 #include <QtDataVisualization/QScatter3DSeries>
 #include "./ui_mainwindow.h"
 
-MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWindow)
-{
-    ui->setupUi(this);  // установка начальных настроек интерфейса
+MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
+    ui->setupUi(this); // установка начальных настроек интерфейса
 
     inputfiles_names.clear();
     outputDir.clear();

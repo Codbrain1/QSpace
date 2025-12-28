@@ -93,6 +93,8 @@ includes/Converter/Converter_Stars.h
 includes/Converter/Converter_YoungStars.h
 includes/Converter/IConverter_Hydrodinamics.h
 includes/Converter/IConverter_NbodyOnly.h
+includes/Plot/Plot3D/Plot3D.h
+includes/Plot/Plot2D/Plot2D.h
 src/Converter/Converter/Converter.cpp
 src/Converter/Converter/IConverter_NbodyOnly.cpp
 src/Converter/Converter/Converter_DarkMatter.cpp
@@ -103,6 +105,7 @@ src/Converter/Converter/Converter_YoungStars.cpp
 src/Converter/DataStorage/DataStorage_file_func.cpp
 src/Converter/DataStorage/DataStorage_gets.cpp
 src/Converter/DataStorage/DataStorage_sets.cpp
+src/Plot/Plot3D/Plot3D.cpp
 src/UI/mainwindow.ui
 ${QM_FILES}
 )

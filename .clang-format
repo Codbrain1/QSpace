@@ -1,81 +1,42 @@
-# .clang-format
-Language:        Cpp
-BasedOnStyle:    LLVM
+# .clang-format — 100 % работает на clang-format 20.1.3 из Qt (Windows)
+Language: Cpp
+BasedOnStyle: LLVM
+Standard: c++20
 
-# Основные параметры, подогнанные под твой стиль
-IndentWidth:     4
-TabWidth:        4
-UseTab:          Never
-ColumnLimit:     120
-BreakBeforeBraces: Attach          # { сразу после if/for/else/function
-AllowShortFunctionsOnASingleLine: None
-AllowShortIfStatementsOnASingleLine: false
-AllowShortLoopsOnASingleLine: false
+IndentWidth: 4
+UseTab: Never
+ColumnLimit: 120
 
-SpaceBeforeParens: Custom
-SpaceAfterCStyleCast: false
-SpaceBeforeCpp11BracedList: false
+BreakBeforeBraces: Attach
 
-# Пробелы внутри скобок и лямбд
-SpaceInEmptyParentheses: false
-SpacesInParentheses: false
-SpacesInSquareBrackets: false
-SpacesInAngles: false
+# Скобки сразу после if/for/while/function
+BraceWrapping:
+  AfterControlStatement: Never
+  AfterFunction: false
 
-# Специально для твоего стиля с лямбдами и захватами
-SpacesInLambda: true
-SpaceBeforeLambdaArrow: true
-
-# Отступ продолжения строк
-ContinuationIndentWidth: 4
+# Главное — каждый аргумент с новой строки и выровнен под (
 AlignAfterOpenBracket: Align
-AlignConsecutiveAssignments: false
-AlignConsecutiveDeclarations: false
-AlignTrailingComments: true
-
-# Разрывы строк
 BinPackArguments: false
 BinPackParameters: false
-AllowShortCaseLabelsOnASingleLine: false
-IndentCaseLabels: true
+AllowAllArgumentsOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
+PenaltyBreakBeforeFirstCallParameter: 1000   # 100 % всегда перенос вниз
 
-# Пробелы вокруг операторов
-SpaceAroundPointerQualifiers: Default
-SpaceBeforeAssignmentOperators: true
-SpaceBeforeRangeBasedForLoopColon: true
+# Пробелы (только те, что реально есть в версии 20)
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+SpaceInEmptyParentheses: false
 
-# Специфично для твоего кода
-DerivePointerAlignment: false
+# Указатели слева: int* p
 PointerAlignment: Left
 
-# Не ломать длинные строки в некоторых местах (как у тебя в calculate_V_projection)
-AllowAllParametersOfDeclarationOnNextLine: false
-AllowAllArgumentsOnNextLine: false
-AlwaysBreakAfterReturnType: None
-AlwaysBreakAfterDefinitionReturnType: None
-
-# Ключевой момент: не переносить тело функции/цикла на новую строку
-BraceWrapping:
-  AfterClass:      false
-  AfterControlStatement: false   # <--- ВАЖНО: if/for/else { на той же строке
-  AfterEnum:       false
-  AfterFunction:   false
-  AfterNamespace:  false
-  AfterObjCDeclaration: false
-  AfterStruct:     false
-  AfterUnion:      false
-  BeforeCatch:     false
-  BeforeElse:      false
-  IndentBraces:    false
-
-# Дополнительно: не добавлять лишние пустые строки
+# Остальное
+SpaceBeforeAssignmentOperators: true
+IndentCaseLabels: true
+ReflowComments: true
+SortIncludes: false
 KeepEmptyLinesAtTheStartOfBlocks: false
 
-# Комментарии
-CommentPragmas:  '^ IWYU pragma:'
-ReflowComments:  true
-SortIncludes:    false   # у тебя include идут не по алфавиту, оставляем как есть
-
-# Для #pragma omp — не трогать
-Cpp11BracedListStyle: true
-Standard:        Cpp17
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
