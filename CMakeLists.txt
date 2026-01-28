@@ -104,6 +104,7 @@ src/Converter/DataStorage/DataStorage_file_func.cpp
 src/Converter/DataStorage/DataStorage_gets.cpp
 src/Converter/DataStorage/DataStorage_sets.cpp
 src/UI/mainwindow.ui
+src/UI/ini_project.ui
 ${QM_FILES}
 )
 
