@@ -1,0 +1,28 @@
+# Очень агрессивный перенос членов классов и enum
+
+BreakBeforeBraces:       Allman   # или Linux / Stroustrup
+BasedOnStyle:    LLVM
+AllowShortFunctionsOnASingleLine:    false
+AllowShortCaseLabelsOnASingleLine:   false
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine:        false
+
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+PackConstructorInitializers:         Never
+
+# Самое сильное влияние на поля классов
+ColumnLimit:             1000     # ← очень большое значение помогает не паковать
+PenaltyBreakAssignment:  2
+PenaltyBreakString:      1000
+PenaltyExcessCharacter:  1000000
+
+BraceWrapping:
+  AfterClass:            true
+  AfterEnum:             true
+  AfterStruct:           true
+  AfterUnion:            true
+  AfterFunction:         true
+  AfterControlStatement: false
+  BeforeElse:            false
+
+SortIncludes:                    true

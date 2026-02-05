@@ -1,0 +1,30 @@
+---
+BasedOnStyle: LLVM
+ColumnLimit: 120
+
+# Основные опции для case в switch
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortCaseExpressionOnASingleLine: true      # если у тебя clang-format >= 15–16
+
+# Выравнивание коротких case (самое важное для твоего примера)
+AlignConsecutiveShortCaseStatements:
+  Enabled:           true
+  AcrossEmptyLines:  false
+  AcrossComments:    false
+  AlignCaseColons:   false           # false → не выравнивать двоеточия по правому краю
+
+# Отступы case
+IndentCaseLabels: true
+IndentCaseBlocks: false              # не добавлять лишний отступ внутрь case-блока
+
+# Общие настройки, чтобы не мешали
+BreakBeforeBraces: Attach            # или Stroustrup / Allman — Attach ближе к твоему примеру
+AllowShortBlocksOnASingleLine: false # или Empty / Never — чтобы не сворачивать другие блоки
+AllowShortFunctionsOnASingleLine: InlineOnly
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+
+# Дополнительно (часто полезно)
+IndentWidth: 2
+TabWidth: 4
+UseTab: Never
