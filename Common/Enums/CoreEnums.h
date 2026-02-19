@@ -1,3 +1,4 @@
+#pragma once
 namespace QSpace::Core
 {
 enum class TaskPriority
@@ -6,4 +7,4 @@ enum class TaskPriority
   Bulk,
   Auto
 };
-}
+} // namespace QSpace::Core

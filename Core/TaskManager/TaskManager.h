@@ -1,6 +1,5 @@
 #pragma once
 #include "Common/Enums/CoreEnums.h"
-#include "Core/TaskManager/TaskManager.h"
 #include <QFuture>
 #include <QtConcurrent/QtConcurrent>
 #include <QtConcurrent/qtconcurrentmap.h>

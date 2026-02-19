@@ -9,4 +9,5 @@ target_link_libraries(DataManager PUBLIC
                 QSpace::IO
                 QSpace::Common
                 Qt6::Core
+                Qt6::Concurrent
 )

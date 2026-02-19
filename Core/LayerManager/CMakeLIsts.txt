@@ -1,0 +1,14 @@
+add_library(LayerManager STATIC)
+target_sources(LayerManager PRIVATE
+            LayerManager.h
+            LayerManager.cpp
+)
+target_include_directories(LayerManager PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../..)
+target_link_libraries(LayerManager PUBLIC
+            project_config
+            ObjectRegistry
+            ViewManager
+            QSpace::Renderer
+            QSpace::Common
+            Qt6::Core
+) 

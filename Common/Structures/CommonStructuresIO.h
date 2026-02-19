@@ -1,10 +1,10 @@
 #pragma once
 #include "Enums/CommonEnumsIO.h"
+#include "Enums/RenderEnums.h"
 #include <QList>
 #include <QMap>
 #include <QString>
 #include <qcontainerfwd.h>
-#include <variant>
 #include <vtkDataSet.h>
 #include <vtkDataSetAttributes.h>
 #include <vtkMultiBlockDataSet.h>
@@ -45,6 +45,7 @@ using WriteScheme = std::variant<std::monostate, ColumnScheme, HDF5WriteScheme, 
 //
 struct ReadResult { // результат чтения одного файла
     vtkSmartPointer<vtkDataSet> data = nullptr;
+    QString                     path;
     QString                     errMessage;
     ReadStatus                  status = ReadStatus::UnknownError;
     bool                        isSuccess() const {
@@ -64,5 +65,30 @@ struct BatchTask { // одна задача для пакетного чтени
     QString    path;
     ReadScheme scheme;
 };
-
+class ShemeFactory {
+  public:
+    static ReadScheme createDefaultSheme(Visualize::EntityType type, FileFormat format) {
+        if (format == FileFormat::BIN || format == FileFormat::TXT) {
+            ColumnScheme scheme;
+            if (type == QSpace::Visualize::EntityType::DarkMatter || type == QSpace::Visualize::EntityType::Stars) {
+                scheme.columnsPolicy.append({"Position", VTK_DOUBLE, -1, 3, true});
+                scheme.columnsPolicy.append({"Velocity", VTK_DOUBLE, vtkDataSetAttributes::VECTORS, 3, false});
+                scheme.columnsPolicy.append({"Mass", VTK_DOUBLE, vtkDataSetAttributes::SCALARS, 1, false});
+            } else if (type == QSpace::Visualize::EntityType::Gas) {
+                scheme.columnsPolicy.append({"Position", VTK_DOUBLE, -1, 3, true});
+                scheme.columnsPolicy.append({"Density", VTK_DOUBLE, vtkDataSetAttributes::SCALARS, 1, false});
+                scheme.columnsPolicy.append({"Velocity", VTK_DOUBLE, vtkDataSetAttributes::VECTORS, 3, false});
+                scheme.columnsPolicy.append({"Energy", VTK_DOUBLE, vtkDataSetAttributes::SCALARS, 1, false});
+                scheme.columnsPolicy.append({"Mass", VTK_DOUBLE, vtkDataSetAttributes::SCALARS, 1, false});
+                scheme.columnsPolicy.append({"ind_SPH", VTK_INT, vtkDataSetAttributes::SCALARS, 1, false});
+                scheme.columnsPolicy.append({"t_MCYS", VTK_DOUBLE, vtkDataSetAttributes::SCALARS, 1, false});
+            }
+            // TODO:: //добавить обработку MIXED
+            scheme.isInterleaved = true;
+            return scheme;
+        }
+        // TODO::добавить обработку других форматов hdf5 и тд
+        return DefaultScheme{};
+    }
+};
 } // namespace QSpace::IO

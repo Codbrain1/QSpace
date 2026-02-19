@@ -35,7 +35,10 @@ find_package(Qt6 REQUIRED COMPONENTS
 find_package(VTK REQUIRED COMPONENTS 
             CommonCore 
             CommonDataModel 
-            IOCore)
+            CommonColor
+            IOCore
+            GUISupportQt
+            )
 
 # автоматическая генерация для qt
 #------------------------------------
@@ -70,14 +73,14 @@ endif()
 add_subdirectory(app/QSpaceDesktop)
 add_subdirectory(Common)
 add_subdirectory(Core)
-add_subdirectory(Filtering)
+# add_subdirectory(Filtering)
 add_subdirectory(IO)
-add_subdirectory(Physics)
-add_subdirectory(Remote)
+# add_subdirectory(Physics)
+# add_subdirectory(Remote)
 add_subdirectory(Renderer)
-add_subdirectory(Session)
+# add_subdirectory(Session)
 add_subdirectory(UI)
-add_subdirectory(Charting)
+# add_subdirectory(Charting)
 
 include(GNUInstallDirs)
 set(CPACK_PACKAGE_NAME "QSpace")

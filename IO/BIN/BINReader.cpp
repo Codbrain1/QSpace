@@ -32,30 +32,30 @@
 #include <vtkType.h>
 
 namespace QSpace::IO {
+BINReader::~BINReader() = default;
 ReadResult BINReader::read(const QString& path, const ReadScheme& scheme) const {
-    //
     // >---------------   1. ===== Валидация данных =====   ---------------<
     const auto& config = std::get<ColumnScheme>(scheme);
     if (!path.endsWith(".bin")) {
         qCCritical(LogIO) << "BinReader requires .bin file format: " + path;
-        return {nullptr, "BinReader requires .bin file format: " + path, ReadStatus::InvalidFormat};
+        return {nullptr, path, "BinReader requires .bin file format: " + path, ReadStatus::InvalidFormat};
     }
     // открываем файл
     QFile file(path);
     auto  isValid = validate(file, scheme); // проверяем что переданная структура файла валидна
     if (!isValid) {
-        return {nullptr, "Unsupported file structure: " + path, ReadStatus::InvalidFileStructure};
+        return {nullptr, path, "Unsupported file structure: " + path, ReadStatus::InvalidFileStructure};
     }
     if (!file.open(QIODevice::ReadOnly)) {
         qCCritical(LogIO) << "file " << file.fileName() << "is not Open!";
-        return {nullptr, "Could not open file: " + path, ReadStatus::FileNotFound};
+        return {nullptr, path, "Could not open file: " + path, ReadStatus::FileNotFound};
     }
     // обработка заголовка
     if (config.headerOffsetBytes > 0) {
         if (!file.seek(config.headerOffsetBytes)) { // пропуск незначимых данных
             qCCritical(LogIO) << "BinReader requires file header: NumParticles, time (int,double)[realHeaderOffset]"
                               << config.headerOffsetBytes;
-            return {nullptr, "Could not read file header: " + path, ReadStatus::InvalidFileStructure};
+            return {nullptr, path, "Could not read file header: " + path, ReadStatus::InvalidFileStructure};
         }
     }
 
@@ -72,7 +72,7 @@ ReadResult BINReader::read(const QString& path, const ReadScheme& scheme) const 
     headerStream >> timestamp;
     if (N <= 0) {
         qCritical(LogIO) << "Incorrect number of particles: " << N;
-        return {nullptr, "Incorrect number of particles in file " + path, ReadStatus::InvalidFileStructure};
+        return {nullptr, path, "Incorrect number of particles in file " + path, ReadStatus::InvalidFileStructure};
     }
     qCDebug(LogIO) << "Reading N = " << N << "; timestamp = " << timestamp << " in File: " << file.fileName();
 
@@ -95,14 +95,15 @@ ReadResult BINReader::read(const QString& path, const ReadScheme& scheme) const 
             }
             default: {
                 Q_ASSERT(false);
-                return {nullptr, "should never be called", ReadStatus::UnknownError};
+                return {nullptr, path, "should never be called", ReadStatus::UnknownError};
             }
         }
-        if (col.isCoordiante) {
-            colSize *= 3;
-        }
+        // Используем numberOfComponents для учета всех компонент (не только координат)
+        colSize *= col.numberOfComponents;
         particleSize += colSize;
     }
+    qCDebug(LogIO) << "ParticleSize calculation: total=" << particleSize << "bytes for" << config.columnsPolicy.size()
+                   << "columns";
     qint64 dataStart = config.headerOffsetBytes + sizeof(int) + sizeof(double);
     // подготавливем vtk примитивы
     ReadContext context{vtkSmartPointer<vtkPolyData>::New(),
@@ -116,7 +117,7 @@ ReadResult BINReader::read(const QString& path, const ReadScheme& scheme) const 
     // >---------------   4. ===== Валидация данных =====   ---------------<
     auto isPrerape = prepareVTK(context);
     if (!isPrerape)
-        return {nullptr, "vtk couldn't create data structures", ReadStatus::UnknownError};
+        return {nullptr, path, "vtk couldn't create data structures", ReadStatus::UnknownError};
 
     // >---------------   5. ===== Выбор политики чтения =====   ---------------<
     bool UseMap = false;
@@ -128,7 +129,7 @@ ReadResult BINReader::read(const QString& path, const ReadScheme& scheme) const 
     qint64 expectedDataSize = static_cast<qint64>(context.N) * particleSize;
     if (file.size() - context.dataStartPos < expectedDataSize) {
         qCCritical(LogIO) << "File size less expected for " << context.N << " particles";
-        return {nullptr, "Error file size:" + path, ReadStatus::UnknownError};
+        return {nullptr, path, "Error file size:" + path, ReadStatus::UnknownError};
     }
 
     // >---------------   6. ===== Чтение файлов =====   ---------------<
@@ -147,24 +148,33 @@ ReadResult BINReader::read(const QString& path, const ReadScheme& scheme) const 
     }
     if (!success) {
         qCCritical(LogIO) << "Failed read file: " << file.fileName();
-        return {nullptr, "Failed read file: " + path, ReadStatus::UnknownError};
+        return {nullptr, path, "Failed read file: " + path, ReadStatus::UnknownError};
     }
     context.polyData->SetPoints(context.points);
     auto pd = context.polyData->GetPointData();
     for (auto arr : context.attributArrays) { // добавляем атрибуты
         pd->AddArray(arr);
     }
-    // задаем роли
+    // TODO:: исправить задание ролей по умолчанию
+    //  задаем роли
     for (const auto& col : config.columnsPolicy) {
         if (col.vtkAttributeRole != -1) {
             vtkAbstractArray* arr = pd->GetAbstractArray(col.name.toStdString().c_str());
             if (arr) {
-                pd->SetAttribute(arr, col.vtkAttributeRole);
+                if (pd->GetAttribute(col.vtkAttributeRole) == nullptr) {
+                    pd->SetAttribute(arr, col.vtkAttributeRole);
+                }
+                // вывод для отладки
+                //  for (int k = 0; k < context.polyData->GetPointData()->GetNumberOfArrays(); ++k) {
+                //      qCDebug(LogIO) << context.polyData->GetPointData()->GetArrayName(k);
+                //  }
+                //  qCDebug(LogIO) << "end";
             }
         }
     }
+
     createCells(context);
-    return {context.polyData, "", ReadStatus::Succes};
+    return {context.polyData, path, "", ReadStatus::Succes};
 }
 bool BINReader::validate(const QFile& file, const ReadScheme& scheme) const {
     if (!std::holds_alternative<ColumnScheme>(scheme)) {
@@ -591,6 +601,9 @@ bool BINReader::readInterleavedStream(QFile& file, ReadContext& context, double*
     size_t     stride = context.particleSize;
     QByteArray rowBuffer(stride, 0);
     uchar*     rowPtr = reinterpret_cast<uchar*>(rowBuffer.data());
+
+    qCDebug(LogIO) << "readInterleavedStream: stride=" << stride << "bytes, N=" << context.N;
+
     for (int i = 0; i < context.N; ++i) {
         if (file.read(reinterpret_cast<char*>(rowPtr), stride) != static_cast<qint64>(stride)) {
             qCCritical(LogIO) << "Unexpected end file at particle!";
@@ -599,6 +612,16 @@ bool BINReader::readInterleavedStream(QFile& file, ReadContext& context, double*
         const uchar* current_ptr = rowPtr;
         for (const auto& parser : parsers) {
             current_ptr = parser(current_ptr, i);
+        }
+
+        // Выводим первые 3 частицы для отладки
+        if (i < 3) {
+            const double* dptr = reinterpret_cast<const double*>(rowBuffer.data());
+            qCDebug(LogIO) << "Particle" << i << ": pos=(" << qFromLittleEndian(dptr[0]) << ","
+                           << qFromLittleEndian(dptr[1]) << "," << qFromLittleEndian(dptr[2]) << ")"
+                           << " vel=(" << qFromLittleEndian(dptr[3]) << "," << qFromLittleEndian(dptr[4]) << ","
+                           << qFromLittleEndian(dptr[5]) << ")"
+                           << " mass=" << qFromLittleEndian(dptr[6]);
         }
     }
     return true;

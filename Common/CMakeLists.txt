@@ -18,5 +18,5 @@ target_link_libraries(Common INTERFACE
     Structures
     # Version
     project_config
-)
+    )
 

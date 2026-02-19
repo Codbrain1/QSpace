@@ -15,7 +15,7 @@ class DataManager : public QObject {
     Q_OBJECT
   public:
     explicit DataManager(TaskManager* tastManager, QObject* parent = nullptr);
-    ~DataManager() override;
+    ~DataManager() override = default;
     /**
      * @brief Устанавливает глобальную политику (MMap/Stream) для создаваемых ридеров.
      */
@@ -51,8 +51,7 @@ class DataManager : public QObject {
     void progressChanged(const QUuid& taskId, int value, int total);
     void ioFinished(const QUuid& taskId, bool succes);
 
-    void dataReady(vtkSmartPointer<vtkDataSet> data);
-    void batchFileReady(IO::ReadResult result);
+    void fileReady(IO::ReadResult result);
     // void snapShotReady(vtkSmartPointer<vtkMultiBlockDataSet> data, const QString& name);
 
     void errorOccured(const QString& mes);

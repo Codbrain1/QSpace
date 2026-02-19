@@ -1,0 +1,1 @@
+qspace_add_test(TestObjectRegistry QSpace::Common QSpace::Core)

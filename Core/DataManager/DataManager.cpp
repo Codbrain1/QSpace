@@ -26,7 +26,7 @@ void DataManager::importDataAsync(const QString& path, const IO::ReadScheme& sch
     connect(watcher, &QFutureWatcher<IO::ReadResult>::finished, this, [this, watcher, taskId]() {
         IO::ReadResult result = watcher->result();
         if (result.isSuccess()) {
-            emit dataReady(result.data);
+            emit fileReady(result);
         } else {
             emit errorOccured(result.errMessage);
         }
@@ -35,12 +35,15 @@ void DataManager::importDataAsync(const QString& path, const IO::ReadScheme& sch
     });
 
     watcher->setFuture(m_taskManager->runIO(priority, [path, scheme, policy = m_global_policy]() -> IO::ReadResult {
-        auto reader = IO::IOFactory::createReader(path);
+        auto type   = IO::Utils::getFormat(path);
+        auto reader = IO::IOFactory::createReader(type);
         if (!reader) {
-            return IO::ReadResult{nullptr, "Unsupported file format", IO::ReadStatus::InvalidFormat};
+            return IO::ReadResult{nullptr, path, "Unsupported file format", IO::ReadStatus::InvalidFormat};
         }
         reader->setPolicy(policy);
-        return reader->read(path, scheme);
+        auto res = reader->read(path, scheme);
+        res.path = path;
+        return res;
     }));
 }
 void DataManager::importBatchDataAsync(const QList<IO::BatchTask>& tasks) {
@@ -50,7 +53,7 @@ void DataManager::importBatchDataAsync(const QList<IO::BatchTask>& tasks) {
     connect(watcher, &QFutureWatcher<IO::ReadResult>::resultReadyAt, this, [this, watcher, taskId](int index) {
         IO::ReadResult result = watcher->resultAt(index);
         if (result.isSuccess())
-            emit batchFileReady(result);
+            emit fileReady(result);
         emit progressChanged(taskId, watcher->progressValue(), watcher->progressMaximum());
     });
     connect(watcher, &QFutureWatcher<IO::ReadResult>::finished, this, [this, watcher, taskId]() {
@@ -59,11 +62,15 @@ void DataManager::importBatchDataAsync(const QList<IO::BatchTask>& tasks) {
     });
     watcher->setFuture(
         m_taskManager->mapIO(tasks, [policy = m_global_policy](const IO::BatchTask& t) -> IO::ReadResult {
-            auto reader = IO::IOFactory::createReader(t.path);
+            auto type   = IO::Utils::getFormat(t.path);
+            auto reader = IO::IOFactory::createReader(type);
             if (!reader)
-                return {nullptr, "Unsupported file format", IO::ReadStatus::InvalidFormat};
+                return {nullptr, t.path, "Unsupported file format", IO::ReadStatus::InvalidFormat};
             reader->setPolicy(policy);
-            return reader->read(t.path, t.scheme);
+
+            auto res = reader->read(t.path, t.scheme);
+            res.path = t.path;
+            return res;
         }));
 }
 
@@ -88,7 +95,7 @@ void DataManager::importBatchIdendicalDataAsync(const QStringList&    paths,
     connect(watcher, &QFutureWatcher<IO::ReadResult>::resultReadyAt, this, [this, watcher, taskId](int index) {
         auto result = watcher->resultAt(index);
         if (result.isSuccess()) {
-            emit batchFileReady(result);
+            emit fileReady(result);
         }
         emit progressChanged(taskId, watcher->progressValue(), watcher->progressMaximum());
     });
@@ -99,7 +106,9 @@ void DataManager::importBatchIdendicalDataAsync(const QStringList&    paths,
         watcher->deleteLater();
     });
     watcher->setFuture(m_taskManager->mapIO(paths, [readerPtr, scheme](const QString& path) -> IO::ReadResult {
-        return readerPtr->read(path, scheme);
+        auto res = readerPtr->read(path, scheme);
+        res.path = path;
+        return res;
     }));
 }
 TaskPriority DataManager::getPriority(qint64 fileSize) {

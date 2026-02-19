@@ -18,35 +18,42 @@ qt_add_executable(QSpace
 )
 
 target_link_libraries(QSpace PRIVATE
-            Common
-            IO
-            Core
-            Charting
-            Common
-            Core
-            Filtering
-            IO
-            Physics
-            Remote
-            Renderer
-            Session
-            UI
             project_config
+            QSpace::Common
+            QSpace::Core
+            QSpace::IO
+            QSpace::Renderer
+            # Charting
+            # Filtering
+            # Physics
+            # Remote
+            # Session
+            QSpace::UI
+            Qt6::Core
             Qt6::Widgets
+            Qt6::Gui
+            VTK::GUISupportQt
+            VTK::CommonColor
 )
 
 if(WIN32) # на виндовс только gui
 set_target_properties(QSpace PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
-
+set(VTK_BIN_DIR "D:/NIR/NIR_6_semestr/vtk/vtk-install-dll/bin")
+    
+    add_custom_command(TARGET QSpace POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory 
+            "${VTK_BIN_DIR}" 
+            "$<TARGET_FILE_DIR:QSpace>"
+        COMMENT "Copying VTK binaries..."
+    )
 add_custom_command(TARGET QSpace POST_BUILD
 COMMAND "C:/Qt/6.9.2/mingw_64/bin/windeployqt.exe"
     --compiler-runtime
     $<TARGET_FILE:QSpace>
         COMMENT "Running windeployqt..."
         )
-
 endif()
 
 include(GNUInstallDirs)

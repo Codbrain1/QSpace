@@ -4,10 +4,10 @@ function(qspace_add_test TestName)
     add_executable(${TestName} Cxx/${TestName}.cpp)
 
     target_link_libraries(${TestName} PRIVATE 
-            Qt6::Test
-            Qt6::Concurrent
-            ${test_libs}
-            )
+    Qt6::Test
+    Qt6::Concurrent
+    ${test_libs}    
+)
 
     add_test(NAME ${TestName} COMMAND ${TestName})
     set(QT_BIN_DIR "C:/Qt/6.9.2/mingw_64/bin")

@@ -1,0 +1,6 @@
+CompileFlags:
+  Add:
+    - -I${workspaceFolder}/src/Enums    
+    - -I${workspaceFolder}/src/Structures
+    - -I${workspaceFolder}/src/Interfaces
+    - -isystemD:/NIR/NIR_6_semestr/vtk/vtk-install-dll/include/vtk-9.5

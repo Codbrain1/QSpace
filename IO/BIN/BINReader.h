@@ -16,6 +16,7 @@
 namespace QSpace::IO {
 class BINReader : public IReader {
   public:
+    ~BINReader() override;
     void setPolicy(FilePolicy policy) override {
         m_policy = policy;
     }
