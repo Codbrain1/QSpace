@@ -1,5 +1,5 @@
 #pragma once
-#include "Renderer/Renderer.h"
+#include "Visualize/Renderer.h"
 #include <QObject>
 #include <map>
 #include <memory>

@@ -1,6 +1,6 @@
 add_library(Structures INTERFACE)
 target_sources(Structures INTERFACE
-    CommonStructuresIO.h
+    IOStructures.h
     CoreStructures.h
     RenderStructures.h
 )

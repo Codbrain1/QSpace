@@ -1,6 +1,6 @@
 #include "Enums/CommonEnumsIO.h"
 #include "IO/BIN/BINReader.h"
-#include "Structures/CommonStructuresIO.h"
+#include "Structures/IOStructures.h"
 #include <functional>
 #include <qcontainerfwd.h>
 #include <qdebug.h>

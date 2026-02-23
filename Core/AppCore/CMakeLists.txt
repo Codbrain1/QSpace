@@ -8,7 +8,7 @@ target_link_libraries(AppCore PUBLIC
                 project_config
                 QSpace::Common
                 QSpace::IO
-                QSpace::Renderer
+                QSpace::Visualize
                 ObjectRegistry
                 DataManager
                 PipelineManager

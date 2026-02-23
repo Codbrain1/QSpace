@@ -1,14 +1,14 @@
 add_subdirectory(ParticleLayer)
-add_library(Renderer STATIC)
-add_library(QSpace::Renderer ALIAS Renderer)
-target_sources(Renderer PRIVATE 
+add_library(Visualize STATIC)
+add_library(QSpace::Visualize ALIAS Visualize)
+target_sources(Visualize PRIVATE 
             Renderer.h
             Renderer.cpp
             LayerFactory.cpp
 )
 
-target_include_directories(Renderer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
-target_link_libraries(Renderer PUBLIC
+target_include_directories(Visualize PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_link_libraries(Visualize PUBLIC
             project_config
             ParticleLayer
             QSpace::Common

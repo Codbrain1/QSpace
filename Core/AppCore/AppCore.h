@@ -5,9 +5,9 @@
 #include "Core/PipelineManager/PipelineManager.h"
 #include "Core/TaskManager/TaskManager.h"
 #include "Core/ViewManager/ViewManager.h"
-#include "Renderer/Renderer.h"
-#include "Structures/CommonStructuresIO.h"
 #include "Structures/CoreStructures.h"
+#include "Structures/IOStructures.h"
+#include "Visualize/Renderer.h"
 #include <QObject>
 #include <functional>
 #include <memory>

@@ -7,7 +7,6 @@
 #include "Core/TaskManager/TaskManager.h"
 #include "Enums/RenderEnums.h"
 #include "Interfaces/IOFactory.h"
-#include "Structures/CommonStructuresIO.h"
 #include "Structures/CoreStructures.h"
 #include <functional>
 #include <memory>

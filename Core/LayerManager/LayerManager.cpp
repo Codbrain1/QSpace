@@ -4,7 +4,7 @@
 #include "Core/ViewManager/ViewManager.h"
 #include "Enums/CoreEnums.h"
 #include "Interfaces/LayerFactory.h"
-#include "Renderer/ParticleLayer/ParticleLayer.h"
+#include "Visualize/ParticleLayer/ParticleLayer.h"
 #include <memory>
 #include <qobject.h>
 #include <quuid.h>

@@ -1,6 +1,6 @@
 #include "Common/Interfaces/IWriter.h"
 #include "Enums/CommonEnumsIO.h"
-#include "Structures/CommonStructuresIO.h"
+#include "Structures/IOStructures.h"
 #include <QFile>
 #include <qcontainerfwd.h>
 #include <vtkDataSet.h>

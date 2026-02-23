@@ -8,7 +8,7 @@ target_link_libraries(LayerManager PUBLIC
             project_config
             ObjectRegistry
             ViewManager
-            QSpace::Renderer
+            QSpace::Visualize
             QSpace::Common
             Qt6::Core
 ) 

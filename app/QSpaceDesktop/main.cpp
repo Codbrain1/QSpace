@@ -1,7 +1,6 @@
 #include "Core/AppCore/AppCore.h"
 #include "Core/LogManager/LogManager.h"
 #include "Logger/Logger.h"
-#include "Structures/CommonStructuresIO.h"
 #include "UI/Home/MainWindow.h"
 #include <QApplication> //заголовок включающий основной графический класс приложения
 #include <QApplication>

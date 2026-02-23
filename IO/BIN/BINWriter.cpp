@@ -1,6 +1,5 @@
 #include "BINWriter.h"
 #include "Common/Logger/Logger.h"
-#include "Structures/CommonStructuresIO.h"
 #include <qdebug.h>
 #include <qlogging.h>
 #include <qloggingcategory.h>

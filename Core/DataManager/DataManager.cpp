@@ -2,7 +2,6 @@
 #include "Core/TaskManager/TaskManager.h"
 #include "Enums/CommonEnumsIO.h"
 #include "Interfaces/IOFactory.h"
-#include "Structures/CommonStructuresIO.h"
 #include <memory>
 #include <qcontainerfwd.h>
 #include <qfileinfo.h>

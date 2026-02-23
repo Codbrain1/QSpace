@@ -22,7 +22,7 @@ target_link_libraries(QSpace PRIVATE
             QSpace::Common
             QSpace::Core
             QSpace::IO
-            QSpace::Renderer
+            QSpace::Visualize
             # Charting
             # Filtering
             # Physics

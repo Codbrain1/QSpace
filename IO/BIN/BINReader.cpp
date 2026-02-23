@@ -1,7 +1,6 @@
 #include "BINReader.h"
 #include "Common/Logger/Logger.h"
 #include "Enums/CommonEnumsIO.h"
-#include "Structures/CommonStructuresIO.h"
 #include <QByteArray>
 #include <QDataStream>
 #include <QFile>

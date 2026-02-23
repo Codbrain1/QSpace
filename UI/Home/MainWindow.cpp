@@ -6,8 +6,6 @@
 #include "Enums/RenderEnums.h"
 #include "Interfaces/IOFactory.h"
 #include "PropertyInspector.h"
-#include "Renderer/Renderer.h"
-#include "Structures/CommonStructuresIO.h"
 #include "ui_newmainwindow.h"
 #include <QMainWindow>
 #include <QPushButton>
@@ -91,7 +89,7 @@ void MainWindow::on_btn_add_data() {
     if (paths.size() == 1) {
         IO::FileFormat        format     = IO::Utils::getFormat(paths[0]);
         Visualize::EntityType entityType = IO::Utils::getEntityType(QFileInfo(paths[0]).fileName());
-        auto                  scheme     = IO::ShemeFactory::createDefaultSheme(entityType, format);
+        IO::ReadScheme        scheme     = IO::ShemeFactory::createDefaultSheme(entityType, format);
         m_app->getDataManager()->importDataAsync(paths[0], scheme);
     }
 }

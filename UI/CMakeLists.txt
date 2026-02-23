@@ -14,7 +14,7 @@ target_sources(UI PRIVATE
 target_include_directories(UI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 target_link_libraries(UI PUBLIC
     QSpace::Core
-    QSpace::Renderer
+    QSpace::Visualize
     Qt6::Widgets
     Qt6::Core
     Qt6::Gui

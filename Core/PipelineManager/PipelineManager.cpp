@@ -1,7 +1,7 @@
 #include "Core/PipelineManager/PipelineManager.h"
 #include "Common/Logger/Logger.h"
 #include "Core/ObjectRegistry/ObjectRegistry.h"
-#include "Renderer/Renderer.h"
+#include "Visualize/Renderer.h"
 #include <memory>
 #include <qobject.h>
 #include <vtkActor.h>
@@ -23,7 +23,7 @@ void PipelineManager::onNodeAdded(std::shared_ptr<DataNode> node) {
     qCInfo(LogCore) << "PipelineManager::onNodeAdded - Node added:" << node->label;
 
     // пробегаем по всем окнам
-    m_viewManager->forEachView([this, node](Visualize::Renderer* renderer) {
+    m_viewManager->forEachView([this, node](QSpace::Visualize::Renderer* renderer) {
         qCInfo(LogCore) << "PipelineManager::onNodeAdded - Creating layer in renderer";
 
         // создаем слой
@@ -42,12 +42,12 @@ void PipelineManager::onObjectRemoved(const QUuid& id) {
     // Удаляем объект из ВСЕХ окон
     qCInfo(LogCore) << "PipelineManager::onObjectRemoved - Object removed:" << id;
     m_layerManager->removeLayer(id);
-    m_viewManager->forEachView([](Visualize::Renderer* r) { r->render(); });
+    m_viewManager->forEachView([](QSpace::Visualize::Renderer* r) { r->render(); });
 }
 void PipelineManager::onViewCreated(const QUuid& viewId) {
     // Открылось НОВОЕ окно. Оно пустое.
     qCInfo(LogCore) << "PipelineManager::onViewCreated - View created:" << viewId;
-    Visualize::Renderer* newRenderer = m_viewManager->getView(viewId);
+    QSpace::Visualize::Renderer* newRenderer = m_viewManager->getView(viewId);
     if (!newRenderer)
         return;
 
@@ -62,19 +62,3 @@ void PipelineManager::onViewCreated(const QUuid& viewId) {
     newRenderer->resetCamera();
 }
 } // namespace QSpace::Core
-
-// // neuro
-// //  В PipelineManager::onNodeAdded
-// void PipelineManager::onNodeAdded(std::shared_ptr<DataNode> node) {
-//     m_viewManager->forEachView([this, node](Visualize::Renderer* renderer) {
-//         // Создаем слой
-//         auto layer = Visualize::LayerFactory::createLayer(node);
-//         if (auto particleLayer = std::dynamic_pointer_cast<Visualize::ParticleLayer>(layer)) {
-//             // Добавляем проп данных
-//             renderer->addProp(particleLayer->getVtkProp());
-//             // Добавляем легенду (колорбар)
-//             renderer->addScalarBar(particleLayer->getScalarBar());
-//         }
-//         // ... сохраняем layer в LayerManager ...
-//     });
-// }

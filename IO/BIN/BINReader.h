@@ -1,7 +1,7 @@
 #pragma once
 #include "Common/Interfaces/IReader.h"
 #include "Enums/CommonEnumsIO.h"
-#include "Structures/CommonStructuresIO.h"
+#include "Structures/IOStructures.h"
 #include <QFile>
 #include <QtEndian>
 #include <cstddef>

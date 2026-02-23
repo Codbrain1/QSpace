@@ -2,7 +2,7 @@
 #include "Core/AppCore/AppCore.h"
 #include "DataTreeController.h"
 #include "PropertyInspector.h"
-#include "Renderer/Renderer.h"
+#include "Visualize/Renderer.h"
 #include <QMainWindow>
 #include <QObject>
 #include <memory>
@@ -33,8 +33,8 @@ class MainWindow : public QMainWindow {
     void on_action_toggleGridChanged(bool checked);
 
   private:
-    Core::AppCore*                      m_app;
-    Visualize::Renderer*                m_renderer;
+    QSpace::Core::AppCore*              m_app;
+    QSpace::Visualize::Renderer*        m_renderer;
     Ui::MainWindow*                     ui;
     std::unique_ptr<DataTreeController> m_dataTreeController;
     std::unique_ptr<PropertyInspector>  m_propertyInspector;

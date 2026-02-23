@@ -30,10 +30,10 @@ Renderer::Renderer(QObject* parent) : QObject(parent) {
 }
 void Renderer::setupDepthPeeling() {
     // Без этого прозрачные частицы будут исчезать или мерцать
-    m_vtkRenderer->SetUseDepthPeeling(0);
+    m_vtkRenderer->SetUseDepthPeeling(1);
     m_vtkRenderer->SetUseFXAA(true);
-    // m_vtkRenderer->SetOcclusionRatio(0.1);
-    // m_vtkRenderer->SetMaximumNumberOfPeels(8); // 8 слоев обычно достаточно
+    m_vtkRenderer->SetOcclusionRatio(0.1);
+    m_vtkRenderer->SetMaximumNumberOfPeels(8); // 8 слоев обычно достаточно
     // Важно: в main.cpp нужно также задать AlphaBufferSize для QSurfaceFormat
 }
 void Renderer::setupAxes() {

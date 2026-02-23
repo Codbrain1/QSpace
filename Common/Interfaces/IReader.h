@@ -1,5 +1,5 @@
 #pragma once
-#include "Common/Structures/CommonStructuresIO.h"
+#include "Common/Structures/IOStructures.h"
 #include "Enums/CommonEnumsIO.h"
 #include <QString>
 #include <vtkDataSet.h>
