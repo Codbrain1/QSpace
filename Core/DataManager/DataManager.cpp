@@ -25,7 +25,7 @@ void DataManager::importDataAsync(const QString& path, const IO::ReadScheme& sch
     connect(watcher, &QFutureWatcher<IO::ReadResult>::finished, this, [this, watcher, taskId]() {
         IO::ReadResult result = watcher->result();
         if (result.isSuccess()) {
-            emit fileReady(result);
+            emit fileReady(taskId, result);
         } else {
             emit errorOccured(result.errMessage);
         }
@@ -52,25 +52,28 @@ void DataManager::importBatchDataAsync(const QList<IO::BatchTask>& tasks) {
     connect(watcher, &QFutureWatcher<IO::ReadResult>::resultReadyAt, this, [this, watcher, taskId](int index) {
         IO::ReadResult result = watcher->resultAt(index);
         if (result.isSuccess())
-            emit fileReady(result);
+            emit fileReady(taskId, result);
         emit progressChanged(taskId, watcher->progressValue(), watcher->progressMaximum());
     });
     connect(watcher, &QFutureWatcher<IO::ReadResult>::finished, this, [this, watcher, taskId]() {
         emit ioFinished(taskId, true);
         watcher->deleteLater();
     });
-    watcher->setFuture(
-        m_taskManager->mapIO(tasks, [policy = m_global_policy](const IO::BatchTask& t) -> IO::ReadResult {
-            auto type   = IO::Utils::getFormat(t.path);
-            auto reader = IO::IOFactory::createReader(type);
-            if (!reader)
-                return {nullptr, t.path, "Unsupported file format", IO::ReadStatus::InvalidFormat};
-            reader->setPolicy(policy);
+    auto policy = m_global_policy;
+    if (tasks.size() >= 30) {
+        policy = IO::FilePolicy::ForceMapped;
+    }
+    watcher->setFuture(m_taskManager->mapIO(tasks, [policy](const IO::BatchTask& t) -> IO::ReadResult {
+        auto type   = IO::Utils::getFormat(t.path);
+        auto reader = IO::IOFactory::createReader(type);
+        if (!reader)
+            return {nullptr, t.path, "Unsupported file format", IO::ReadStatus::InvalidFormat};
+        reader->setPolicy(policy);
 
-            auto res = reader->read(t.path, t.scheme);
-            res.path = t.path;
-            return res;
-        }));
+        auto res = reader->read(t.path, t.scheme);
+        res.path = t.path;
+        return res;
+    }));
 }
 
 void DataManager::importBatchIdendicalDataAsync(const QStringList&    paths,
@@ -94,7 +97,7 @@ void DataManager::importBatchIdendicalDataAsync(const QStringList&    paths,
     connect(watcher, &QFutureWatcher<IO::ReadResult>::resultReadyAt, this, [this, watcher, taskId](int index) {
         auto result = watcher->resultAt(index);
         if (result.isSuccess()) {
-            emit fileReady(result);
+            emit fileReady(taskId, result);
         }
         emit progressChanged(taskId, watcher->progressValue(), watcher->progressMaximum());
     });

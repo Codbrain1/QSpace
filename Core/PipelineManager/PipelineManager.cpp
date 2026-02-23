@@ -30,12 +30,14 @@ void PipelineManager::onNodeAdded(std::shared_ptr<DataNode> node) {
         m_layerManager->createLayer(node, renderer);
         // Вызываем resetCamera() чтобы камера была настроена на новые данные
         try {
-            renderer->resetCamera();
-            qCInfo(LogCore) << "PipelineManager::onNodeAdded - Camera reset";
+            if (node->settings.isVisible) {
+                renderer->resetCamera();
+                renderer->render();
+                qCInfo(LogCore) << "PipelineManager::onNodeAdded - Camera reset";
+            }
         } catch (...) {
             qCWarning(LogCore) << "PipelineManager::onNodeAdded - resetCamera() failed (no GL context?)";
         }
-        renderer->render();
     });
 }
 void PipelineManager::onObjectRemoved(const QUuid& id) {

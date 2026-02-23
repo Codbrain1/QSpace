@@ -7,6 +7,7 @@
 #include <qobject.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
+#include <quuid.h>
 #include <vtkMultiBlockDataSet.h>
 #include <vtkSmartPointer.h>
 
@@ -51,7 +52,7 @@ class DataManager : public QObject {
     void progressChanged(const QUuid& taskId, int value, int total);
     void ioFinished(const QUuid& taskId, bool succes);
 
-    void fileReady(IO::ReadResult result);
+    void fileReady(const QUuid& taskId, IO::ReadResult result);
     // void snapShotReady(vtkSmartPointer<vtkMultiBlockDataSet> data, const QString& name);
 
     void errorOccured(const QString& mes);

@@ -30,17 +30,31 @@ AppCore::AppCore(QObject* parent) : QObject(parent) {
 void AppCore::initialize() {
     m_viewManager->createView();
     connect(m_dataManager.get(), &DataManager::fileReady, this, &AppCore::onFileReady);
+    connect(m_dataManager.get(), &DataManager::ioStarted, this, [this](const QUuid& taskId, const QString&, int total) {
+        m_activeTasks[taskId] = total;
+    });
+    connect(m_dataManager.get(), &DataManager::ioFinished, this, [this](const QUuid& taskId, bool success) {
+        if (m_activeTasks.value(taskId) > 1 && success) {
+            // Финальный рендер для пачки
+            m_viewManager->forEachView([](Visualize::Renderer* r) {
+                r->resetCamera();
+                r->render();
+            });
+        }
+        m_activeTasks.remove(taskId);
+    });
 }
-void AppCore::onFileReady(IO::ReadResult result) {
+void AppCore::onFileReady(const QUuid& taskId, IO::ReadResult result) {
     if (!result.isSuccess()) {
         qCWarning(LogCore) << "Error loading: " << result.errMessage;
         return;
     }
-    QString               fileName = QFileInfo(result.path).fileName();
-    Visualize::EntityType type     = IO::Utils::getEntityType(result.path);
-    auto                  node     = std::make_shared<DataNode>(result.data, fileName, type);
-
+    int                   totalInThisTask = m_activeTasks.value(taskId, 1);
+    QString               fileName        = QFileInfo(result.path).fileName();
+    Visualize::EntityType type            = IO::Utils::getEntityType(result.path);
+    auto                  node            = std::make_shared<DataNode>(result.data, fileName, type);
     qCInfo(LogCore) << "AppCore::onFileReady - File loaded:" << fileName << "Points:" << node->stats.pointCount;
+    node->settings.isVisible = (totalInThisTask == 1);
 
     if (m_autoGrouping) {
         QString groupName = extractGroupName(fileName);
@@ -56,11 +70,6 @@ void AppCore::onFileReady(IO::ReadResult result) {
     } else {
         m_objectRegistry->registerNode(node);
     }
-
-    m_viewManager->forEachView([](Visualize::Renderer* r) {
-        r->resetCamera();
-        r->getRenderWindow()->Render(); // Это теперь вызовет и RenderWindow->Render(), и updateRequested сигнал
-    });
 
     qCInfo(LogCore) << "AppCore::onFileReady - File processing completed";
 }

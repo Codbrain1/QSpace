@@ -65,7 +65,7 @@ struct BatchTask { // одна задача для пакетного чтени
     QString    path;
     ReadScheme scheme;
 };
-class ShemeFactory {
+class SchemeFactory {
   public:
     static ReadScheme createDefaultSheme(Visualize::EntityType type, FileFormat format) {
         if (format == FileFormat::BIN || format == FileFormat::TXT) {

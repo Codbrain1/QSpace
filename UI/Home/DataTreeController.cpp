@@ -43,11 +43,13 @@ QList<QUuid> DataTreeController::getSelectedIds() const {
     return ids;
 }
 void DataTreeController::onNodeAdded(std::shared_ptr<QSpace::Core::DataNode> node) {
+    m_tree->blockSignals(true);
     auto* item = new QTreeWidgetItem(m_tree);
     item->setText(0, node->label);
     item->setData(0, Qt::UserRole, node->id.toString());
     item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
-    item->setCheckState(0, Qt::Checked);
+    item->setCheckState(0, node->settings.isVisible ? Qt::Checked : Qt::Unchecked);
+    m_tree->blockSignals(false);
 }
 void DataTreeController::onNodeRemoved(const QUuid& id) {
     QTreeWidgetItem* item = findTreeElementById(id);

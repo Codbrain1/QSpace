@@ -6,6 +6,7 @@
 #include "Enums/RenderEnums.h"
 #include "Interfaces/IOFactory.h"
 #include "PropertyInspector.h"
+#include "Structures/IOStructures.h"
 #include "ui_newmainwindow.h"
 #include <QMainWindow>
 #include <QPushButton>
@@ -15,6 +16,7 @@
 #include <qcontainerfwd.h>
 #include <qfiledialog.h>
 #include <qfileinfo.h>
+#include <qlist.h>
 #include <qmainwindow.h>
 #include <qobject.h>
 #include <qpushbutton.h>
@@ -89,8 +91,20 @@ void MainWindow::on_btn_add_data() {
     if (paths.size() == 1) {
         IO::FileFormat        format     = IO::Utils::getFormat(paths[0]);
         Visualize::EntityType entityType = IO::Utils::getEntityType(QFileInfo(paths[0]).fileName());
-        IO::ReadScheme        scheme     = IO::ShemeFactory::createDefaultSheme(entityType, format);
+        IO::ReadScheme        scheme     = IO::SchemeFactory::createDefaultSheme(entityType, format);
         m_app->getDataManager()->importDataAsync(paths[0], scheme);
+    } else {
+        QList<QSpace::IO::BatchTask> tasks;
+        for (const auto& path : paths) {
+            IO::FileFormat        format     = IO::Utils::getFormat(path);
+            Visualize::EntityType entityType = IO::Utils::getEntityType(path);
+            IO::ReadScheme        scheme     = IO::SchemeFactory::createDefaultSheme(entityType, format);
+            IO::BatchTask         task;
+            task.path   = path;
+            task.scheme = scheme;
+            tasks.append(task);
+        }
+        m_app->getDataManager()->importBatchDataAsync(tasks);
     }
 }
 void MainWindow::on_btn_remove_data() {

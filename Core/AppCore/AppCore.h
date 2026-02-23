@@ -38,7 +38,7 @@ class AppCore : public QObject {
         return m_layerManager.get();
     }
   private slots:
-    void onFileReady(IO::ReadResult result);
+    void onFileReady(const QUuid& taskId, IO::ReadResult result);
 
   private:
     std::unique_ptr<TaskManager>     m_taskManager;
@@ -47,6 +47,7 @@ class AppCore : public QObject {
     std::unique_ptr<ViewManager>     m_viewManager;
     std::unique_ptr<PipelineManager> m_pipelineManager;
     std::unique_ptr<LayerManager>    m_layerManager;
+    QMap<QUuid, int>                 m_activeTasks;
 
     bool                           m_autoGrouping = true;
     QString                        extractGroupName(const QString& filename);
