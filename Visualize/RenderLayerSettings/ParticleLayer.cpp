@@ -1,6 +1,7 @@
 #include "ParticleLayer.h"
 #include "Common/Enums/RenderEnums.h"
 #include "Common/Logger/Logger.h"
+#include "Common/Structures/CoreStructures.h"
 #include "Common/Structures/RenderStructures.h"
 #include <cmath>
 #include <memory>
@@ -40,9 +41,9 @@ ParticleLayer::ParticleLayer(std::shared_ptr<Core::DataNode> node) : m_node(node
     m_lut->SetVectorModeToMagnitude();
     setupScalarBar();
 
-    m_mapper->SetScalarModeToUsePointFieldData(); // TODO:: возможно нужно вернуть
-    m_mapper->SetColorModeToMapScalars();         // TODO:: возможно нужно вернуть
-    m_scalarBar->SetLookupTable(m_lut);           // TODO:: возможно нужно вернуть
+    m_mapper->SetScalarModeToUsePointFieldData();
+    m_mapper->SetColorModeToMapScalars();
+    m_scalarBar->SetLookupTable(m_lut);
 }
 void ParticleLayer::update() {
     if (!m_node || !m_node->data) {
@@ -68,7 +69,7 @@ void ParticleLayer::update() {
 
     if (s.mode == RenderMode::GausianSplat) {
         m_mapper->SetScaleFactor(s.PointSize);
-        m_mapper->SetEmissive(true);
+        m_mapper->SetEmissive(true); // TODO: на белом фоне не отображаются частицы из за этой настройки
     } else if (s.mode == RenderMode::Points) {
         m_mapper->SetScaleFactor(0.000);
         m_actor->GetProperty()->SetPointSize(s.PointSize);
@@ -137,6 +138,21 @@ void ParticleLayer::applyColorMap(QSpace::Visualize::ColorMapType type) {
     } else {
         m_lut->SetScaleToLinear();
     }
+}
+// заменяет указатель на данные (позволяет применять одинаковую настройку отображения для разных файлов)
+// упрощает анимирование данных
+void ParticleLayer::swapData(std::shared_ptr<QSpace::Core::DataNode> node) {
+    if (!node || !node->data)
+        return;
+    auto polyData = vtkPolyData::SafeDownCast(node->data);
+    if (!polyData)
+        return;
+    auto oldSettings = m_node->settings;
+    m_node           = node;
+    m_node->settings = oldSettings;
+    m_mapper->SetInputData(polyData);
+    m_mapper->Modified();
+    update();
 }
 void ParticleLayer::setupScalarBar() {
     // TODO: параметризовать настройку colorBar

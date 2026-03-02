@@ -17,7 +17,8 @@ class LayerManager : public QObject {
     LayerManager(QObject* parent = nullptr);
     void createLayer(std::shared_ptr<DataNode> node, QSpace::Visualize::Renderer* Renderer);
     void removeLayer(const QUuid& nodeId);
-    void updateSettings(const QUuid& nodeId);
+    std::shared_ptr<Visualize::IRenderLayer> getLayer(const QUuid& id, Visualize::Renderer* renderer);
+    void                                     updateSettings(const QUuid& nodeId);
     ~LayerManager();
 
   signals:

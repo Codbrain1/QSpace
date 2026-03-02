@@ -23,4 +23,9 @@ enum class FileFormat
   HDF5, // формат для больших данных, включает архивирование
   Unknown
 };
+enum class ImportRole
+{
+  ProjectData, // Обычные данные пользователя
+  Internal     // Временные данные (например, кадры видео)
+};
 } // namespace QSpace::IO

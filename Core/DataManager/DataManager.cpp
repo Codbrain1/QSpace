@@ -16,16 +16,16 @@
 namespace QSpace::Core {
 DataManager::DataManager(TaskManager* taskManager, QObject* parent) : QObject(parent), m_taskManager(taskManager) {
 }
-void DataManager::importDataAsync(const QString& path, const IO::ReadScheme& scheme) {
+QUuid DataManager::importDataAsync(const QString& path, const IO::ReadScheme& scheme, IO::ImportRole role) {
     qint64 fileSize = QFileInfo(path).size();
     auto   priority = getPriority(fileSize);
     QUuid  taskId   = QUuid::createUuid();
     emit   ioStarted(taskId, QString("Import File: " + QFileInfo(path).fileName()), 1);
     auto*  watcher = new QFutureWatcher<IO::ReadResult>(this);
-    connect(watcher, &QFutureWatcher<IO::ReadResult>::finished, this, [this, watcher, taskId]() {
+    connect(watcher, &QFutureWatcher<IO::ReadResult>::finished, this, [this, watcher, taskId, role]() {
         IO::ReadResult result = watcher->result();
         if (result.isSuccess()) {
-            emit fileReady(taskId, result);
+            emit fileReady(taskId, result, role);
         } else {
             emit errorOccured(result.errMessage);
         }
@@ -44,15 +44,16 @@ void DataManager::importDataAsync(const QString& path, const IO::ReadScheme& sch
         res.path = path;
         return res;
     }));
+    return taskId;
 }
-void DataManager::importBatchDataAsync(const QList<IO::BatchTask>& tasks) {
+void DataManager::importBatchDataAsync(const QList<IO::BatchTask>& tasks, IO::ImportRole role) {
     QUuid taskId = QUuid::createUuid();
     emit  ioStarted(taskId, QString("Import Batch"), tasks.size());
     auto* watcher = new QFutureWatcher<IO::ReadResult>(this);
-    connect(watcher, &QFutureWatcher<IO::ReadResult>::resultReadyAt, this, [this, watcher, taskId](int index) {
+    connect(watcher, &QFutureWatcher<IO::ReadResult>::resultReadyAt, this, [this, watcher, taskId, role](int index) {
         IO::ReadResult result = watcher->resultAt(index);
         if (result.isSuccess())
-            emit fileReady(taskId, result);
+            emit fileReady(taskId, result, role);
         emit progressChanged(taskId, watcher->progressValue(), watcher->progressMaximum());
     });
     connect(watcher, &QFutureWatcher<IO::ReadResult>::finished, this, [this, watcher, taskId]() {
@@ -78,7 +79,8 @@ void DataManager::importBatchDataAsync(const QList<IO::BatchTask>& tasks) {
 
 void DataManager::importBatchIdendicalDataAsync(const QStringList&    paths,
                                                 const IO::ReadScheme& scheme,
-                                                IO::FileFormat        format) {
+                                                IO::FileFormat        format,
+                                                IO::ImportRole        role) {
     if (paths.isEmpty()) {
         emit errorOccured(QString("Paths list is empty"));
         return;
@@ -94,10 +96,10 @@ void DataManager::importBatchIdendicalDataAsync(const QStringList&    paths,
 
     auto* readerPtr = reader.release();
     auto* watcher   = new QFutureWatcher<IO::ReadResult>(this);
-    connect(watcher, &QFutureWatcher<IO::ReadResult>::resultReadyAt, this, [this, watcher, taskId](int index) {
+    connect(watcher, &QFutureWatcher<IO::ReadResult>::resultReadyAt, this, [this, watcher, taskId, role](int index) {
         auto result = watcher->resultAt(index);
         if (result.isSuccess()) {
-            emit fileReady(taskId, result);
+            emit fileReady(taskId, result, role);
         }
         emit progressChanged(taskId, watcher->progressValue(), watcher->progressMaximum());
     });

@@ -1,4 +1,5 @@
-add_subdirectory(ParticleLayer)
+add_subdirectory(RenderLayerSettings)
+add_subdirectory(VideoExporter)
 add_library(Visualize STATIC)
 add_library(QSpace::Visualize ALIAS Visualize)
 target_sources(Visualize PRIVATE 
@@ -10,7 +11,8 @@ target_sources(Visualize PRIVATE
 target_include_directories(Visualize PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 target_link_libraries(Visualize PUBLIC
             project_config
-            ParticleLayer
+            RenderLayerSettings
+            VideoExporter
             QSpace::Common
             Qt6::Core
             Qt6::Widgets

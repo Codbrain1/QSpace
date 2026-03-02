@@ -21,6 +21,7 @@ class ParticleLayer : public IRenderLayer {
     vtkSmartPointer<vtkScalarBarActor> getScalarBar() const override {
         return m_scalarBar;
     };
+    void swapData(std::shared_ptr<QSpace::Core::DataNode> node) override;
 
   private:
     std::shared_ptr<Core::DataNode>           m_node;

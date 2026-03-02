@@ -60,7 +60,9 @@ void DataTreeController::onNodeRemoved(const QUuid& id) {
 void DataTreeController::showContextMenu(const QPoint& pos) {
     // находим элемент по позиции
     QTreeWidgetItem* item = m_tree->itemAt(pos);
-    QUuid            id   = QUuid::fromString(item->data(0, Qt::UserRole).toString());
+    if (!item)
+        return;
+    QUuid id = QUuid::fromString(item->data(0, Qt::UserRole).toString());
     // создаем меню в данном месте
     QMenu    menu;
     auto*    reg    = m_registry;

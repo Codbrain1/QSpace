@@ -5,6 +5,7 @@
 #include "Core/ObjectRegistry/ObjectRegistry.h"
 #include "Core/PipelineManager/PipelineManager.h"
 #include "Core/TaskManager/TaskManager.h"
+#include "Enums/CommonEnumsIO.h"
 #include "Enums/RenderEnums.h"
 #include "Interfaces/IOFactory.h"
 #include "Structures/CoreStructures.h"
@@ -44,7 +45,9 @@ void AppCore::initialize() {
         m_activeTasks.remove(taskId);
     });
 }
-void AppCore::onFileReady(const QUuid& taskId, IO::ReadResult result) {
+void AppCore::onFileReady(const QUuid& taskId, IO::ReadResult result, IO::ImportRole role) {
+    if (role != IO::ImportRole::ProjectData)
+        return;
     if (!result.isSuccess()) {
         qCWarning(LogCore) << "Error loading: " << result.errMessage;
         return;
@@ -93,6 +96,56 @@ void AppCore::updateNodeSettings(const QUuid& id, std::function<void(VisualSetti
     if (node) {
         modifer(node->settings);
         m_layerManager->updateSettings(id);
+    }
+}
+
+void AppCore::startVideoExport(const QUuid&       baseNodeId,
+                               const QStringList& files,
+                               const QString&     outputPath,
+                               int                stride,
+                               int                fps) {
+    auto renderer = m_viewManager->getView(m_viewManager->getMainViewId());
+    if (!renderer)
+        return;
+
+    // 1. Получаем базовый слой, который будем анимировать
+    // Для этого нужно достать его из LayerManager (надеюсь, у тебя есть метод вроде getLayer)
+    auto targetLayer = m_layerManager->getLayer(baseNodeId, renderer);
+    if (!targetLayer) {
+        qCCritical(LogCore) << "Cannot start export: target layer not found!";
+        emit exportFinished(false);
+        return;
+    }
+
+    // 2. Создаем экспортер
+    auto exporter = std::make_shared<Visualize::VideoExporter>(renderer);
+    if (!exporter->startExport(outputPath, fps)) { // 30 FPS
+        emit exportFinished(false);
+        return;
+    }
+
+    // 3. Создаем менеджер
+    m_videoExportManager = std::make_shared<VideoExportManager>(m_dataManager.get(), targetLayer, exporter, this);
+
+    // 4. Пробрасываем сигналы в UI
+    connect(m_videoExportManager.get(), &VideoExportManager::progressUpdated, this, &AppCore::exportProgressUpdated);
+    connect(m_videoExportManager.get(), &VideoExportManager::exportFinished, this, [this](bool success) {
+        m_videoExportManager.reset(); // Очищаем память после завершения
+        emit exportFinished(success);
+    });
+
+    // Получаем формат из первого файла
+    IO::FileFormat        format = IO::Utils::getFormat(files.first());
+    Visualize::EntityType type   = IO::Utils::getEntityType(QFileInfo(files.first()).fileName());
+    IO::ReadScheme        scheme = IO::SchemeFactory::createDefaultSheme(type, format);
+
+    // 5. Погнали!
+    m_videoExportManager->start(files, scheme, format, stride);
+}
+
+void AppCore::cancelVideoExport() {
+    if (m_videoExportManager) {
+        m_videoExportManager->cancel();
     }
 }
 } // namespace QSpace::Core

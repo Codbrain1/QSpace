@@ -80,6 +80,8 @@ void Renderer::setBackgroundColor(double r, double g, double b) {
     render();
 }
 void Renderer::setAxesVisible(bool visible) {
+    if (!m_axesActor)
+        return;
     m_axesActor->SetVisibility(visible);
     // Обновляем границы осей по текущим данным
     if (visible) {
@@ -88,6 +90,15 @@ void Renderer::setAxesVisible(bool visible) {
         m_vtkRenderer->ComputeVisiblePropBounds(bounds);
         m_axesActor->SetBounds(bounds);
     }
+    render();
+}
+void Renderer::setGridVisible(bool visible) {
+    if (!m_axesActor)
+        return;
+    m_axesActor->SetDrawXGridlines(visible);
+    m_axesActor->SetDrawYGridlines(visible);
+    m_axesActor->SetDrawZGridlines(visible);
+    // TODO: добавить настройку внешнего вида сетки
     render();
 }
 void Renderer::setCameraView(CameraViewType view) {

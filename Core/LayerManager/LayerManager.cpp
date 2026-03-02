@@ -4,7 +4,7 @@
 #include "Core/ViewManager/ViewManager.h"
 #include "Enums/CoreEnums.h"
 #include "Interfaces/LayerFactory.h"
-#include "Visualize/ParticleLayer/ParticleLayer.h"
+#include "Visualize/RenderLayerSettings/ParticleLayer.h"
 #include <memory>
 #include <qobject.h>
 #include <quuid.h>
@@ -64,6 +64,18 @@ void LayerManager::removeLayer(const QUuid& nodeId) {
     m_layers.remove(nodeId);
     emit layerRemoved(nodeId);
     qCInfo(LogCore) << "LayerManager::removeLayer - Layer removed";
+}
+std::shared_ptr<Visualize::IRenderLayer> LayerManager::getLayer(const QUuid& id, Visualize::Renderer* renderer) {
+    if (!m_layers.contains(id)) {
+        qCWarning(LogCore) << "LayerManager::getLayer - Layer not found for node id:" << id;
+        return nullptr;
+    }
+    auto& rendererMap = m_layers[id];
+    if (!rendererMap.contains(renderer)) {
+        qCWarning(LogCore) << "LayerManager::removeLayer - Layer not found for node Renderer";
+        return nullptr;
+    }
+    return rendererMap[renderer];
 }
 void LayerManager::updateSettings(const QUuid& nodeId) {
     // 1. Находим все слои для этого узла (во всех окнах)

@@ -11,6 +11,7 @@
 #include <vtkRenderWindow.h>
 #include <vtkScalarBarActor.h>
 #include <vtkSmartPointer.h>
+#include <vtkSmartPointerBase.h>
 
 namespace QSpace::Visualize {
 class Renderer : public QObject {
@@ -29,6 +30,7 @@ class Renderer : public QObject {
     // общие настройки
     void setBackgroundColor(double r, double g, double b);
     void setAxesVisible(bool visible);
+    void setGridVisible(bool visible);
     void setCameraView(CameraViewType view);
     void setCenterOfRotation(double x, double y, double z); // Перенос "центра"
 
