@@ -1,4 +1,6 @@
 #pragma once
+#include <QString>
+#include <qcontainerfwd.h>
 namespace QSpace::IO
 {
 enum class ReadStatus
@@ -28,4 +30,32 @@ enum class ImportRole
   ProjectData, // Обычные данные пользователя
   Internal     // Временные данные (например, кадры видео)
 };
+inline QString fileformatToString(FileFormat format)
+{
+  switch (format)
+  {
+  case QSpace::IO::FileFormat::BIN:
+    return "BIN";
+  case QSpace::IO::FileFormat::GRD:
+    return "GRD";
+  case QSpace::IO::FileFormat::HDF5:
+    return "HDF5";
+  case QSpace::IO::FileFormat::TXT:
+    return "TXT";
+  default:
+    return "Unknown";
+  }
+}
+inline FileFormat fileformatFromString(QString s)
+{
+  if (s == "BIN")
+    return QSpace::IO::FileFormat::BIN;
+  if (s == "GRD")
+    return QSpace::IO::FileFormat::GRD;
+  if (s == "HDF5")
+    return QSpace::IO::FileFormat::HDF5;
+  if (s == "TXT")
+    return QSpace::IO::FileFormat::TXT;
+  return FileFormat::Unknown;
+}
 } // namespace QSpace::IO

@@ -1,9 +1,10 @@
+#include "Common/Enums/IOEnums.h"
 #include "Common/Interfaces/IWriter.h"
-#include "Enums/CommonEnumsIO.h"
 #include "Structures/IOStructures.h"
 #include <QFile>
 #include <qcontainerfwd.h>
 #include <vtkDataSet.h>
+
 
 namespace QSpace::IO { // TODO: решить в каком формате и что будет записываться в бинарные файлы
 class BINWriter : public IWriter {

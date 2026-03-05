@@ -29,7 +29,7 @@ class ParticleLayer : public IRenderLayer {
     vtkSmartPointer<vtkActor>                 m_actor;
     vtkSmartPointer<vtkColorTransferFunction> m_lut;
     vtkSmartPointer<vtkScalarBarActor>        m_scalarBar;
-    void                                      applyColorMap(QSpace::Visualize::ColorMapType type);
+    void                                      applyColorMap(QSpace::Visualize::ColorMapType type, double range[2]);
     void                                      setupScalarBar();
 };
 } // namespace QSpace::Visualize

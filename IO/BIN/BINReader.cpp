@@ -1,6 +1,6 @@
 #include "BINReader.h"
 #include "Common/Logger/Logger.h"
-#include "Enums/CommonEnumsIO.h"
+#include "Structures/IOStructures.h"
 #include <QByteArray>
 #include <QDataStream>
 #include <QFile>
@@ -37,24 +37,39 @@ ReadResult BINReader::read(const QString& path, const ReadScheme& scheme) const 
     const auto& config = std::get<ColumnScheme>(scheme);
     if (!path.endsWith(".bin")) {
         qCCritical(LogIO) << "BinReader requires .bin file format: " + path;
-        return {nullptr, path, "BinReader requires .bin file format: " + path, ReadStatus::InvalidFormat};
+        return {nullptr,
+                path,
+                "BinReader requires .bin file format: " + path,
+                FileFormat::BIN,
+                scheme,
+                ReadStatus::InvalidFormat};
     }
     // открываем файл
     QFile file(path);
     auto  isValid = validate(file, scheme); // проверяем что переданная структура файла валидна
     if (!isValid) {
-        return {nullptr, path, "Unsupported file structure: " + path, ReadStatus::InvalidFileStructure};
+        return {nullptr,
+                path,
+                "Unsupported file structure: " + path,
+                FileFormat::BIN,
+                scheme,
+                ReadStatus::InvalidFileStructure};
     }
     if (!file.open(QIODevice::ReadOnly)) {
         qCCritical(LogIO) << "file " << file.fileName() << "is not Open!";
-        return {nullptr, path, "Could not open file: " + path, ReadStatus::FileNotFound};
+        return {nullptr, path, "Could not open file: " + path, FileFormat::BIN, scheme, ReadStatus::FileNotFound};
     }
     // обработка заголовка
     if (config.headerOffsetBytes > 0) {
         if (!file.seek(config.headerOffsetBytes)) { // пропуск незначимых данных
             qCCritical(LogIO) << "BinReader requires file header: NumParticles, time (int,double)[realHeaderOffset]"
                               << config.headerOffsetBytes;
-            return {nullptr, path, "Could not read file header: " + path, ReadStatus::InvalidFileStructure};
+            return {nullptr,
+                    path,
+                    "Could not read file header: " + path,
+                    FileFormat::BIN,
+                    scheme,
+                    ReadStatus::InvalidFileStructure};
         }
     }
 
@@ -71,7 +86,12 @@ ReadResult BINReader::read(const QString& path, const ReadScheme& scheme) const 
     headerStream >> timestamp;
     if (N <= 0) {
         qCritical(LogIO) << "Incorrect number of particles: " << N;
-        return {nullptr, path, "Incorrect number of particles in file " + path, ReadStatus::InvalidFileStructure};
+        return {nullptr,
+                path,
+                "Incorrect number of particles in file " + path,
+                FileFormat::BIN,
+                scheme,
+                ReadStatus::InvalidFileStructure};
     }
     qCDebug(LogIO) << "Reading N = " << N << "; timestamp = " << timestamp << " in File: " << file.fileName();
 
@@ -94,7 +114,7 @@ ReadResult BINReader::read(const QString& path, const ReadScheme& scheme) const 
             }
             default: {
                 Q_ASSERT(false);
-                return {nullptr, path, "should never be called", ReadStatus::UnknownError};
+                return {nullptr, path, "should never be called", FileFormat::BIN, scheme, ReadStatus::UnknownError};
             }
         }
         // Используем numberOfComponents для учета всех компонент (не только координат)
@@ -116,7 +136,12 @@ ReadResult BINReader::read(const QString& path, const ReadScheme& scheme) const 
     // >---------------   4. ===== Валидация данных =====   ---------------<
     auto isPrerape = prepareVTK(context);
     if (!isPrerape)
-        return {nullptr, path, "vtk couldn't create data structures", ReadStatus::UnknownError};
+        return {nullptr,
+                path,
+                "vtk couldn't create data structures",
+                FileFormat::BIN,
+                scheme,
+                ReadStatus::UnknownError};
 
     // >---------------   5. ===== Выбор политики чтения =====   ---------------<
     bool UseMap = false;
@@ -128,7 +153,7 @@ ReadResult BINReader::read(const QString& path, const ReadScheme& scheme) const 
     qint64 expectedDataSize = static_cast<qint64>(context.N) * particleSize;
     if (file.size() - context.dataStartPos < expectedDataSize) {
         qCCritical(LogIO) << "File size less expected for " << context.N << " particles";
-        return {nullptr, path, "Error file size:" + path, ReadStatus::UnknownError};
+        return {nullptr, path, "Error file size:" + path, FileFormat::BIN, scheme, ReadStatus::UnknownError};
     }
 
     // >---------------   6. ===== Чтение файлов =====   ---------------<
@@ -147,7 +172,7 @@ ReadResult BINReader::read(const QString& path, const ReadScheme& scheme) const 
     }
     if (!success) {
         qCCritical(LogIO) << "Failed read file: " << file.fileName();
-        return {nullptr, path, "Failed read file: " + path, ReadStatus::UnknownError};
+        return {nullptr, path, "Failed read file: " + path, FileFormat::BIN, scheme, ReadStatus::UnknownError};
     }
     context.polyData->SetPoints(context.points);
     auto pd = context.polyData->GetPointData();
@@ -173,7 +198,14 @@ ReadResult BINReader::read(const QString& path, const ReadScheme& scheme) const 
     }
 
     createCells(context);
-    return {context.polyData, path, "", ReadStatus::Succes};
+    IO::ReadResult res;
+    res.data       = context.polyData;
+    res.path       = path;
+    res.errMessage = "";
+    res.status     = ReadStatus::Succes;
+    res.format     = FileFormat::BIN;
+    res.scheme     = scheme;
+    return res;
 }
 bool BINReader::validate(const QFile& file, const ReadScheme& scheme) const {
     if (!std::holds_alternative<ColumnScheme>(scheme)) {

@@ -1,5 +1,7 @@
 #pragma once
+#include "Common/Enums/IOEnums.h"
 #include "Common/Enums/RenderEnums.h"
+#include "Common/Structures/IOStructures.h"
 #include <QMap>
 #include <QPair>
 #include <memory>
@@ -40,8 +42,11 @@ struct VisualSettings {
 struct DataNode {
     QUuid                       id;
     QString                     label;
+    QString                     path;
     Visualize::EntityType       type;
     vtkSmartPointer<vtkDataSet> data;
+    QSpace::IO::FileFormat      format;
+    QSpace::IO::ReadScheme      scheme;
     VisualSettings              settings;
     struct MetaData {
         double                               bounds[6];

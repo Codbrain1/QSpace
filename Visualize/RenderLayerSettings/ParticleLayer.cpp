@@ -87,7 +87,6 @@ void ParticleLayer::update() {
         vtkDataArray* arr = data->GetPointData()->GetArray(s.colorByField.toStdString().c_str());
         if (arr) {
             data->GetPointData()->SetActiveScalars(s.colorByField.toStdString().c_str());
-            applyColorMap(s.colorMap);
 
             m_mapper->SelectColorArray(s.colorByField.toStdString().c_str());
 
@@ -96,11 +95,19 @@ void ParticleLayer::update() {
             double range[2] = {0.0, 1.0};
             if (s.autoRange) {
                 // для отладки
-                //  for (int k = 0; k < data->GetPointData()->GetNumberOfArrays(); ++k) {
-                //      qCDebug(LogIO) << data->GetPointData()->GetArrayName(k);
-                //  }
-                // GetRange(-1) возвращает диапазон магнитуды вектора
-                arr->GetRange(range, -1);
+                for (int k = 0; k < data->GetPointData()->GetNumberOfArrays(); ++k) {
+                    qCDebug(LogIO) << data->GetPointData()->GetArrayName(k)
+                                   << " Components: " << data->GetPointData()->GetArray(k)->GetNumberOfComponents();
+                }
+                // Если компонентов 3, берем магнитуду, если 1 - обычный диапазон
+                int comp = arr->GetNumberOfComponents() == 3 ? -1 : 0;
+                arr->GetRange(range, comp);
+
+                // Защита от отрицательных значений для LOG-шкалы
+                if (s.useLogScale && range[0] <= 0) {
+                    range[0] = 1e-5; // Или другое минимальное положительное число
+                } // TODO:: исправить работу отрисовки здесь не правильные диапазоны
+
                 // Защита от "нулевого" диапазона (если все скорости одинаковые)
                 if (std::abs(range[1] - range[0]) < 1e-10) {
                     range[1] = range[0] + 1.0;
@@ -109,6 +116,7 @@ void ParticleLayer::update() {
                 range[0] = s.rangeMin;
                 range[1] = s.rangeMax;
             }
+            applyColorMap(s.colorMap, range);
             m_mapper->SetScalarRange(range);
 
             // обновление легенды
@@ -123,17 +131,22 @@ void ParticleLayer::update() {
     }
     m_mapper->Modified();
 }
-void ParticleLayer::applyColorMap(QSpace::Visualize::ColorMapType type) {
+void ParticleLayer::applyColorMap(QSpace::Visualize::ColorMapType type, double range[2]) {
     m_lut->RemoveAllPoints();
 
-    // получение точек
     auto points = QSpace::Visualize::ColorMapRegistry::getPresetPoints(type);
+
+    double minVal = range[0];
+    double maxVal = range[1];
+    double diff   = maxVal - minVal;
+
     for (const auto& pt : points) {
-        m_lut->AddRGBPoint(pt.x, pt.r, pt.g, pt.b);
+        // Масштабируем нормализованную координату точки (0..1) в реальные значения
+        double actualValue = minVal + (pt.x * diff);
+        m_lut->AddRGBPoint(actualValue, pt.r, pt.g, pt.b);
     }
 
-    // Если в настройках включен логарифм (для космоса это часто нужно)
-    if (m_node->settings.useLogScale) {
+    if (m_node->settings.useLogScale && minVal > 0) {
         m_lut->SetScaleToLog10();
     } else {
         m_lut->SetScaleToLinear();

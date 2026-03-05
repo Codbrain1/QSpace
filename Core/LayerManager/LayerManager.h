@@ -19,6 +19,7 @@ class LayerManager : public QObject {
     void removeLayer(const QUuid& nodeId);
     std::shared_ptr<Visualize::IRenderLayer> getLayer(const QUuid& id, Visualize::Renderer* renderer);
     void                                     updateSettings(const QUuid& nodeId);
+
     ~LayerManager();
 
   signals:

@@ -1,6 +1,6 @@
 add_library(Enums INTERFACE)
 target_sources(Enums INTERFACE
-        CommonEnumsIO.h
+        IOEnums.h
         CoreEnums.h
         RenderEnums.h
 )

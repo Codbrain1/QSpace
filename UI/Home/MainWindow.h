@@ -35,6 +35,8 @@ class MainWindow : public QMainWindow {
     void on_action_toggleAxesChanged(bool checked);
     void on_action_toggleGridChanged(bool checked);
     void on_action_exportVideoClicked();
+    void on_action_saveProjectClicked();
+    void on_action_openProjectClicked();
 
   private:
     std::unique_ptr<QProgressDialog>    m_exportProgressDialog;

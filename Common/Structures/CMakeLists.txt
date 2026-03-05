@@ -3,6 +3,7 @@ target_sources(Structures INTERFACE
     IOStructures.h
     CoreStructures.h
     RenderStructures.h
+    SessionStructures.h
 )
 
 target_include_directories(Structures INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/../..)

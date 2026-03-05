@@ -9,9 +9,11 @@ target_link_libraries(AppCore PUBLIC
                 QSpace::Common
                 QSpace::IO
                 QSpace::Visualize
+                QSpace::Session
                 ObjectRegistry
                 DataManager
                 PipelineManager
                 TaskManager
+                SessionManager
                 Qt6::Core
 )

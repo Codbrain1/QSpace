@@ -2,18 +2,14 @@
 #include "Common/Logger/Logger.h"
 #include "Core/AppCore/AppCore.h"
 #include "DataTreeController.h"
-#include "Enums/CommonEnumsIO.h"
 #include "Enums/RenderEnums.h"
-#include "Interfaces/IOFactory.h"
 #include "PropertyInspector.h"
-#include "Structures/IOStructures.h"
 #include "ui_newmainwindow.h"
 #include <QMainWindow>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QToolButton>
 #include <QVTKOpenGLNativeWidget.h>
-#include <cstddef>
 #include <memory>
 #include <qaction.h>
 #include <qcontainerfwd.h>
@@ -97,6 +93,9 @@ void MainWindow::setupSlots() {
         QAction* actionExport = ui->mainToolBar->addAction(QIcon::fromTheme("video-x-generic"), "Экспорт видео");
         connect(actionExport, &QAction::triggered, this, &MainWindow::on_action_exportVideoClicked);
     }
+    // загрузка и сохранение проекта
+    connect(ui->action_save_session, &QAction::triggered, this, &MainWindow::on_action_saveProjectClicked);
+    connect(ui->action_open_session, &QAction::triggered, this, &MainWindow::on_action_openProjectClicked);
 
     // --- СОЗДАНИЕ АНИМАЦИИ ---
     connect(m_exportProgressDialog.get(), &QProgressDialog::canceled, m_app, &Core::AppCore::cancelVideoExport);
@@ -130,6 +129,30 @@ void MainWindow::setupSlots() {
 
     connect(ui->menu_camera, &QMenu::triggered, this, &MainWindow::on_action_ChangedViewClicked);
     connect(ui->menu_bg, &QMenu::triggered, this, &MainWindow::on_action_ChangedBackgroundClicked);
+
+    connect(m_app, &Core::AppCore::requestSavePathFromUI, this, [this]() {
+        QString path = QFileDialog::getSaveFileName(this, "Сохранить проект как...", "", "QSpace Project (*.qsp)");
+
+        if (!path.isEmpty()) {
+            // Устанавливаем путь в стейт и пробуем сохранить еще раз
+            auto& session           = m_app->getCurrentSessionState();
+            session.projectFilePath = path;
+            // Можно автоматически подставить имя файла как имя проекта, если оно пустое
+            if (session.projectName.isEmpty()) {
+                session.projectName = QFileInfo(path).baseName();
+            }
+            m_app->saveCurrentProject();
+        }
+    });
+    // 2. Обновление заголовка окна при изменении состояния сессии
+    connect(m_app, &Core::AppCore::sessionStateChanged, this, [this](const QSpace::Session::CurrentSession& session) {
+        QString title = QString("QSpace - %1%2")
+                            .arg(session.projectName.isEmpty() ? "Новый проект" : session.projectName)
+                            .arg(session.isDirty ? "*" : ""); // Звездочка, если есть несохраненные изменения
+        setWindowTitle(title);
+
+        qCDebug(LogSystem) << "Session state updated. Project:" << session.projectName;
+    });
 }
 // РЕАЛИЗАЦИЯ СЛОТА
 void MainWindow::on_action_exportVideoClicked() {
@@ -188,7 +211,7 @@ void MainWindow::on_action_ChangedBackgroundClicked(QAction* action) {
     if (action == ui->action_bg_black) {
         m_renderer->setBackgroundColor(0.0, 0.0, 0.0);
     } else if (action == ui->action_bg_white) {
-        m_renderer->setBackgroundColor(0.3, 1.0, 1.0);
+        m_renderer->setBackgroundColor(1.0, 1.0, 1.0);
     }
 
     // Меняем текст на кнопке тулбара
@@ -212,26 +235,7 @@ void MainWindow::on_render_update() {
 }
 void MainWindow::on_btn_add_data() {
     QStringList paths = QFileDialog::getOpenFileNames(this, "выберите файлы с данными", "", "Bin Files (*.bin)");
-    if (paths.isEmpty())
-        return;
-    if (paths.size() == 1) {
-        IO::FileFormat        format     = IO::Utils::getFormat(paths[0]);
-        Visualize::EntityType entityType = IO::Utils::getEntityType(QFileInfo(paths[0]).fileName());
-        IO::ReadScheme        scheme     = IO::SchemeFactory::createDefaultSheme(entityType, format);
-        m_app->getDataManager()->importDataAsync(paths[0], scheme);
-    } else {
-        QList<QSpace::IO::BatchTask> tasks;
-        for (const auto& path : paths) {
-            IO::FileFormat        format     = IO::Utils::getFormat(path);
-            Visualize::EntityType entityType = IO::Utils::getEntityType(path);
-            IO::ReadScheme        scheme     = IO::SchemeFactory::createDefaultSheme(entityType, format);
-            IO::BatchTask         task;
-            task.path   = path;
-            task.scheme = scheme;
-            tasks.append(task);
-        }
-        m_app->getDataManager()->importBatchDataAsync(tasks);
-    }
+    m_app->importFiles(paths);
 }
 void MainWindow::on_btn_remove_data() {
     auto items = ui->tree_layers->selectedItems();
@@ -239,8 +243,18 @@ void MainWindow::on_btn_remove_data() {
     for (auto* item : items) {
         QString idStr = item->data(0, Qt::UserRole).toString();
         if (!idStr.isEmpty()) {
-            m_app->getObjectRegistry()->removeObject(QUuid::fromString(idStr));
+            m_app->removeLayer(idStr);
         }
+    }
+}
+void MainWindow::on_action_saveProjectClicked() {
+    m_app->saveCurrentProject();
+}
+void MainWindow::on_action_openProjectClicked() {
+    QString path = QFileDialog::getOpenFileName(this, "Открыть проект", "", "QSpace Project (*.qsp);;All Files (*)");
+
+    if (!path.isEmpty()) {
+        m_app->openProject(path);
     }
 }
 } // namespace QSpace::UI

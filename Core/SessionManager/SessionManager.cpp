@@ -1,0 +1,49 @@
+#include "SessionManager.h"
+#include "Session/ProjectSerializer.h"
+#include <qfileinfo.h>
+
+namespace QSpace::Core {
+
+SessionManager::SessionManager(QSpace::Core::ObjectRegistry* registry, QObject* parent)
+    : QObject(parent), m_registry(registry) {
+    // ВАЖНО: Инициализируем хранилище, иначе будет краш!
+    m_storage_session = std::make_unique<QSpace::Session::SessionStorage>();
+}
+
+std::optional<QSpace::Session::ProjectState> SessionManager::loadProject(const QString& filePath) {
+    auto data = m_storage_session->load(filePath);
+    if (data.has_value()) {
+        auto projectState = QSpace::Session::ProjectSerializer::deserialize(data.value());
+        if (projectState.has_value()) {
+            projectState->projectName = QFileInfo(filePath).fileName();
+            return projectState;
+        }
+    }
+    return std::nullopt;
+}
+
+bool SessionManager::saveProject(const QSpace::Session::CurrentSession& curSession) {
+    if (curSession.projectFilePath.isEmpty())
+        return false;
+
+    QSpace::Session::ProjectState state;
+    state.projectName = curSession.projectName;
+
+    for (const auto& node : m_registry->getAllNodes()) {
+        QSpace::Session::DataNodeState ds;
+        ds.id       = node->id;
+        ds.label    = node->label;
+        ds.path     = node->path;
+        ds.settings = node->settings;
+        ds.stats    = node->stats;
+        ds.type     = node->type;
+        ds.format   = node->format;
+        ds.scheme   = node->scheme;
+        state.nodesStates.append(ds);
+    }
+
+    QByteArray data = QSpace::Session::ProjectSerializer::serialize(state);
+    return m_storage_session->save(curSession.projectFilePath, data);
+}
+
+} // namespace QSpace::Core

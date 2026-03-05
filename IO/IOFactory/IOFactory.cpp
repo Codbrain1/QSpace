@@ -1,5 +1,5 @@
 #include "Common/Interfaces/IOFactory.h"
-#include "Enums/CommonEnumsIO.h"
+#include "Common/Enums/IOEnums.h"
 #include "IO/BIN/BINReader.h"
 #include "Interfaces/IReader.h"
 #include <memory>

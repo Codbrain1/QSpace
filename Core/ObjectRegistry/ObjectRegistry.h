@@ -22,10 +22,19 @@ class ObjectRegistry : public QObject {
     QList<std::shared_ptr<DataNode>> getAllNodes() {
         return m_nodes.values();
     }
+    void clear() {
+        for (const auto& node : m_nodes) {
+            removeObject(node->id);
+        }
+        for (const auto& container : m_containers) {
+            removeObject(container->id);
+        }
+    }
   signals:
     void nodeAdded(std::shared_ptr<QSpace::Core::DataNode> node);
     void containerAdded(std::shared_ptr<DataContainer> container);
     void objectRemoved(const QUuid& id);
+    void cleared();
 
   private:
     QMap<QUuid, std::shared_ptr<DataNode>>      m_nodes;

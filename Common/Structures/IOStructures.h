@@ -1,6 +1,7 @@
 #pragma once
-#include "Enums/CommonEnumsIO.h"
-#include "Enums/RenderEnums.h"
+#include "Common/Enums/IOEnums.h"
+#include "Common/Enums/RenderEnums.h"
+#include "Common/Structures/IOStructures.h"
 #include <QList>
 #include <QMap>
 #include <QString>
@@ -10,6 +11,7 @@
 #include <vtkMultiBlockDataSet.h>
 #include <vtkSmartPointer.h>
 #include <vtkType.h>
+
 
 namespace QSpace::IO {
 struct ColumnScheme {
@@ -47,6 +49,8 @@ struct ReadResult { // результат чтения одного файла
     vtkSmartPointer<vtkDataSet> data = nullptr;
     QString                     path;
     QString                     errMessage;
+    IO::FileFormat              format;
+    IO::ReadScheme              scheme;
     ReadStatus                  status = ReadStatus::UnknownError;
     bool                        isSuccess() const {
         return status == ReadStatus::Succes && data != nullptr;

@@ -1,4 +1,4 @@
-#include "Enums/CommonEnumsIO.h"
+#include "Common/Enums/IOEnums.h"
 #include "IO/BIN/BINReader.h"
 #include "Structures/IOStructures.h"
 #include <functional>

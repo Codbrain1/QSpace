@@ -1,6 +1,6 @@
 #pragma once
-#include "Common/Enums/CommonEnumsIO.h"
-#include "Enums/RenderEnums.h"
+#include "Common/Enums/IOEnums.h"
+#include "Common/Enums/RenderEnums.h"
 #include "IReader.h"
 #include "IWriter.h"
 #include <memory>

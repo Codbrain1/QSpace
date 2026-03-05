@@ -1,17 +1,21 @@
 #pragma once
-#include "Common/Enums/CommonEnumsIO.h"
+#include "Common/Enums/IOEnums.h"
 #include "Core/DataManager/DataManager.h"
 #include "Core/LayerManager/LayerManager.h"
 #include "Core/ObjectRegistry/ObjectRegistry.h"
 #include "Core/PipelineManager/PipelineManager.h"
+#include "Core/SessionManager/SessionManager.h"
 #include "Core/TaskManager/TaskManager.h"
 #include "Core/VideoExportManager/VideoExportManager.h"
 #include "Core/ViewManager/ViewManager.h"
 #include "Structures/CoreStructures.h"
 #include "Structures/IOStructures.h"
+#include "Structures/SessionStructures.h"
 #include <QObject>
 #include <functional>
 #include <memory>
+#include <mutex>
+#include <qcontainerfwd.h>
 #include <qobject.h>
 #include <qtmetamacros.h>
 #include <quuid.h>
@@ -53,6 +57,8 @@ class AppCore : public QObject {
                           const QString&     outputPath,
                           int                stride = 1,
                           int                fps    = 30);
+    void importFiles(const QStringList& paths);
+    void removeLayer(const QString& layerName);
     /**
      * @brief отменяет рендеринг видео
      */
@@ -69,6 +75,11 @@ class AppCore : public QObject {
     LayerManager* getLayerManager() const {
         return m_layerManager.get();
     }
+    QSpace::Session::CurrentSession& getCurrentSessionState() {
+        return m_session_state;
+    }
+    void saveCurrentProject();
+    void openProject(const QString& projectPath);
   signals:
     /**
      * @brief сообщает об обновлении процесса создания видео
@@ -80,11 +91,15 @@ class AppCore : public QObject {
      * @brief сигнал об окончании создания видео
      */
     void exportFinished(bool success);
+    void requestSavePathFromUI();
+    void sessionStateChanged(QSpace::Session::CurrentSession session);
   private slots:
     /**
      * @brief добавляет считанный файл в ObjectRegister
      */
     void onFileReady(const QUuid& taskId, IO::ReadResult result, IO::ImportRole role);
+
+    void createNewProject(const QString& projectName);
 
   private:
     std::unique_ptr<TaskManager>        m_taskManager;
@@ -94,9 +109,13 @@ class AppCore : public QObject {
     std::unique_ptr<ViewManager>        m_viewManager;
     std::unique_ptr<PipelineManager>    m_pipelineManager;
     std::unique_ptr<LayerManager>       m_layerManager;
+    std::unique_ptr<SessionManager>     m_sessionManager;
+    QSpace::Session::CurrentSession     m_session_state;
     QMap<QUuid, int>                    m_activeTasks;
+    // Очередь восстановления: Путь файла -> Сохраненное состояние ноды
+    QMap<QString, QSpace::Session::DataNodeState> m_restoringNodes;
+    bool                                          m_autoGrouping = true;
 
-    bool                           m_autoGrouping = true;
     QString                        extractGroupName(const QString& filename);
     std::shared_ptr<DataContainer> findOrCreateContainer(const QString& groupName);
 };

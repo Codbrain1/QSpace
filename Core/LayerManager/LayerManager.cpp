@@ -14,7 +14,7 @@ LayerManager::LayerManager(QObject* parent) : QObject(parent) {
 }
 
 void LayerManager::createLayer(std::shared_ptr<DataNode> node, Visualize::Renderer* renderer) {
-    if (!node || !renderer) {
+    if (!node || !renderer || !node->data) {
         qCWarning(LogCore) << "LayerManager::createLayer - Invalid node or renderer";
         return;
     }

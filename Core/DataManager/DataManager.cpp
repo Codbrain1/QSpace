@@ -1,6 +1,5 @@
 #include "DataManager.h"
 #include "Core/TaskManager/TaskManager.h"
-#include "Enums/CommonEnumsIO.h"
 #include "Interfaces/IOFactory.h"
 #include <memory>
 #include <qcontainerfwd.h>
@@ -37,7 +36,12 @@ QUuid DataManager::importDataAsync(const QString& path, const IO::ReadScheme& sc
         auto type   = IO::Utils::getFormat(path);
         auto reader = IO::IOFactory::createReader(type);
         if (!reader) {
-            return IO::ReadResult{nullptr, path, "Unsupported file format", IO::ReadStatus::InvalidFormat};
+            return IO::ReadResult{nullptr,
+                                  path,
+                                  "Unsupported file format",
+                                  IO::FileFormat::BIN,
+                                  scheme,
+                                  IO::ReadStatus::InvalidFormat};
         }
         reader->setPolicy(policy);
         auto res = reader->read(path, scheme);
@@ -68,7 +72,12 @@ void DataManager::importBatchDataAsync(const QList<IO::BatchTask>& tasks, IO::Im
         auto type   = IO::Utils::getFormat(t.path);
         auto reader = IO::IOFactory::createReader(type);
         if (!reader)
-            return {nullptr, t.path, "Unsupported file format", IO::ReadStatus::InvalidFormat};
+            return {nullptr,
+                    t.path,
+                    "Unsupported file format",
+                    IO::FileFormat::BIN,
+                    t.scheme,
+                    IO::ReadStatus::InvalidFormat};
         reader->setPolicy(policy);
 
         auto res = reader->read(t.path, t.scheme);

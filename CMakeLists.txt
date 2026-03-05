@@ -80,7 +80,7 @@ add_subdirectory(IO)
 # add_subdirectory(Physics)
 # add_subdirectory(Remote)
 add_subdirectory(Visualize)
-# add_subdirectory(Session)
+add_subdirectory(Session)
 add_subdirectory(UI)
 # add_subdirectory(Charting)
 

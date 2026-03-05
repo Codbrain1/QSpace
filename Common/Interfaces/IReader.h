@@ -1,10 +1,11 @@
 #pragma once
+#include "Common/Enums/IOEnums.h"
 #include "Common/Structures/IOStructures.h"
-#include "Enums/CommonEnumsIO.h"
 #include <QString>
 #include <vtkDataSet.h>
 #include <vtkMultiBlockDataSet.h>
 #include <vtkSmartPointer.h>
+
 
 namespace QSpace
 {

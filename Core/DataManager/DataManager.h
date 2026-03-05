@@ -1,7 +1,7 @@
 #pragma once
+#include "Common/Enums/IOEnums.h"
 #include "Common/Structures/IOStructures.h"
 #include "Core/TaskManager/TaskManager.h"
-#include "Enums/CommonEnumsIO.h"
 #include <qcontainerfwd.h>
 #include <qlist.h>
 #include <qobject.h>
@@ -11,6 +11,7 @@
 #include <quuid.h>
 #include <vtkMultiBlockDataSet.h>
 #include <vtkSmartPointer.h>
+
 
 namespace QSpace::Core {
 class DataManager : public QObject {

@@ -1,6 +1,6 @@
 #pragma once
+#include "Common/Enums/IOEnums.h"
 #include "Common/Interfaces/IReader.h"
-#include "Enums/CommonEnumsIO.h"
 #include "Structures/IOStructures.h"
 #include <QFile>
 #include <QtEndian>
@@ -12,6 +12,7 @@
 #include <vtkAbstractArray.h>
 #include <vtkPointSet.h>
 #include <vtkPolyData.h>
+
 
 namespace QSpace::IO {
 class BINReader : public IReader {
