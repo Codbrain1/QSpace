@@ -11,7 +11,7 @@ function(qspace_add_test TestName)
 
     add_test(NAME ${TestName} COMMAND ${TestName})
     set(QT_BIN_DIR "C:/Qt/6.9.2/mingw_64/bin")
-    set(VTK_BIN_DIR "D:/NIR/NIR_6_semestr/vtk/vtk-install-dll/bin")
+    set(VTK_BIN_DIR "D:/NIR/NIR_6_semestr/vtk/vtk-install-ffmpeg-wmf-dll/bin")
     set_tests_properties(${TestName} PROPERTIES ENVIRONMENT 
         "PATH=${QT_BIN_DIR}\;${VTK_BIN_DIR}\;$ENV{PATH}"
     )

@@ -26,10 +26,12 @@
 
 namespace QSpace::Visualize {
 ParticleLayer::ParticleLayer(std::shared_ptr<Core::DataNode> node) : m_node(node) {
-    m_mapper    = vtkSmartPointer<vtkPointGaussianMapper>::New();
-    m_actor     = vtkSmartPointer<vtkActor>::New();
-    m_lut       = vtkSmartPointer<vtkColorTransferFunction>::New();
-    m_scalarBar = vtkSmartPointer<vtkScalarBarActor>::New();
+    m_mapper          = vtkSmartPointer<vtkPointGaussianMapper>::New();
+    m_actor           = vtkSmartPointer<vtkActor>::New();
+    m_lut             = vtkSmartPointer<vtkColorTransferFunction>::New();
+    m_scalarBar       = vtkSmartPointer<vtkScalarBarActor>::New();
+    m_opacityFunction = vtkSmartPointer<vtkPiecewiseFunction>::New();
+
     m_mapper->SetEmissive(false);
     m_mapper->SetStatic(true);
 
@@ -70,6 +72,9 @@ void ParticleLayer::update() {
     if (s.mode == RenderMode::GausianSplat) {
         m_mapper->SetScaleFactor(s.PointSize);
         m_mapper->SetEmissive(true); // TODO: на белом фоне не отображаются частицы из за этой настройки
+        m_mapper->SetScalarOpacityFunction(m_opacityFunction);
+        m_mapper->SetColorModeToMapScalars();
+
     } else if (s.mode == RenderMode::Points) {
         m_mapper->SetScaleFactor(0.000);
         m_actor->GetProperty()->SetPointSize(s.PointSize);
@@ -151,7 +156,8 @@ void ParticleLayer::update() {
 }
 void ParticleLayer::applyColorMap(QSpace::Visualize::ColorMapType type, double range[2]) {
     m_lut->RemoveAllPoints();
-
+    m_opacityFunction->RemoveAllPoints();
+    m_lut->SetColorSpaceToLab();
     auto points = QSpace::Visualize::ColorMapRegistry::getPresetPoints(type);
 
     double minVal = range[0];
@@ -174,6 +180,7 @@ void ParticleLayer::applyColorMap(QSpace::Visualize::ColorMapType type, double r
         }
 
         m_lut->AddRGBPoint(actualValue, pt.r, pt.g, pt.b);
+        m_opacityFunction->AddPoint(actualValue, pt.x);
     }
 
     if (useLog) {

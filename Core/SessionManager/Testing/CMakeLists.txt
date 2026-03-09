@@ -1,0 +1,1 @@
+qspace_add_test(TestSessionManager QSpace::Core QSpace::Common QSpace::Session)

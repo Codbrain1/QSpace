@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>267</width>
-    <height>315</height>
+    <width>351</width>
+    <height>537</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -23,48 +23,99 @@
       <item row="0" column="0">
        <widget class="QLabel" name="label_cmap">
         <property name="text">
-         <string>Палитра:</string>
+         <string>Палитра</string>
         </property>
        </widget>
       </item>
       <item row="0" column="1">
        <widget class="QComboBox" name="combo_colormap"/>
       </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_current_column">
+        <property name="text">
+         <string>Раскрасить по</string>
+        </property>
+       </widget>
+      </item>
       <item row="1" column="1">
        <widget class="QComboBox" name="combo_current_column"/>
       </item>
       <item row="2" column="0">
+       <widget class="QLabel" name="label_visibalityTYpe">
+        <property name="text">
+         <string>Тип отображения</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QComboBox" name="combo_visibalityType"/>
+      </item>
+      <item row="3" column="0">
        <widget class="QLabel" name="label_opacity">
         <property name="text">
          <string>Прозрачность:</string>
         </property>
        </widget>
       </item>
-      <item row="2" column="1">
+      <item row="3" column="1">
        <widget class="QSlider" name="slider_opacity">
         <property name="orientation">
          <enum>Qt::Orientation::Horizontal</enum>
         </property>
        </widget>
       </item>
-      <item row="3" column="0">
+      <item row="4" column="0">
        <widget class="QLabel" name="label_size">
         <property name="text">
-         <string>размер частицы</string>
+         <string>Размер частицы:</string>
         </property>
        </widget>
       </item>
-      <item row="3" column="1">
+      <item row="4" column="1">
        <widget class="QSlider" name="slider_size">
         <property name="orientation">
          <enum>Qt::Orientation::Horizontal</enum>
         </property>
        </widget>
       </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="label_current_column">
+      <item row="9" column="0" colspan="2">
+       <widget class="QCheckBox" name="checkBox_useLogScale">
         <property name="text">
-         <string>раскрасить по</string>
+         <string>логарифмическая шкала</string>
+        </property>
+       </widget>
+      </item>
+      <item row="10" column="0">
+       <widget class="QCheckBox" name="checkBox_useEmissive">
+        <property name="text">
+         <string>излучение</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="0">
+       <widget class="QLabel" name="label_maxValue">
+        <property name="text">
+         <string>Макс. значение:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="1">
+       <widget class="QDoubleSpinBox" name="spin_maxValue"/>
+      </item>
+      <item row="7" column="0">
+       <widget class="QLabel" name="label_minValue">
+        <property name="text">
+         <string>Мин. значение:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="1">
+       <widget class="QDoubleSpinBox" name="spin_minValue"/>
+      </item>
+      <item row="5" column="0">
+       <widget class="QCheckBox" name="checkBox_useEmissive_2">
+        <property name="text">
+         <string>автоматический диапазон</string>
         </property>
        </widget>
       </item>

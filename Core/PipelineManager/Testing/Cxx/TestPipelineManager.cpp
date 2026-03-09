@@ -2,14 +2,13 @@
 #include <QtTest>
 #include <memory>
 
-
 #include "Common/Structures/CoreStructures.h"
 #include "Core/LayerManager/LayerManager.h"
 #include "Core/ObjectRegistry/ObjectRegistry.h"
 #include "Core/PipelineManager/PipelineManager.h"
 #include "Core/ViewManager/ViewManager.h"
-
-
+#include <vtkPolyData.h>
+#include <vtkSmartPointer.h>
 using namespace QSpace::Core;
 
 class TestPipelineManager : public QObject {
@@ -31,31 +30,26 @@ class TestPipelineManager : public QObject {
     }
 
     void testNodeAddition() {
-        // 1. Создаем окно (это создаст Renderer)
-        QUuid vId = m_viewManager->createView();
-
-        // 2. Следим за LayerManager
+        QUuid      vId = m_viewManager->createView();
         QSignalSpy spy(m_layerManager, &LayerManager::layerCreated);
 
-        // 3. Создаем и регистрируем ноду
-        // ВАЖНО: PipelineManager вызовет renderer->render()
-        auto node = std::make_shared<DataNode>(nullptr, "TestNode");
+        // СОЗДАЕМ МИНИМАЛЬНЫЕ ДАННЫЕ
+        auto dummyData = vtkSmartPointer<vtkPolyData>::New();
+        auto node      = std::make_shared<DataNode>(dummyData, "TestNode");
 
-        // Чтобы не упасть на Render(), можно добавить проверку в самом Renderer
-        // Но сейчас попробуем просто вызвать регистрацию
         m_registry->registerNode(node);
 
         QCOMPARE(spy.count(), 1);
     }
 
     void testViewCreation() {
-        // 1. Добавляем ноду заранее
-        auto node = std::make_shared<DataNode>(nullptr, "EarlyNode");
+        // ТО ЖЕ САМОЕ ЗДЕСЬ
+        auto dummyData = vtkSmartPointer<vtkPolyData>::New();
+        auto node      = std::make_shared<DataNode>(dummyData, "EarlyNode");
+
         m_registry->registerNode(node);
 
         QSignalSpy spy(m_layerManager, &LayerManager::layerCreated);
-
-        // 2. Создаем окно. PipelineManager должен подхватить ноду
         m_viewManager->createView();
 
         QCOMPARE(spy.count(), 1);

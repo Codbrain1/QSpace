@@ -15,7 +15,7 @@ option(ENABLE_TESTS "Build Tests" ON) #опция переключения ме�
 if(WIN32) 
     set(CMAKE_PREFIX_PATH 
     "C:/Qt/6.9.2/mingw_64"
-    "D:/NIR/NIR_6_semestr/vtk/vtk-install-dll/lib/cmake/vtk-9.5")
+    "D:/NIR/NIR_6_semestr/vtk/vtk-install-ffmpeg-wmf-dll/lib/cmake/vtk-9.5")
     # Отключение Vulkan
     set(QT_NO_VULKAN ON)
     set(CMAKE_CXX_COMPILER "C:/Qt/Tools/mingw1310_64/bin/g++.exe")

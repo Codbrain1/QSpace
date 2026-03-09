@@ -3,6 +3,7 @@
 #include "Common/Structures/CoreStructures.h"
 #include <memory>
 #include <vtkColorTransferFunction.h>
+#include <vtkPiecewiseFunction.h>
 #include <vtkPointGaussianMapper.h>
 #include <vtkProp.h>
 #include <vtkRenderer.h>
@@ -28,6 +29,7 @@ class ParticleLayer : public IRenderLayer {
     vtkSmartPointer<vtkPointGaussianMapper>   m_mapper;
     vtkSmartPointer<vtkActor>                 m_actor;
     vtkSmartPointer<vtkColorTransferFunction> m_lut;
+    vtkSmartPointer<vtkPiecewiseFunction>     m_opacityFunction;
     vtkSmartPointer<vtkScalarBarActor>        m_scalarBar;
     void                                      applyColorMap(QSpace::Visualize::ColorMapType type, double range[2]);
     void                                      setupScalarBar();

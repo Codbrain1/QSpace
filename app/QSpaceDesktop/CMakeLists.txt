@@ -40,7 +40,7 @@ if(WIN32) # на виндовс только gui
 set_target_properties(QSpace PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
-set(VTK_BIN_DIR "D:/NIR/NIR_6_semestr/vtk/vtk-install-dll/bin")
+set(VTK_BIN_DIR "D:/NIR/NIR_6_semestr/vtk/vtk-install-ffmpeg-wmf-dll/bin")
     
     add_custom_command(TARGET QSpace POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory 
