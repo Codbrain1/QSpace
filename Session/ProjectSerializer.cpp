@@ -55,7 +55,6 @@ QJsonObject ProjectSerializer::serializeDataNode(const QSpace::Session::DataNode
     o.insert("path", node_state.path);
     o.insert("format", IO::fileformatToString(node_state.format)); // Проверь: ...ToString или ...String в твоих енамах
     o.insert("entityType", QSpace::Visualize::entitytypeToString(node_state.type));
-
     // Bounds
     QJsonArray boundsArr;
     for (int i = 0; i < 6; ++i)
@@ -147,6 +146,7 @@ QJsonObject ProjectSerializer::serializeVisualSettings(const QSpace::Core::Visua
     obj.insert("rangeMin", settings.rangeMin);
     obj.insert("rangeMax", settings.rangeMax);
     obj.insert("colorByField", settings.colorByField);
+    obj.insert("isEmisive", settings.isEmmisive);
     return obj;
 }
 
@@ -165,6 +165,7 @@ QSpace::Core::VisualSettings ProjectSerializer::deserializeVisualSettings(const 
     vs.autoRange     = json["autoRange"].toBool(true);
     vs.rangeMin      = json["rangeMin"].toDouble(0.0);
     vs.rangeMax      = json["rangeMax"].toDouble(100.0);
+    vs.isEmmisive    = json["isEmisive"].toBool(false);
     return vs;
 }
 

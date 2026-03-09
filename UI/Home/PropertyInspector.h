@@ -44,6 +44,7 @@ class PropertyInspector : public QWidget {
     void onRangeMaxValueChanged(double val);
     void onRangeMinValueChanged(double val);
     void onCheckBoxAutoRangeChanged(bool checked);
+    void onShowScalarBar(bool checked);
 
   private:
     Ui::PropertyInspector* ui;

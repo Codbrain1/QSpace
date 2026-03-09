@@ -85,7 +85,13 @@ void PropertyInspector::setupUiLogic() {
             &PropertyInspector::onRenderModeChanged);
     connect(ui->checkBox_useLogScale, &QCheckBox::toggled, this, &PropertyInspector::onUseLogscaleChanged);
     connect(ui->checkBox_useEmissive, &QCheckBox::toggled, this, &PropertyInspector::onUseEmisiveChanged);
+    connect(ui->checkBox_isVisibleScalarBar, &QCheckBox::toggled, this, &PropertyInspector::onShowScalarBar);
     connect(ui->checkBox_isAutomaticRange, &QCheckBox::toggled, this, &PropertyInspector::onCheckBoxAutoRangeChanged);
+}
+void PropertyInspector::onShowScalarBar(bool checked) {
+    if (m_currentNodeId.isNull())
+        return;
+    m_app->updateNodeSettings(m_currentNodeId, [checked](Core::VisualSettings& s) { s.showScalarBar = checked; });
 }
 void PropertyInspector::onCheckBoxAutoRangeChanged(bool checked) {
     if (m_currentNodeId.isNull())
@@ -190,6 +196,8 @@ void PropertyInspector::updateWidgets() {
                                                                        : Qt::CheckState::Unchecked);
     ui->checkBox_useEmissive->setCheckState(node->settings.isEmmisive ? Qt::CheckState::Checked
                                                                       : Qt::CheckState::Unchecked);
+    ui->checkBox_isVisibleScalarBar->setCheckState(node->settings.showScalarBar ? Qt::CheckState::Checked
+                                                                                : Qt::CheckState::Unchecked);
 }
 void PropertyInspector::onRangeMaxValueChanged(double val) {
     if (m_currentNodeId.isNull())

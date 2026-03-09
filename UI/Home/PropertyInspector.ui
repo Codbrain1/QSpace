@@ -20,10 +20,10 @@
       <string>Визуализация</string>
      </property>
      <layout class="QGridLayout" name="gridLayout">
-      <item row="5" column="0">
-       <widget class="QCheckBox" name="checkBox_isAutomaticRange">
+      <item row="9" column="0">
+       <widget class="QCheckBox" name="checkBox_useEmissive">
         <property name="text">
-         <string>автоматический диапазон</string>
+         <string>самосвечение</string>
         </property>
        </widget>
       </item>
@@ -31,6 +31,30 @@
        <widget class="QLabel" name="label_cmap">
         <property name="text">
          <string>Палитра</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="0">
+       <widget class="QLabel" name="label_maxValue">
+        <property name="text">
+         <string>Макс. значение:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_visibalityTYpe">
+        <property name="text">
+         <string>Тип отображения</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1" colspan="2">
+       <widget class="QComboBox" name="combo_current_column"/>
+      </item>
+      <item row="8" column="0" colspan="2">
+       <widget class="QCheckBox" name="checkBox_useLogScale">
+        <property name="text">
+         <string>логарифмическая шкала</string>
         </property>
        </widget>
       </item>
@@ -48,10 +72,16 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="label_visibalityTYpe">
-        <property name="text">
-         <string>Тип отображения</string>
+      <item row="3" column="1" colspan="2">
+       <widget class="QDoubleSpinBox" name="doubleSpinBox_Opacity">
+        <property name="decimals">
+         <number>5</number>
+        </property>
+        <property name="maximum">
+         <double>1.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>0.010000000000000</double>
         </property>
        </widget>
       </item>
@@ -59,57 +89,6 @@
        <widget class="QDoubleSpinBox" name="spin_maxValue">
         <property name="singleStep">
          <double>0.100000000000000</double>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="label_current_column">
-        <property name="text">
-         <string>Раскрасить по</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1" colspan="2">
-       <widget class="QComboBox" name="combo_colormap"/>
-      </item>
-      <item row="3" column="0" alignment="Qt::AlignmentFlag::AlignLeft">
-       <widget class="QLabel" name="label_opacity">
-        <property name="text">
-         <string>Прозрачность:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1" colspan="2">
-       <widget class="QComboBox" name="combo_RenderMode"/>
-      </item>
-      <item row="9" column="0">
-       <widget class="QCheckBox" name="checkBox_useEmissive">
-        <property name="text">
-         <string>самосвечение</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1" colspan="2">
-       <widget class="QComboBox" name="combo_current_column"/>
-      </item>
-      <item row="6" column="0">
-       <widget class="QLabel" name="label_maxValue">
-        <property name="text">
-         <string>Макс. значение:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="7" column="1" colspan="2">
-       <widget class="QDoubleSpinBox" name="spin_minValue">
-        <property name="singleStep">
-         <double>0.100000000000000</double>
-        </property>
-       </widget>
-      </item>
-      <item row="8" column="0" colspan="2">
-       <widget class="QCheckBox" name="checkBox_useLogScale">
-        <property name="text">
-         <string>логарифмическая шкала</string>
         </property>
        </widget>
       </item>
@@ -123,16 +102,44 @@
         </property>
        </widget>
       </item>
-      <item row="3" column="1" colspan="2">
-       <widget class="QDoubleSpinBox" name="doubleSpinBox_Opacity">
-        <property name="decimals">
-         <number>5</number>
-        </property>
-        <property name="maximum">
-         <double>1.000000000000000</double>
-        </property>
+      <item row="7" column="1" colspan="2">
+       <widget class="QDoubleSpinBox" name="spin_minValue">
         <property name="singleStep">
-         <double>0.010000000000000</double>
+         <double>0.100000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0" alignment="Qt::AlignmentFlag::AlignLeft">
+       <widget class="QLabel" name="label_opacity">
+        <property name="text">
+         <string>Прозрачность:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1" colspan="2">
+       <widget class="QComboBox" name="combo_colormap"/>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_current_column">
+        <property name="text">
+         <string>Раскрасить по</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QCheckBox" name="checkBox_isAutomaticRange">
+        <property name="text">
+         <string>автоматический диапазон</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1" colspan="2">
+       <widget class="QComboBox" name="combo_RenderMode"/>
+      </item>
+      <item row="10" column="0">
+       <widget class="QCheckBox" name="checkBox_isVisibleScalarBar">
+        <property name="text">
+         <string>отображать колорбар</string>
         </property>
        </widget>
       </item>

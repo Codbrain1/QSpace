@@ -69,9 +69,9 @@ void ParticleLayer::update() {
         m_mapper->SetInputData(data);
     }
 
+    m_mapper->SetEmissive(s.isEmmisive); // TODO: на белом фоне не отображаются частицы из за этой настройки
     if (s.mode == RenderMode::GausianSplat) {
         m_mapper->SetScaleFactor(s.PointSize);
-        m_mapper->SetEmissive(s.isEmmisive); // TODO: на белом фоне не отображаются частицы из за этой настройки
         m_mapper->SetScalarOpacityFunction(m_opacityFunction);
         m_mapper->SetColorModeToMapScalars();
 
