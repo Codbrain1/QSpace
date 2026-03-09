@@ -38,6 +38,7 @@ struct VisualSettings {
     double                  rangeMin      = 0.0;
     double                  rangeMax      = 100.0;
     bool                    autoRange     = true;
+    bool                    isEmmisive    = true;
 };
 struct DataNode {
     QUuid                       id;

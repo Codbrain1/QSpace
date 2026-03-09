@@ -33,10 +33,17 @@ class PropertyInspector : public QWidget {
     // Слот для комбобокса палитр
     void onPaletteChanged(int index);
     void onCurrentVisColumnChanged(int index);
+    void onRenderModeChanged(int index);
+
     // Слот для прозрачности (например, если есть слайдер)
-    void onOpacityChanged(int value);
+    void onOpacityChanged(double val);
+    void onParticleSizeChanged(double val);
     void onTransformChanged(double val);
-    void onParticleSizeChanged(int value);
+    void onUseLogscaleChanged(bool checked);
+    void onUseEmisiveChanged(bool checked);
+    void onRangeMaxValueChanged(double val);
+    void onRangeMinValueChanged(double val);
+    void onCheckBoxAutoRangeChanged(bool checked);
 
   private:
     Ui::PropertyInspector* ui;

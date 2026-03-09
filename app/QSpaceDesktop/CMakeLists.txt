@@ -27,7 +27,7 @@ target_link_libraries(QSpace PRIVATE
             # Filtering
             # Physics
             # Remote
-            # Session
+            QSpace::Session
             QSpace::UI
             Qt6::Core
             Qt6::Widgets

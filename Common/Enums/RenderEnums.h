@@ -1,6 +1,8 @@
 #pragma once
+#include <QList>
 #include <QString>
 #include <optional>
+
 namespace QSpace::Visualize
 {
 enum class EntityType
@@ -35,6 +37,10 @@ enum class CameraViewType
   Iso       // Изометрия
   // TODO:: добавить стандратные позиции
 };
+inline QList<QSpace::Visualize::RenderMode> getAllRenderModes()
+{
+  return {RenderMode::GausianSplat, RenderMode::Points, RenderMode::Volume};
+}
 inline QString entitytypeToString(EntityType type)
 {
   switch (type)

@@ -71,12 +71,12 @@ void ParticleLayer::update() {
 
     if (s.mode == RenderMode::GausianSplat) {
         m_mapper->SetScaleFactor(s.PointSize);
-        m_mapper->SetEmissive(true); // TODO: на белом фоне не отображаются частицы из за этой настройки
+        m_mapper->SetEmissive(s.isEmmisive); // TODO: на белом фоне не отображаются частицы из за этой настройки
         m_mapper->SetScalarOpacityFunction(m_opacityFunction);
         m_mapper->SetColorModeToMapScalars();
 
     } else if (s.mode == RenderMode::Points) {
-        m_mapper->SetScaleFactor(0.000);
+        m_mapper->SetScaleFactor(0.0);
         m_actor->GetProperty()->SetPointSize(s.PointSize);
     } else {
         qCCritical(LogRenderer) << "Don't supported rendering mode: volume";
@@ -107,6 +107,8 @@ void ParticleLayer::update() {
                 // Если компонентов 3, берем магнитуду, если 1 - обычный диапазон
                 int comp = arr->GetNumberOfComponents() == 3 ? -1 : 0;
                 arr->GetRange(range, comp);
+                s.rangeMin = range[0];
+                s.rangeMax = range[1];
 
             } else {
                 range[0] = s.rangeMin;
@@ -115,6 +117,7 @@ void ParticleLayer::update() {
             // ЗАЩИТА 1: Модуль вектора не может быть отрицательным
             if (arr->GetNumberOfComponents() == 3 && range[0] < 0) {
                 range[0] = 0.0;
+                range[0] = s.rangeMin;
             }
             // ЗАЩИТА 2: Для логарифмической шкалы значения <= 0 недопустимы
             if (s.useLogScale) {
