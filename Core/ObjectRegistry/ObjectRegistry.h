@@ -22,6 +22,9 @@ class ObjectRegistry : public QObject {
     QList<std::shared_ptr<DataNode>> getAllNodes() {
         return m_nodes.values();
     }
+    QList<std::shared_ptr<DataContainer>> getAllContainers() {
+        return m_containers.values();
+    }
     void clear() {
         for (const auto& node : m_nodes) {
             removeObject(node->id);

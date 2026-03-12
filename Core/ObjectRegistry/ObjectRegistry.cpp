@@ -9,7 +9,7 @@ namespace QSpace::Core {
 ObjectRegistry::ObjectRegistry(QObject* parent) : QObject(parent) {
 }
 void ObjectRegistry::registerNode(std::shared_ptr<DataNode> node) {
-    if (!node)
+    if (!node || !node->data)
         return;
     if (m_nodes.contains(node->id))
         return;
