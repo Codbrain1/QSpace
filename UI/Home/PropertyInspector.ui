@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>360</width>
+    <width>318</width>
     <height>573</height>
    </rect>
   </property>
@@ -117,7 +117,7 @@
        </widget>
       </item>
       <item row="0" column="1" colspan="2">
-       <widget class="QComboBox" name="combo_colormap"/>
+       <widget class="QSpace::UI::ColorMapComboBox" name="combo_colormap"/>
       </item>
       <item row="1" column="0">
        <widget class="QLabel" name="label_current_column">
@@ -161,6 +161,13 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QSpace::UI::ColorMapComboBox</class>
+   <extends>QComboBox</extends>
+   <header>UI/Home/ColorMapComboBox.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

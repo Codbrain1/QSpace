@@ -10,6 +10,11 @@ target_sources(UI PRIVATE
     Home/PropertyInspector.h
     Home/PropertyInspector.cpp
     Home/PropertyInspector.ui
+    Home/ColorMapComboBox.h
+    Home/ColorMapComboBox.cpp
+    Home/ColorMapEditorDialog.h
+    Home/ColorMapEditorDialog.cpp
+    Home/ColorMapEditorDialog.ui
 )
 target_include_directories(UI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 target_link_libraries(UI PUBLIC

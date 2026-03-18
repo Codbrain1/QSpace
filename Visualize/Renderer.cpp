@@ -19,7 +19,7 @@ Renderer::Renderer(QObject* parent) : QObject(parent) {
 
     m_renderWindow->AddRenderer(m_vtkRenderer);
     m_renderWindow->SetMultiSamples(
-        0); // если включить MSAA, то на AMD видеокартах будет баг с прозрачностью (частицы будут мерцать или исчезать),
+        8); // если включить MSAA, то на AMD видеокартах будет баг с прозрачностью (частицы будут мерцать или исчезать),
             // так что отключаем его и используем только Depth Peeling для прозрачности
 
     auto colors = vtkSmartPointer<vtkNamedColors>::New();

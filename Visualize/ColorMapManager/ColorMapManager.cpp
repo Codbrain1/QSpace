@@ -51,5 +51,27 @@ ColorMapManager::ColorMapManager() {
 bool ColorMapManager::contains(const QUuid& id) {
     return m_availableMaps.contains(id);
 }
+QIcon ColorMapManager::createColorMapIcon(const QSpace::Visualize::ColorMap& map, QSize size) {
+    QPixmap  pix(size);
+    QPainter painter(&pix);
+
+    // Рисуем градиент
+    QLinearGradient grad(0, 0, size.width(), 0);
+    for (const auto& pt : map.points) {
+        grad.setColorAt(pt.x, QColor::fromRgbF(pt.r, pt.g, pt.b));
+    }
+
+    painter.fillRect(pix.rect(), grad);
+
+    // Адаптивная рамка: берем цвет текста из системной палитры,
+    // но делаем его полупрозрачным
+    QColor borderColor = qApp->palette().color(QPalette::WindowText);
+    borderColor.setAlpha(60);
+
+    painter.setPen(borderColor);
+    painter.drawRect(pix.rect().adjusted(0, 0, -1, -1));
+
+    return QIcon(pix);
+}
 
 } // namespace QSpace::Visualize

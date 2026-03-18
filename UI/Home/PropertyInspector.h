@@ -1,4 +1,5 @@
 #pragma once
+#include "ColorMapComboBox.h"
 #include "Core/AppCore/AppCore.h"
 #include <QMainWindow>
 #include <QObject>
@@ -15,6 +16,7 @@
 #include <qtmetamacros.h>
 #include <vtkDataSetAttributes.h>
 #include <vtkType.h>
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -44,6 +46,7 @@ class PropertyInspector : public QWidget {
     void onRangeMinValueChanged(double val);
     void onCheckBoxAutoRangeChanged(bool checked);
     void onShowScalarBar(bool checked);
+    void onCustomPaleteButtonClicked();
 
   private:
     Ui::PropertyInspector* ui;

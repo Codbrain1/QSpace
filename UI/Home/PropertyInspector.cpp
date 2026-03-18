@@ -1,12 +1,16 @@
 #include "PropertyInspector.h"
-#include "Common/Structures/RenderStructures.h" // Твой класс с палитрами
+#include "ColorMapComboBox.h"
+#include "ColorMapEditorDialog.h"
+#include "Common/Structures/RenderStructures.h"
 #include "Enums/RenderEnums.h"
 #include "Structures/CoreStructures.h"
 #include "Visualize/ColorMapManager/ColorMapManager.h"
-#include "ui_PropertyInspector.h" // Генерируется из твоего нового .ui
+#include "ui_PropertyInspector.h"
 #include <QSignalBlocker>
 #include <qcheckbox.h>
 #include <qcombobox.h>
+#include <qicon.h>
+#include <qmessagebox.h>
 #include <qnamespace.h>
 #include <qobject.h>
 #include <qoverload.h>
@@ -33,9 +37,13 @@ PropertyInspector::~PropertyInspector() {
 void PropertyInspector::setupUiLogic() {
     // 1. Заполняем палитры
     ui->combo_colormap->clear();
-    for (auto colorMap : QSpace::Visualize::ColorMapManager::instance().getAllMaps()) {
-        ui->combo_colormap->addItem(colorMap.name,
-                                    colorMap.id // Прячем Enum в UserData
+    ui->combo_colormap->setIconSize(QSize(50, 18));
+    auto manager = Visualize::ColorMapManager::instance();
+    for (auto colorMap : manager.getAllMaps()) {
+        QIcon icon = manager.createColorMapIcon(colorMap);
+        ui->combo_colormap->addItem(icon,          // палитра
+                                    colorMap.name, // название
+                                    colorMap.id    // Прячем Enum в UserData
         );
     }
     ui->combo_RenderMode->clear();
@@ -47,14 +55,17 @@ void PropertyInspector::setupUiLogic() {
             QOverload<int>::of(&QComboBox::currentIndexChanged),
             this,
             &PropertyInspector::onPaletteChanged);
-
+    connect(ui->combo_colormap,
+            &ColorMapComboBox::customButtonClicked,
+            this,
+            &PropertyInspector::onCustomPaleteButtonClicked);
     // Пример для слайдера прозрачности (если он есть в ui)
     connect(ui->doubleSpinBox_Opacity,
             QOverload<double>::of(&QDoubleSpinBox::valueChanged),
             this,
             &PropertyInspector::onOpacityChanged);
 
-    // Alpha / Beta (SpinBoxes)
+    //(SpinBoxes)
     connect(ui->spin_maxValue,
             QOverload<double>::of(&QDoubleSpinBox::valueChanged),
             this,
@@ -80,6 +91,46 @@ void PropertyInspector::setupUiLogic() {
     connect(ui->checkBox_useEmissive, &QCheckBox::toggled, this, &PropertyInspector::onUseEmisiveChanged);
     connect(ui->checkBox_isVisibleScalarBar, &QCheckBox::toggled, this, &PropertyInspector::onShowScalarBar);
     connect(ui->checkBox_isAutomaticRange, &QCheckBox::toggled, this, &PropertyInspector::onCheckBoxAutoRangeChanged);
+}
+void PropertyInspector::onCustomPaleteButtonClicked() {
+    if (m_currentNodeId.isNull())
+        return;
+
+    // 1. Берем текущую палитру как базовую (чтобы было что редактировать)
+    auto node       = m_app->getObjectRegistry()->getNode(m_currentNodeId);
+    auto baseMapOpt = QSpace::Visualize::ColorMapManager::instance().getMap(node->settings.colorMapId);
+
+    // Если палитра не найдена, берем первую дефолтную
+    Visualize::ColorMap baseMap =
+        baseMapOpt.has_value() ? baseMapOpt.value() : Visualize::ColorMapManager::instance().getAllMaps().first();
+
+    // 2. Создаем диалог, передавая базовую палитру
+    ColorMapEditorDialog dialog(baseMap, this);
+
+    // 3. Открываем окно и ждем. Выполнение кода здесь останавливается,
+    // пока пользователь не нажмет Ok или Cancel
+    if (dialog.exec() == QDialog::Accepted) {
+        // 4. Забираем готовую палитру из окна
+        Visualize::ColorMap customMap = dialog.getEditedMap();
+
+        // 5. Сохраняем в менеджер
+        auto& manager = QSpace::Visualize::ColorMapManager::instance();
+        manager.AddCustomMap(customMap);
+
+        // 6. Обновляем комбобокс без срабатывания сигналов
+        QSignalBlocker blocker(ui->combo_colormap);
+
+        QIcon icon = manager.createColorMapIcon(customMap);
+        ui->combo_colormap->addItem(icon, customMap.name, customMap.id);
+
+        // Выбираем свежедобавленную палитру
+        ui->combo_colormap->setCurrentIndex(ui->combo_colormap->count() - 1);
+
+        // 7. Обновляем ядро и рендер
+        auto colorMapId = customMap.id;
+        m_app->updateNodeSettings(m_currentNodeId,
+                                  [colorMapId](QSpace::Core::VisualSettings& s) { s.colorMapId = colorMapId; });
+    }
 }
 void PropertyInspector::onShowScalarBar(bool checked) {
     if (m_currentNodeId.isNull())
