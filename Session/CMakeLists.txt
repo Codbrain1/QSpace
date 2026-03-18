@@ -11,6 +11,7 @@ target_include_directories(Session PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 target_link_libraries(Session PUBLIC
             project_config
             QSpace::Common
+            QSpace::Visualize
             Qt6::Core
             Qt6::Widgets
 )

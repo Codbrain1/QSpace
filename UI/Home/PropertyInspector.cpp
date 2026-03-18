@@ -2,6 +2,7 @@
 #include "Common/Structures/RenderStructures.h" // Твой класс с палитрами
 #include "Enums/RenderEnums.h"
 #include "Structures/CoreStructures.h"
+#include "Visualize/ColorMapManager/ColorMapManager.h"
 #include "ui_PropertyInspector.h" // Генерируется из твоего нового .ui
 #include <QSignalBlocker>
 #include <qcheckbox.h>
@@ -11,6 +12,7 @@
 #include <qoverload.h>
 #include <qslider.h>
 #include <qspinbox.h>
+#include <quuid.h>
 #include <qvariant.h>
 
 namespace QSpace::UI {
@@ -31,9 +33,9 @@ PropertyInspector::~PropertyInspector() {
 void PropertyInspector::setupUiLogic() {
     // 1. Заполняем палитры
     ui->combo_colormap->clear();
-    for (auto type : QSpace::Visualize::ColorMapRegistry::getAllTypes()) {
-        ui->combo_colormap->addItem(QSpace::Visualize::ColorMapRegistry::toString(type),
-                                    QVariant::fromValue(type) // Прячем Enum в UserData
+    for (auto colorMap : QSpace::Visualize::ColorMapManager::instance().getAllMaps()) {
+        ui->combo_colormap->addItem(colorMap.name,
+                                    colorMap.id // Прячем Enum в UserData
         );
     }
     ui->combo_RenderMode->clear();
@@ -53,15 +55,6 @@ void PropertyInspector::setupUiLogic() {
             &PropertyInspector::onOpacityChanged);
 
     // Alpha / Beta (SpinBoxes)
-    connect(ui->spin_alpha,
-            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-            this,
-            &PropertyInspector::onTransformChanged);
-    connect(ui->spin_beta,
-            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-            this,
-            &PropertyInspector::onTransformChanged);
-
     connect(ui->spin_maxValue,
             QOverload<double>::of(&QDoubleSpinBox::valueChanged),
             this,
@@ -130,19 +123,6 @@ void PropertyInspector::setCurrentNode(const QUuid& id) {
     this->setEnabled(true);
     updateWidgets();
 }
-void PropertyInspector::onTransformChanged(double val) {
-    // Общий слот для спинбоксов, если нужно различать отправителя:
-    auto senderBox = qobject_cast<QDoubleSpinBox*>(sender());
-    if (!senderBox || m_currentNodeId.isNull())
-        return;
-
-    m_app->updateNodeSettings(m_currentNodeId, [this, senderBox](Core::VisualSettings& s) {
-        if (senderBox == ui->spin_alpha)
-            s.alpha = senderBox->value();
-        if (senderBox == ui->spin_beta)
-            s.beta = senderBox->value();
-    });
-}
 void PropertyInspector::updateWidgets() {
     auto node = m_app->getObjectRegistry()->getNode(m_currentNodeId);
     if (!node)
@@ -175,7 +155,7 @@ void PropertyInspector::updateWidgets() {
         ui->combo_current_column->setCurrentIndex(index);
     }
     // Устанавливаем текущую палитру в комбобоксе
-    index = ui->combo_colormap->findData(QVariant::fromValue(node->settings.colorMap));
+    index = ui->combo_colormap->findData(QVariant::fromValue(node->settings.colorMapId));
     if (index != -1) {
         ui->combo_colormap->setCurrentIndex(index);
     }
@@ -217,10 +197,11 @@ void PropertyInspector::onPaletteChanged(int index) {
         return;
 
     // Достаем тип палитры из выбранного пункта
-    auto type = ui->combo_colormap->itemData(index).value<QSpace::Visualize::ColorMapType>();
+    auto colorMapId = ui->combo_colormap->itemData(index).value<QUuid>();
 
     // Обновляем Core (PipelineManager поймает это изменение сам)
-    m_app->updateNodeSettings(m_currentNodeId, [type](QSpace::Core::VisualSettings& s) { s.colorMap = type; });
+    m_app->updateNodeSettings(m_currentNodeId,
+                              [colorMapId](QSpace::Core::VisualSettings& s) { s.colorMapId = colorMapId; });
 }
 void PropertyInspector::onUseLogscaleChanged(bool checked) {
     if (m_currentNodeId.isNull())

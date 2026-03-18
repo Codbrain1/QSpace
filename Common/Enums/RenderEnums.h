@@ -19,16 +19,16 @@ enum class RenderMode
   GausianSplat,
   Volume
 };
-enum class ColorMapType
-{
-  Viridis,
-  Inferno,
-  Plasma,
-  Magma,
-  CoolToWarm,
-  Rainbow,
-  Grayscale
-};
+// enum class ColorMapType
+// {
+//   Viridis,
+//   Inferno,
+//   Plasma,
+//   Magma,
+//   CoolToWarm,
+//   Rainbow,
+//   Grayscale
+// };
 enum class CameraViewType
 {
   XY_Top,   // Сверху
@@ -91,46 +91,6 @@ inline std::optional<RenderMode> rendermodeFromString(const QString &s)
     return QSpace::Visualize::RenderMode::Points;
   if (s == "Volume")
     return QSpace::Visualize::RenderMode::Volume;
-  return std::nullopt;
-}
-inline QString colormapToString(ColorMapType colormap)
-{
-  switch (colormap)
-  {
-  case ColorMapType::Viridis:
-    return "Viridis";
-  case ColorMapType::Inferno:
-    return "Inferno";
-  case ColorMapType::Plasma:
-    return "Plasma";
-  case ColorMapType::Magma:
-    return "Magma";
-  case ColorMapType::CoolToWarm:
-    return "CoolToWarm";
-  case ColorMapType::Rainbow:
-    return "Rainbow";
-  case ColorMapType::Grayscale:
-    return "Grayscale";
-  default:
-    return "Unknown";
-  }
-}
-inline std::optional<ColorMapType> colormapFromString(const QString &s)
-{
-  if (s == "Viridis")
-    return ColorMapType::Viridis;
-  if (s == "Inferno")
-    return ColorMapType::Inferno;
-  if (s == "Plasma")
-    return ColorMapType::Plasma;
-  if (s == "Magma")
-    return ColorMapType::Magma;
-  if (s == "CoolToWarm")
-    return ColorMapType::CoolToWarm;
-  if (s == "Rainbow")
-    return ColorMapType::Rainbow;
-  if (s == "Grayscale")
-    return ColorMapType::Grayscale;
   return std::nullopt;
 }
 } // namespace QSpace::Visualize

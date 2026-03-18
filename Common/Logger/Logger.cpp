@@ -9,6 +9,7 @@
 #include <qdebug.h>
 #include <qfiledevice.h>
 #include <qlogging.h>
+#include <qloggingcategory.h>
 #include <qmutex.h>
 
 Q_LOGGING_CATEGORY(LogSystem, "QSpace.System")
@@ -21,6 +22,7 @@ Q_LOGGING_CATEGORY(LogPhysics, "QSpace.Physics")
 Q_LOGGING_CATEGORY(LogRemote, "QSpace.Remote")
 Q_LOGGING_CATEGORY(LogRenderer, "QSpace.Renderer")
 Q_LOGGING_CATEGORY(LogUI, "QSpace.UI")
+Q_LOGGING_CATEGORY(LogSession, "QSpace.Session")
 
 static std::unique_ptr<QFile> m_log_file;
 static QMutex m_mutex;

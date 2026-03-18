@@ -8,13 +8,15 @@
 #include <QJsonObject>
 #include <optional>
 
-
 namespace QSpace::Session {
 
 class ProjectSerializer {
   public:
     static QByteArray                                   serialize(const QSpace::Session::ProjectState& project_state);
     static std::optional<QSpace::Session::ProjectState> deserialize(const QByteArray& data);
+
+    static QJsonObject                 serializeColorMap(const QSpace::Visualize::ColorMap& map);
+    static QSpace::Visualize::ColorMap deserializeColorMap(const QJsonObject& json);
 
   private:
     static QJsonObject                    serializeDataNode(const QSpace::Session::DataNodeState& node_state);

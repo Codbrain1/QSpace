@@ -10,6 +10,7 @@ target_link_libraries(SessionManager PUBLIC
             project_config
             ObjectRegistry
             QSpace::Session
+            QSpace::Visualize
             QSpace::Common
             Qt6::Core
 )

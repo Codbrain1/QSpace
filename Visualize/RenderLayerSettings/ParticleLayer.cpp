@@ -3,10 +3,12 @@
 #include "Common/Logger/Logger.h"
 #include "Common/Structures/CoreStructures.h"
 #include "Common/Structures/RenderStructures.h"
+#include "Visualize/ColorMapManager/ColorMapManager.h"
 #include <cmath>
 #include <memory>
 #include <qloggingcategory.h>
 #include <qstring.h>
+#include <quuid.h>
 #include <vtkAbstractArray.h>
 #include <vtkActor.h>
 #include <vtkCell.h>
@@ -134,7 +136,7 @@ void ParticleLayer::update() {
                     range[1] = range[0] + (std::abs(range[0]) * 0.1 + 1e-5);
                 }
             }
-            applyColorMap(s.colorMap, range);
+            applyColorMap(s.colorMapId, range);
             m_mapper->SetScalarRange(range);
 
             // обновление легенды
@@ -157,19 +159,22 @@ void ParticleLayer::update() {
     }
     m_mapper->Modified();
 }
-void ParticleLayer::applyColorMap(QSpace::Visualize::ColorMapType type, double range[2]) {
+void ParticleLayer::applyColorMap(QUuid& colorMapUuid, double range[2]) {
     m_lut->RemoveAllPoints();
     m_opacityFunction->RemoveAllPoints();
     m_lut->SetColorSpaceToLab();
-    auto points = QSpace::Visualize::ColorMapRegistry::getPresetPoints(type);
-
+    auto colorMapManager = QSpace::Visualize::ColorMapManager::instance();
+    auto colorMap        = colorMapManager.getMap(colorMapUuid);
+    if (!colorMap.has_value()) {
+        colorMap = Visualize::ColorMapPresets::getStandardPresets().first();
+    }
     double minVal = range[0];
     double maxVal = range[1];
 
     // Флаг логарифма: включаем только если настройка активна И минимум больше нуля
     bool useLog = m_node->settings.useLogScale && (minVal > 0);
 
-    for (const auto& pt : points) {
+    for (const auto& pt : colorMap->points) {
         double actualValue;
 
         // Главная магия: распределяем точки по шкале корректно

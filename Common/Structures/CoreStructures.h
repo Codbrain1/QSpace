@@ -2,6 +2,7 @@
 #include "Common/Enums/IOEnums.h"
 #include "Common/Enums/RenderEnums.h"
 #include "Common/Structures/IOStructures.h"
+#include "RenderStructures.h"
 #include <QMap>
 #include <QPair>
 #include <memory>
@@ -28,17 +29,21 @@ struct VisualSettings {
     // геометрия
     double PointSize = 0.005; // размер частиц
     double opacity   = 1.0;   // непрозрачность
-    double alpha     = 0.0;
-    double beta      = 0.0;
+    // double alpha     = 0.0;
+    // double beta      = 0.0;
     // цветовая схема
-    QString                 colorByField;
-    Visualize::ColorMapType colorMap      = Visualize::ColorMapType::Viridis;
-    bool                    useLogScale   = true;
-    bool                    showScalarBar = true;
-    double                  rangeMin      = 0.0;
-    double                  rangeMax      = 100.0;
-    bool                    autoRange     = true;
-    bool                    isEmmisive    = true;
+    QString colorByField;
+    QUuid   colorMapId;
+    bool    useLogScale   = true;
+    bool    showScalarBar = true;
+    double  rangeMin      = 0.0;
+    double  rangeMax      = 100.0;
+    bool    autoRange     = true;
+    bool    isEmmisive    = true;
+    VisualSettings() {
+        // Забираем готовую Plasma. UUID будет сгенерирован автоматически внутри getPresetByName
+        colorMapId = Visualize::ColorMapPresets::getPresetByName("Plasma").id;
+    }
 };
 struct DataNode {
     QUuid                       id;

@@ -38,7 +38,6 @@ class PropertyInspector : public QWidget {
     // Слот для прозрачности (например, если есть слайдер)
     void onOpacityChanged(double val);
     void onParticleSizeChanged(double val);
-    void onTransformChanged(double val);
     void onUseLogscaleChanged(bool checked);
     void onUseEmisiveChanged(bool checked);
     void onRangeMaxValueChanged(double val);

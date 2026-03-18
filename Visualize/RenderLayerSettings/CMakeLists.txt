@@ -6,6 +6,7 @@ target_sources(RenderLayerSettings PRIVATE
 target_include_directories(RenderLayerSettings PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 target_link_libraries(RenderLayerSettings PUBLIC
             project_config
+            ColorMapManager
              VTK::CommonCore
              Qt6::Concurrent
 )

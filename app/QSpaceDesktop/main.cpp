@@ -18,6 +18,10 @@
 int main(int argc, char* argv[]) {
     QApplication app(argc, argv); // создание экземпляра приложения
     QSurfaceFormat::setDefaultFormat(QVTKOpenGLNativeWidget::defaultFormat());
+    QSurfaceFormat fmt = QSurfaceFormat::defaultFormat();
+    fmt.setAlphaBufferSize(8); // КРИТИЧЕСКИ ВАЖНО ДЛЯ AMD! //TODO: добавить настройки для этого в UI
+    fmt.setSamples(0);         // Если отключили MSAA в Renderer.cpp
+    QSurfaceFormat::setDefaultFormat(fmt);
 
     QSpace::Core::LogManager::setup(); // инициализируем запись логов
     QSpace::Core::AppCore core;

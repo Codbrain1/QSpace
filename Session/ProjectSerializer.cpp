@@ -1,7 +1,11 @@
 #include "ProjectSerializer.h"
 #include "Enums/IOEnums.h"
 #include "Enums/RenderEnums.h"
+#include "Logger/Logger.h"
+#include "Structures/RenderStructures.h"
+#include "Visualize/ColorMapManager/ColorMapManager.h"
 #include <QVariant>
+#include <qloggingcategory.h>
 
 namespace QSpace::Session {
 
@@ -13,6 +17,16 @@ QByteArray ProjectSerializer::serialize(const QSpace::Session::ProjectState& pro
     QJsonObject root;
     root.insert("version", project_state.version);
 
+    // 1. СОХРАНЯЕМ КАСТОМНЫЕ ПАЛИТРЫ ГЛОБАЛЬНО
+    QJsonArray palettesArr;
+    for (const auto& map : Visualize::ColorMapManager::instance().getAllMaps()) {
+        if (!map.isPreset) { // Пресеты не сохраняем, они жестко вшиты в код
+            palettesArr.append(serializeColorMap(map));
+        }
+    }
+    root.insert("customColorMaps", palettesArr);
+
+    // 2. СОХРАНЯЕМ НОДЫ
     QJsonArray arr;
     for (const auto& node_state : project_state.nodesStates) {
         // Теперь мы просто вызываем выделенный метод
@@ -34,6 +48,17 @@ std::optional<ProjectState> ProjectSerializer::deserialize(const QByteArray& dat
     ProjectState state;
     state.version = root["version"].toString("1.0");
 
+    // 1. СНАЧАЛА ЗАГРУЖАЕМ ПАЛИТРЫ В МЕНЕДЖЕР
+    if (root.contains("customColorMaps")) {
+        QJsonArray palettesArr = root["customColorMaps"].toArray();
+        for (auto v : palettesArr) {
+            auto map = deserializeColorMap(v.toObject());
+            // Регистрируем, чтобы ноды могли их найти при загрузке ниже
+            Visualize::ColorMapManager::instance().AddCustomMap(map);
+        }
+    }
+
+    // 2. ЗАТЕМ ЗАГРУЖАЕМ НОДЫ
     QJsonArray nodesArr = root["nodes"].toArray();
     for (const auto& nodeVal : nodesArr) {
         if (nodeVal.isObject()) {
@@ -134,15 +159,15 @@ DataNodeState ProjectSerializer::deserializeDataNode(const QJsonObject& json) {
 QJsonObject ProjectSerializer::serializeVisualSettings(const QSpace::Core::VisualSettings& settings) {
     QJsonObject obj;
     obj.insert("mode", QSpace::Visualize::rendermodeToString(settings.mode));
-    obj.insert("colorMap", QSpace::Visualize::colormapToString(settings.colorMap));
+    obj.insert("colorMapId", settings.colorMapId.toString());
     obj.insert("isVisible", settings.isVisible);
     obj.insert("useLogScale", settings.useLogScale);
     obj.insert("showScalarBar", settings.showScalarBar);
     obj.insert("autoRange", settings.autoRange);
     obj.insert("pointSize", settings.PointSize);
     obj.insert("opacity", settings.opacity);
-    obj.insert("alpha", settings.alpha);
-    obj.insert("beta", settings.beta);
+    // obj.insert("alpha", settings.alpha);
+    // obj.insert("beta", settings.beta);
     obj.insert("rangeMin", settings.rangeMin);
     obj.insert("rangeMax", settings.rangeMax);
     obj.insert("colorByField", settings.colorByField);
@@ -152,13 +177,27 @@ QJsonObject ProjectSerializer::serializeVisualSettings(const QSpace::Core::Visua
 
 QSpace::Core::VisualSettings ProjectSerializer::deserializeVisualSettings(const QJsonObject& json) {
     QSpace::Core::VisualSettings vs;
-    vs.mode     = Visualize::rendermodeFromString(json["mode"].toString()).value_or(Visualize::RenderMode::Points);
-    vs.colorMap = Visualize::colormapFromString(json["colorMap"].toString()).value_or(Visualize::ColorMapType::Viridis);
-    vs.isVisible     = json["isVisible"].toBool(true);
-    vs.PointSize     = json["pointSize"].toDouble(0.005);
-    vs.opacity       = json["opacity"].toDouble(1.0);
-    vs.alpha         = json["alpha"].toDouble(0.0);
-    vs.beta          = json["beta"].toDouble(0.0);
+    vs.mode = Visualize::rendermodeFromString(json["mode"].toString()).value_or(Visualize::RenderMode::Points);
+
+    if (json.contains("colorMapId")) {
+        QUuid id = QUuid::fromString(json["colorMapId"].toString());
+        // Ищем в менеджере (туда уже загрузились кастомные палитры из корня проекта)
+        if (!Visualize::ColorMapManager::instance().contains(id)) {
+            qCWarning(LogSession) << "don't exist colorMap:" << id.toString();
+            id = Visualize::ColorMapPresets::getStandardPresets().first().id;
+        }
+    } else if (json.contains("colorMap")) { // Легаси поддержка старых сохранений
+        QString name  = json["colorMap"].toString();
+        vs.colorMapId = Visualize::ColorMapPresets::getPresetByName(name).id;
+    } else {
+        vs.colorMapId = Visualize::ColorMapPresets::getStandardPresets().first().id;
+    }
+
+    vs.isVisible = json["isVisible"].toBool(true);
+    vs.PointSize = json["pointSize"].toDouble(0.005);
+    vs.opacity   = json["opacity"].toDouble(1.0);
+    // vs.alpha         = json["alpha"].toDouble(0.0);
+    // vs.beta          = json["beta"].toDouble(0.0);
     vs.colorByField  = json["colorByField"].toString();
     vs.useLogScale   = json["useLogScale"].toBool(false);
     vs.showScalarBar = json["showScalarBar"].toBool(true);
@@ -252,6 +291,39 @@ IO::ColumnScheme ProjectSerializer::deserializeColumnScheme(const QJsonObject& j
         cs.columnsPolicy.append(m);
     }
     return cs;
+}
+QJsonObject ProjectSerializer::serializeColorMap(const QSpace::Visualize::ColorMap& map) {
+    QJsonObject obj;
+    obj.insert("id", map.id.toString());
+    obj.insert("name", map.name);
+    obj.insert("filePath", map.filePath);
+    obj.insert("isPreset", map.isPreset);
+
+    QJsonArray ptsArr;
+    for (const auto& pt : map.points) {
+        QJsonObject p;
+        p.insert("x", pt.x);
+        p.insert("r", pt.r);
+        p.insert("g", pt.g);
+        p.insert("b", pt.b);
+        ptsArr.append(p);
+    }
+    obj.insert("points", ptsArr);
+    return obj;
+}
+QSpace::Visualize::ColorMap ProjectSerializer::deserializeColorMap(const QJsonObject& json) {
+    QSpace::Visualize::ColorMap map;
+    map.id       = QUuid::fromString(json["id"].toString());
+    map.name     = json["name"].toString();
+    map.filePath = json["filePath"].toString();
+    map.isPreset = json["isPreset"].toBool();
+
+    QJsonArray ptsArr = json["points"].toArray();
+    for (auto v : ptsArr) {
+        QJsonObject p = v.toObject();
+        map.points.append({p["x"].toDouble(), p["r"].toDouble(), p["g"].toDouble(), p["b"].toDouble()});
+    }
+    return map;
 }
 
 } // namespace QSpace::Session
