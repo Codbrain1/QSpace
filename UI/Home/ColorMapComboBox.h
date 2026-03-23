@@ -14,12 +14,15 @@ class ColorMapComboBox : public QComboBox {
   public:
     explicit ColorMapComboBox(QWidget* parent = nullptr);
   signals:
-    void customButtonClicked();
+    void newButtonClicked();
+    void editButtonClicked();
 
   protected:
     void showPopup() override;
+    bool eventFilter(QObject* obj, QEvent* event) override;
 
   private:
-    QPushButton* m_footerButton = nullptr;
+    QPushButton* m_newButton  = nullptr;
+    QPushButton* m_editButton = nullptr;
 };
 } // namespace QSpace::UI

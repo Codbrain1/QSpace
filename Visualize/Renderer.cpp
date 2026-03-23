@@ -43,11 +43,31 @@ void Renderer::setupAxes() {
     m_axesActor->SetCamera(m_vtkRenderer->GetActiveCamera());
 
     // Настройки внешнего вида осей
-    m_axesActor->SetXTitle("X [pc]");
-    m_axesActor->SetYTitle("Y [pc]");
-    m_axesActor->SetZTitle("Z [pc]");
-    m_axesActor->GetTitleTextProperty(0)->SetColor(1.0, 1.0, 1.0);
-    m_axesActor->GetLabelTextProperty(0)->SetColor(0.8, 0.8, 0.8);
+    m_axesActor->SetXTitle("X");
+    m_axesActor->SetYTitle("Y");
+    m_axesActor->SetZTitle("Z");
+
+    // Цвет текста (Заголовки и Цифры)
+    for (int i = 0; i < 3; ++i) {
+        m_axesActor->GetTitleTextProperty(i)->SetColor(0, 0, 0);
+        m_axesActor->GetLabelTextProperty(i)->SetColor(0, 0, 0);
+    }
+
+    // --- ЦВЕТ ЛИНИЙ ОСЕЙ (рамка куба) ---
+    m_axesActor->GetXAxesLinesProperty()->SetColor(0, 0, 0);
+    m_axesActor->GetYAxesLinesProperty()->SetColor(0, 0, 0);
+    m_axesActor->GetZAxesLinesProperty()->SetColor(0, 0, 0);
+
+    // --- ЦВЕТ СЕТКИ ---
+    m_axesActor->GetXAxesGridlinesProperty()->SetColor(0.1, 0.1, 0.1); // Почти черный
+    m_axesActor->GetYAxesGridlinesProperty()->SetColor(0.1, 0.1, 0.1);
+    m_axesActor->GetZAxesGridlinesProperty()->SetColor(0.1, 0.1, 0.1);
+
+    // Если используете внутреннюю сетку:
+    m_axesActor->GetXAxesInnerGridlinesProperty()->SetColor(0.1, 0.1, 0.1);
+    m_axesActor->GetYAxesInnerGridlinesProperty()->SetColor(0.1, 0.1, 0.1);
+    m_axesActor->GetZAxesInnerGridlinesProperty()->SetColor(0.1, 0.1, 0.1);
+
     m_axesActor->SetFlyModeToStaticEdges(); // Чтобы оси не прыгали
     m_axesActor->SetVisibility(false);      // По умолчанию скрыты
 
@@ -77,8 +97,24 @@ void Renderer::removeScalarBar(vtkSmartPointer<vtkScalarBarActor> bar) {
 void Renderer::setBackgroundColor(double r, double g, double b) {
     m_vtkRenderer->SetBackground(r, g, b);
     // Для осей меняем цвет текста инверсно (упрощенно)
-    double axesColor = (r + g + b > 1.5) ? 0.0 : 1.0;
-    m_axesActor->GetTitleTextProperty(0)->SetColor(axesColor, axesColor, axesColor);
+    double contrastColor = (r + g + b > 1.5) ? 0.0 : 1.0;
+    if (m_axesActor) {
+        for (int i = 0; i < 3; ++i) {
+            m_axesActor->GetTitleTextProperty(i)->SetColor(contrastColor, contrastColor, contrastColor);
+            m_axesActor->GetLabelTextProperty(i)->SetColor(contrastColor, contrastColor, contrastColor);
+        }
+
+        // Линии осей
+        m_axesActor->GetXAxesLinesProperty()->SetColor(contrastColor, contrastColor, contrastColor);
+        m_axesActor->GetYAxesLinesProperty()->SetColor(contrastColor, contrastColor, contrastColor);
+        m_axesActor->GetZAxesLinesProperty()->SetColor(contrastColor, contrastColor, contrastColor);
+
+        // Линии сетки (можно сделать чуть светлее/прозрачнее основного цвета для эстетики)
+        double gridGray = contrastColor;
+        m_axesActor->GetXAxesGridlinesProperty()->SetColor(gridGray, gridGray, gridGray);
+        m_axesActor->GetYAxesGridlinesProperty()->SetColor(gridGray, gridGray, gridGray);
+        m_axesActor->GetZAxesGridlinesProperty()->SetColor(gridGray, gridGray, gridGray);
+    }
     render();
 }
 void Renderer::setAxesVisible(bool visible) {

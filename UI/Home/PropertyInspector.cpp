@@ -26,7 +26,9 @@ PropertyInspector::PropertyInspector(Core::AppCore* app, QWidget* parent)
 
     // Выключаем панель, пока ничего не выбрано
     this->setEnabled(false);
-
+    // отключает установку диапазона (изначально он определяется автоматически)
+    ui->spin_maxValue->setEnabled(false);
+    ui->spin_minValue->setEnabled(false);
     setupUiLogic();
 }
 
@@ -38,7 +40,7 @@ void PropertyInspector::setupUiLogic() {
     // 1. Заполняем палитры
     ui->combo_colormap->clear();
     ui->combo_colormap->setIconSize(QSize(50, 18));
-    auto manager = Visualize::ColorMapManager::instance();
+    auto& manager = Visualize::ColorMapManager::instance();
     for (auto colorMap : manager.getAllMaps()) {
         QIcon icon = manager.createColorMapIcon(colorMap);
         ui->combo_colormap->addItem(icon,          // палитра
@@ -50,15 +52,20 @@ void PropertyInspector::setupUiLogic() {
     for (auto mode : QSpace::Visualize::getAllRenderModes()) {
         ui->combo_RenderMode->addItem(QSpace::Visualize::rendermodeToString(mode), QVariant::fromValue(mode));
     }
-    // 2. Коннектим сигналы UI к слотам
+    // 2. Коннектим сигналы UI к слотамв
     connect(ui->combo_colormap,
             QOverload<int>::of(&QComboBox::currentIndexChanged),
             this,
             &PropertyInspector::onPaletteChanged);
     connect(ui->combo_colormap,
-            &ColorMapComboBox::customButtonClicked,
+            &ColorMapComboBox::newButtonClicked,
             this,
-            &PropertyInspector::onCustomPaleteButtonClicked);
+            &PropertyInspector::onNewCustomPaleteButtonClicked);
+    connect(ui->combo_colormap,
+            &ColorMapComboBox::editButtonClicked,
+            this,
+            &PropertyInspector::onEditPaleteButtonClicked);
+
     // Пример для слайдера прозрачности (если он есть в ui)
     connect(ui->doubleSpinBox_Opacity,
             QOverload<double>::of(&QDoubleSpinBox::valueChanged),
@@ -91,21 +98,42 @@ void PropertyInspector::setupUiLogic() {
     connect(ui->checkBox_useEmissive, &QCheckBox::toggled, this, &PropertyInspector::onUseEmisiveChanged);
     connect(ui->checkBox_isVisibleScalarBar, &QCheckBox::toggled, this, &PropertyInspector::onShowScalarBar);
     connect(ui->checkBox_isAutomaticRange, &QCheckBox::toggled, this, &PropertyInspector::onCheckBoxAutoRangeChanged);
+    connect(&Visualize::ColorMapManager::instance(),
+            &Visualize::ColorMapManager::paleteAdded,
+            this,
+            &PropertyInspector::onColorMapAdded);
 }
-void PropertyInspector::onCustomPaleteButtonClicked() {
+void PropertyInspector::onColorMapAdded(const Visualize::ColorMap& map) {
+    auto& manager = Visualize::ColorMapManager::instance();
+    QIcon icon    = manager.createColorMapIcon(map);
+    ui->combo_colormap->removeItem(ui->combo_colormap->findData(map.id)); // Удаляем старую запись, если она есть
+    ui->combo_colormap->addItem(icon, map.name, map.id);
+    // 6. Обновляем комбобокс без срабатывания сигналов
+    QSignalBlocker blocker(ui->combo_colormap);
+    // Выбираем свежедобавленную палитру
+    ui->combo_colormap->setCurrentIndex(ui->combo_colormap->count() - 1);
+    // 7. Обновляем ядро и рендер
+    auto colorMapId = map.id;
+    m_app->updateNodeSettings(m_currentNodeId,
+                              [colorMapId](QSpace::Core::VisualSettings& s) { s.colorMapId = colorMapId; });
+}
+void PropertyInspector::onNewCustomPaleteButtonClicked() {
     if (m_currentNodeId.isNull())
         return;
 
     // 1. Берем текущую палитру как базовую (чтобы было что редактировать)
     auto node       = m_app->getObjectRegistry()->getNode(m_currentNodeId);
     auto baseMapOpt = QSpace::Visualize::ColorMapManager::instance().getMap(node->settings.colorMapId);
-
+    if (!baseMapOpt.has_value()) {
+        QMessageBox::warning(this, "Ошибка", "Текущая палитра не найдена. Невозможно создать на ее основе.");
+        return;
+    }
     // Если палитра не найдена, берем первую дефолтную
     Visualize::ColorMap baseMap =
         baseMapOpt.has_value() ? baseMapOpt.value() : Visualize::ColorMapManager::instance().getAllMaps().first();
 
     // 2. Создаем диалог, передавая базовую палитру
-    ColorMapEditorDialog dialog(baseMap, this);
+    ColorMapEditorDialog dialog(baseMap, m_app->getSessionManager(), this);
 
     // 3. Открываем окно и ждем. Выполнение кода здесь останавливается,
     // пока пользователь не нажмет Ok или Cancel
@@ -116,20 +144,37 @@ void PropertyInspector::onCustomPaleteButtonClicked() {
         // 5. Сохраняем в менеджер
         auto& manager = QSpace::Visualize::ColorMapManager::instance();
         manager.AddCustomMap(customMap);
+    }
+}
+void PropertyInspector::onEditPaleteButtonClicked() {
+    if (m_currentNodeId.isNull())
+        return;
 
-        // 6. Обновляем комбобокс без срабатывания сигналов
-        QSignalBlocker blocker(ui->combo_colormap);
+    auto node       = m_app->getObjectRegistry()->getNode(m_currentNodeId);
+    auto baseMapOpt = QSpace::Visualize::ColorMapManager::instance().getMap(node->settings.colorMapId);
 
-        QIcon icon = manager.createColorMapIcon(customMap);
-        ui->combo_colormap->addItem(icon, customMap.name, customMap.id);
+    if (!baseMapOpt.has_value()) {
+        QMessageBox::warning(this, "Ошибка", "Текущая палитра не найдена. Невозможно отредактировать.");
+        return;
+    }
+    if (baseMapOpt.value().isPreset) {
+        QMessageBox::warning(this,
+                             "Ошибка",
+                             "Невозможно редактировать пресет. Создайте копию палитры и редактируйте ее.");
+        return;
+    }
+    Visualize::ColorMap baseMap = baseMapOpt.value();
 
-        // Выбираем свежедобавленную палитру
-        ui->combo_colormap->setCurrentIndex(ui->combo_colormap->count() - 1);
+    ColorMapEditorDialog dialog(baseMap, m_app->getSessionManager(), this);
+    if (dialog.exec() == QDialog::Accepted) {
+        Visualize::ColorMap editedMap = dialog.getEditedMap();
+        // Если палитра была загружена из файла, сохраняем ее ID и имя
+        editedMap.id       = baseMap.id;
+        editedMap.name     = baseMap.name;
+        editedMap.isPreset = false;
 
-        // 7. Обновляем ядро и рендер
-        auto colorMapId = customMap.id;
-        m_app->updateNodeSettings(m_currentNodeId,
-                                  [colorMapId](QSpace::Core::VisualSettings& s) { s.colorMapId = colorMapId; });
+        auto& manager = QSpace::Visualize::ColorMapManager::instance();
+        manager.AddCustomMap(editedMap);
     }
 }
 void PropertyInspector::onShowScalarBar(bool checked) {
@@ -137,6 +182,7 @@ void PropertyInspector::onShowScalarBar(bool checked) {
         return;
     m_app->updateNodeSettings(m_currentNodeId, [checked](Core::VisualSettings& s) { s.showScalarBar = checked; });
 }
+
 void PropertyInspector::onCheckBoxAutoRangeChanged(bool checked) {
     if (m_currentNodeId.isNull())
         return;
@@ -149,6 +195,7 @@ void PropertyInspector::onCheckBoxAutoRangeChanged(bool checked) {
     }
     m_app->updateNodeSettings(m_currentNodeId, [checked](Core::VisualSettings& s) { s.autoRange = checked; });
 }
+
 void PropertyInspector::onCurrentVisColumnChanged(int index) {
     if (m_currentNodeId.isNull())
         return;
@@ -174,6 +221,7 @@ void PropertyInspector::setCurrentNode(const QUuid& id) {
     this->setEnabled(true);
     updateWidgets();
 }
+
 void PropertyInspector::updateWidgets() {
     auto node = m_app->getObjectRegistry()->getNode(m_currentNodeId);
     if (!node)
@@ -184,8 +232,14 @@ void PropertyInspector::updateWidgets() {
     QSignalBlocker comboBlocker(ui->combo_colormap);
     QSignalBlocker comboBlocker1(ui->combo_current_column);
     QSignalBlocker comboBlocker2(ui->combo_RenderMode);
-    QSignalBlocker spinBlocker(ui->doubleSpinBox_ParticleSize);
-    QSignalBlocker spinBlocker1(ui->doubleSpinBox_Opacity);
+    QSignalBlocker spinBlocker(ui->doubleSpinBox_Opacity);
+    QSignalBlocker spinBlocker1(ui->doubleSpinBox_ParticleSize);
+    QSignalBlocker checkBlocker(ui->checkBox_isAutomaticRange);
+    QSignalBlocker spinBlocker2(ui->spin_maxValue);
+    QSignalBlocker spinBlocker3(ui->spin_minValue);
+    QSignalBlocker spinBlocker4(ui->checkBox_useLogScale);
+    QSignalBlocker spinBlocker5(ui->checkBox_useEmissive);
+    QSignalBlocker spinBlocker6(ui->checkBox_isVisibleScalarBar);
 
     ui->combo_current_column->clear();
     auto pointData = node->data->GetPointData();

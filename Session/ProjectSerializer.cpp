@@ -193,11 +193,9 @@ QSpace::Core::VisualSettings ProjectSerializer::deserializeVisualSettings(const 
         vs.colorMapId = Visualize::ColorMapPresets::getStandardPresets().first().id;
     }
 
-    vs.isVisible = json["isVisible"].toBool(true);
-    vs.PointSize = json["pointSize"].toDouble(0.005);
-    vs.opacity   = json["opacity"].toDouble(1.0);
-    // vs.alpha         = json["alpha"].toDouble(0.0);
-    // vs.beta          = json["beta"].toDouble(0.0);
+    vs.isVisible     = json["isVisible"].toBool(true);
+    vs.PointSize     = json["pointSize"].toDouble(0.005);
+    vs.opacity       = json["opacity"].toDouble(1.0);
     vs.colorByField  = json["colorByField"].toString();
     vs.useLogScale   = json["useLogScale"].toBool(false);
     vs.showScalarBar = json["showScalarBar"].toBool(true);

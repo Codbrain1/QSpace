@@ -17,7 +17,6 @@
 #include <vtkDataSetAttributes.h>
 #include <vtkType.h>
 
-
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class PropertyInspector;
@@ -46,7 +45,9 @@ class PropertyInspector : public QWidget {
     void onRangeMinValueChanged(double val);
     void onCheckBoxAutoRangeChanged(bool checked);
     void onShowScalarBar(bool checked);
-    void onCustomPaleteButtonClicked();
+    void onNewCustomPaleteButtonClicked();
+    void onEditPaleteButtonClicked();
+    void onColorMapAdded(const Visualize::ColorMap& map);
 
   private:
     Ui::PropertyInspector* ui;

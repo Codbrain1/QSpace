@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16) #минимальная версия cmake
 
 # 1. основные сведедения о проекте
 #-------------------------------------------------------------------
-project(QSpace VERSION 0.6 LANGUAGES CXX) # название проекта его версия и язык на котором написан проект
+project(QSpace VERSION 0.6.1 LANGUAGES CXX) # название проекта его версия и язык на котором написан проект
 
 set(CMAKE_CXX_STANDARD 20) # стандарт языка 23
 set(CMAKE_CXX_STANDARD_REQUIRED ON)#обязательный стандарт языка
@@ -57,7 +57,7 @@ set(QT_NO_VIRTUALKEYBOARD ON)
 add_library(project_config INTERFACE)
 target_compile_options(project_config INTERFACE -Wall -Wextra -fopenmp)
 target_compile_options(project_config INTERFACE $<$<CONFIG:Release>:-O2>)
-target_compile_options(project_config INTERFACE $<$<CONFIG:Debug>: -O0 -g>)
+target_compile_options(project_config INTERFACE $<$<CONFIG:Debug>: -O0 -g3 -fno-omit-frame-pointer>)
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
 
 # 5. исполняемые файлы помещают в bin, библиотеки в lib

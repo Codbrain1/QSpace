@@ -163,8 +163,8 @@ void ParticleLayer::applyColorMap(QUuid& colorMapUuid, double range[2]) {
     m_lut->RemoveAllPoints();
     m_opacityFunction->RemoveAllPoints();
     m_lut->SetColorSpaceToLab();
-    auto colorMapManager = QSpace::Visualize::ColorMapManager::instance();
-    auto colorMap        = colorMapManager.getMap(colorMapUuid);
+    auto& colorMapManager = QSpace::Visualize::ColorMapManager::instance();
+    auto  colorMap        = colorMapManager.getMap(colorMapUuid);
     if (!colorMap.has_value()) {
         colorMap = Visualize::ColorMapPresets::getStandardPresets().first();
     }
@@ -217,14 +217,15 @@ void ParticleLayer::setupScalarBar() {
     m_scalarBar->SetNumberOfLabels(5);
     m_scalarBar->SetWidth(0.1);  // 10% ширины экрана
     m_scalarBar->SetHeight(0.4); // 50% высоты экрана
+    m_scalarBar->SetVerticalTitleSeparation(15);
     // Позиция справа
     m_scalarBar->GetPositionCoordinate()->SetCoordinateSystemToNormalizedViewport();
     m_scalarBar->GetPositionCoordinate()->SetValue(0.85, 0.05);
 
     // Настройка текста
     vtkTextProperty* txt = m_scalarBar->GetLabelTextProperty();
-    txt->SetColor(1.0, 1.0, 1.0); // Белый текст
+    txt->SetColor(0, 0, 0); // Черный текст
     txt->SetFontSize(12);
-    m_scalarBar->GetTitleTextProperty()->SetColor(1.0, 1.0, 1.0);
+    m_scalarBar->GetTitleTextProperty()->SetColor(0, 0, 0);
 }
 } // namespace QSpace::Visualize

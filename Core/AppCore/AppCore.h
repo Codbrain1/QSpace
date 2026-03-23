@@ -78,6 +78,9 @@ class AppCore : public QObject {
     QSpace::Session::CurrentSession& getCurrentSessionState() {
         return m_session_state;
     }
+    QSpace::Core::SessionManager* getSessionManager() const {
+        return m_sessionManager.get();
+    }
     void saveCurrentProject();
     void openProject(const QString& projectPath);
   signals:

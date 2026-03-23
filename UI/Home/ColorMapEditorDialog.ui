@@ -55,6 +55,13 @@
       </widget>
      </item>
      <item>
+      <widget class="QCheckBox" name="checkBoxIsInvert">
+       <property name="text">
+        <string>invert palete</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <spacer name="horizontalSpacerTop">
        <property name="orientation">
         <enum>Qt::Orientation::Horizontal</enum>

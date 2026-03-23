@@ -6,7 +6,6 @@
 #include <memory>
 #include <optional>
 
-
 namespace QSpace::Core {
 class SessionManager : public QObject { // Исправлена опечатка в имени
     Q_OBJECT
@@ -15,6 +14,8 @@ class SessionManager : public QObject { // Исправлена опечатка
 
     bool                                         saveProject(const QSpace::Session::CurrentSession& curSession);
     std::optional<QSpace::Session::ProjectState> loadProject(const QString& filePath);
+    bool                                         savePalete(const Visualize::ColorMap& map, const QString& filePath);
+    std::optional<Visualize::ColorMap>           loadPalete(const QString& filePath);
 
   signals:
     void projectLoaded(const QSpace::Session::ProjectState& state);

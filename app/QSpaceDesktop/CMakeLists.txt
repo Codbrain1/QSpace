@@ -14,6 +14,7 @@ RESOURCE_PREFIX "/i18n"
 qt_add_executable(QSpace
     MANUAL_FINALIZATION
     main.cpp
+    ${PROJECT_SOURCE_DIR}/app/icons/resources.rc
     ${QM_FILES}
 )
 

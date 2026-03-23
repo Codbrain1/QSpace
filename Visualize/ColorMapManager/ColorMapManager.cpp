@@ -1,7 +1,9 @@
 
 #include "ColorMapManager.h"
 #include "Common/Logger/Logger.h"
+#include "Common/Structures/RenderStructures.h"
 #include <QList>
+#include <qobject.h>
 #include <quuid.h>
 namespace QSpace::Visualize {
 ColorMapManager& ColorMapManager::instance() {
@@ -20,17 +22,9 @@ std::optional<ColorMap> ColorMapManager::getMap(const QUuid& id) const {
 QList<ColorMap> ColorMapManager::getAllMaps() const {
     return m_availableMaps.values();
 }
-
-void ColorMapManager::loadCustomMap(const QString& filePath) {
-    // ... логика загрузки ...
-    // ColorMap newMap = ...
-    // m_availableMaps.insert(newMap.id, newMap);
-}
-void ColorMapManager::saveCustomMap(const ColorMap& map, const QString& filePath) {
-    // ... логика сохранения ...
-}
 void ColorMapManager::AddCustomMap(const ColorMap& map) {
     m_availableMaps.insert(map.id, map);
+    emit paleteAdded(map);
 }
 void ColorMapManager::removeCustomMap(const QUuid& id) {
     auto it = m_availableMaps.find(id);
@@ -41,7 +35,7 @@ void ColorMapManager::removeCustomMap(const QUuid& id) {
     }
 }
 
-ColorMapManager::ColorMapManager() {
+ColorMapManager::ColorMapManager(QObject* parent) : QObject(parent) {
     // При инициализации заполняем карту пресетами
     auto presets = ColorMapPresets::getStandardPresets();
     for (const auto& map : presets) {

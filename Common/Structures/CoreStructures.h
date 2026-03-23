@@ -27,10 +27,8 @@ struct VisualSettings {
     Visualize::RenderMode mode      = Visualize::RenderMode::GausianSplat;
     bool                  isVisible = true;
     // геометрия
-    double PointSize = 0.005; // размер частиц
+    double PointSize = 0.002; // размер частиц
     double opacity   = 1.0;   // непрозрачность
-    // double alpha     = 0.0;
-    // double beta      = 0.0;
     // цветовая схема
     QString colorByField;
     QUuid   colorMapId;
