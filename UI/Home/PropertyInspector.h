@@ -48,6 +48,17 @@ class PropertyInspector : public QWidget {
     void onNewCustomPaleteButtonClicked();
     void onEditPaleteButtonClicked();
     void onColorMapAdded(const Visualize::ColorMap& map);
+    void onCheckBox_hideOutOfRangeChanged(bool checked);
+    void onDoubleSpinBox_colorCorrectionChanged(double val);
+    void onDoubleSpinBox_gauianSharpnesChanged(double val);
+    void onDoubleSpinBox_sigmoidGammaOpacityChanged(double val);
+    void onDoubleSpinBox_sigmoidGammaColorChanged(double val);
+    void onDoubleSpinBox__sigmoidShiftOpacityChanged(double val);
+    void onDoubleSpinBox__sigmoidShiftColorChanged(double val);
+    void onCombo_functionSplatChanged(int index);
+    void onCombo_interpolationRangeChanged(int index);
+    void onCombo_functionOpacityChanged(int index);
+    void onDoubleSpinBox__alphaChanged(double val);
 
   private:
     Ui::PropertyInspector* ui;

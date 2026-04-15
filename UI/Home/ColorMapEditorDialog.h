@@ -3,6 +3,7 @@
 #include "Core/SessionManager/SessionManager.h"
 #include "Structures/RenderStructures.h"
 #include <QDialog>
+#include <optional>
 #include <qtmetamacros.h>
 
 QT_BEGIN_NAMESPACE
@@ -15,11 +16,15 @@ namespace QSpace::UI {
 class ColorMapEditorDialog : public QDialog {
     Q_OBJECT
   public:
-    explicit ColorMapEditorDialog(const QSpace::Visualize::ColorMap&  baseMap,
-                                  const QSpace::Core::SessionManager* sessionManager,
-                                  QWidget*                            parent = nullptr);
+    explicit ColorMapEditorDialog(const QSpace::Visualize::ColorMap& baseMap,
+                                  QWidget*                           parent = nullptr);
     ~ColorMapEditorDialog();
     Visualize::ColorMap getEditedMap() const;
+  signals:
+    void savePaletteRequested(const Visualize::ColorMap& map, const QString& filePath);
+    void loadPaletteRequested(const QString& filePath);
+  public slots:
+    void onPaletteLoaded(QSpace::Visualize::ColorMap colorMap);
   private slots:
     void on_addButton_clicked();
     void on_removeButton_clicked();
@@ -30,9 +35,8 @@ class ColorMapEditorDialog : public QDialog {
     void on_spinBoxChanged(double value);
 
   private:
-    Ui::ColorMapEditorDialog*     ui; // Теперь это совпадет с именем в .ui
-    QSpace::Core::SessionManager* m_sessionManager;
-    Visualize::ColorMap           m_baseMap;
-    void                          populateTable();
+    Ui::ColorMapEditorDialog* ui; // Теперь это совпадет с именем в .ui
+    Visualize::ColorMap       m_baseMap;
+    void                      populateTable();
 };
 } // namespace QSpace::UI

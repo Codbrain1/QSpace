@@ -36,8 +36,26 @@ struct VisualSettings {
     bool    showScalarBar = true;
     double  rangeMin      = 0.0;
     double  rangeMax      = 100.0;
-    bool    autoRange     = true;
-    bool    isEmmisive    = true;
+    double  baseRangeMin;
+    double  baseRangeMax;
+    bool    autoRange      = true;
+    bool    isEmmisive     = false;
+    bool    hideOutOfRange = true;
+    double  exposureClamp  = 1.0;
+    QString interpolationRangeType =
+        Visualize::scalarBarRangeInterpolationTypeToString(Visualize::ScalarBarRangeInterpolation::Linear);
+    QString ShaderType = Visualize::shaderTypeToString(Visualize::ShaderType::Default);
+    QString interpolationOpacityFunction =
+        Visualize::interpolationOpacityFunctionToString(Visualize::InterpolationOpacityFunction::Constant);
+
+    double gaussianSharpness = 4.5; // Спад краев: 1.0 - пухлые сферы, 6.0 - резкие точки
+
+    double sigmoidGammaOpacity = 6.0; // Крутизна перехода: больше = резче граница облака
+    double sigmoidShiftOpacity = 0.2; // Сдвиг (0.0 - 1.0): отсекает фоновый "шум" мелких значений
+
+    double sigmoidGammaColor = 6.0; // Крутизна перехода для цвета: больше = резче граница облака
+    double sigmoidShiftColor = 0.2; // Сдвиг для цвета (0.0 - 1.0): отсекает фоновый "шум" мелких значений
+    double alpha = 3.0; // Для Asinh: больше = сильнее выделяет мелкие значения, меньше = более линейная шкала
     VisualSettings() {
         // Забираем готовую Plasma. UUID будет сгенерирован автоматически внутри getPresetByName
         colorMapId = Visualize::ColorMapPresets::getPresetByName("Plasma").id;

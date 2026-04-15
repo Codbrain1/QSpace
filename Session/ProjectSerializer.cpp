@@ -166,7 +166,15 @@ QJsonObject ProjectSerializer::serializeVisualSettings(const QSpace::Core::Visua
     obj.insert("autoRange", settings.autoRange);
     obj.insert("pointSize", settings.PointSize);
     obj.insert("opacity", settings.opacity);
-    // obj.insert("alpha", settings.alpha);
+    obj.insert("interpolationRangeType", settings.interpolationRangeType);
+    obj.insert("shaderType", settings.ShaderType);
+    obj.insert("interpolationOpacityFunction", settings.interpolationOpacityFunction);
+    obj.insert("gaussianSharpness", settings.gaussianSharpness);
+    obj.insert("sigmoidGammaOpacity", settings.sigmoidGammaOpacity);
+    obj.insert("sigmoidShiftOpacity", settings.sigmoidShiftOpacity);
+    obj.insert("sigmoidGammaColor", settings.sigmoidGammaColor);
+    obj.insert("sigmoidShiftColor", settings.sigmoidShiftColor);
+    obj.insert("alpha", settings.alpha);
     // obj.insert("beta", settings.beta);
     obj.insert("rangeMin", settings.rangeMin);
     obj.insert("rangeMax", settings.rangeMax);
@@ -193,16 +201,25 @@ QSpace::Core::VisualSettings ProjectSerializer::deserializeVisualSettings(const 
         vs.colorMapId = Visualize::ColorMapPresets::getStandardPresets().first().id;
     }
 
-    vs.isVisible     = json["isVisible"].toBool(true);
-    vs.PointSize     = json["pointSize"].toDouble(0.005);
-    vs.opacity       = json["opacity"].toDouble(1.0);
-    vs.colorByField  = json["colorByField"].toString();
-    vs.useLogScale   = json["useLogScale"].toBool(false);
-    vs.showScalarBar = json["showScalarBar"].toBool(true);
-    vs.autoRange     = json["autoRange"].toBool(true);
-    vs.rangeMin      = json["rangeMin"].toDouble(0.0);
-    vs.rangeMax      = json["rangeMax"].toDouble(100.0);
-    vs.isEmmisive    = json["isEmisive"].toBool(false);
+    vs.isVisible                    = json["isVisible"].toBool(true);
+    vs.PointSize                    = json["pointSize"].toDouble(0.005);
+    vs.opacity                      = json["opacity"].toDouble(1.0);
+    vs.colorByField                 = json["colorByField"].toString();
+    vs.useLogScale                  = json["useLogScale"].toBool(false);
+    vs.showScalarBar                = json["showScalarBar"].toBool(true);
+    vs.autoRange                    = json["autoRange"].toBool(true);
+    vs.rangeMin                     = json["rangeMin"].toDouble(0.0);
+    vs.rangeMax                     = json["rangeMax"].toDouble(100.0);
+    vs.isEmmisive                   = json["isEmisive"].toBool(false);
+    vs.interpolationRangeType       = json["interpolationRangeType"].toString();
+    vs.ShaderType                   = json["shaderType"].toString();
+    vs.interpolationOpacityFunction = json["interpolationOpacityFunction"].toString();
+    vs.gaussianSharpness            = json["gaussianSharpness"].toDouble(4.5);
+    vs.sigmoidGammaOpacity          = json["sigmoidGammaOpacity"].toDouble(6.0);
+    vs.sigmoidShiftOpacity          = json["sigmoidShiftOpacity"].toDouble(0.2);
+    vs.sigmoidGammaColor            = json["sigmoidGammaColor"].toDouble(6.0);
+    vs.sigmoidShiftColor            = json["sigmoidShiftColor"].toDouble(0.2);
+    vs.alpha                        = json["alpha"].toDouble(3.0);
     return vs;
 }
 

@@ -3,6 +3,8 @@
 #include <QString>
 #include <QUuid>
 #include <QVector>
+#include <qcontainerfwd.h>
+#include <qlist.h>
 
 namespace QSpace::Visualize {
 
@@ -18,7 +20,6 @@ struct ColorMap {
     QVector<ColorPoint> points;
     bool                isPreset = false;
 };
-
 class ColorMapPresets {
   public:
     static QList<ColorMap> getStandardPresets() {

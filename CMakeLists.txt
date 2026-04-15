@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16) #минимальная версия cmake
 
 # 1. основные сведедения о проекте
 #-------------------------------------------------------------------
-project(QSpace VERSION 0.6.1 LANGUAGES CXX) # название проекта его версия и язык на котором написан проект
+project(QSpace VERSION 0.7.1 LANGUAGES CXX) # название проекта его версия и язык на котором написан проект
 
 set(CMAKE_CXX_STANDARD 20) # стандарт языка 23
 set(CMAKE_CXX_STANDARD_REQUIRED ON)#обязательный стандарт языка
@@ -40,6 +40,14 @@ find_package(VTK REQUIRED COMPONENTS
             IOOggTheora
             IOVideo
             GUISupportQt
+            ImagingHybrid
+            RenderingVolumeOpenGL2
+            RenderingCore             # Обязательно
+            RenderingOpenGL2          # Обязательно
+            InteractionStyle
+            RenderingVolume          # Абстрактный интерфейс объема
+            RenderingVolumeOpenGL2   # Реализация GPU-рейкастинга
+            FiltersPoints
             )
 
 # автоматическая генерация для qt
@@ -92,5 +100,35 @@ set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
 set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
 set(CPACK_GENERATOR "NSIS")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "QSpace")
+# --- Настройки отображения в Windows (Установка и удаление программ) ---
 set(CPACK_NSIS_DISPLAY_NAME "QSpace Visualization Tool")
+set(CPACK_NSIS_CONTACT "PRIb-231_126178@volsu.ru") # Добавляет контактную информацию
+# set(CPACK_NSIS_URL_INFO_ABOUT "https://твой-сайт.com") # Ссылка на проект
+set(CPACK_NSIS_INSTALLED_ICON_NAME "bin\\\\QSpace.exe") # Иконка для Панели управления
+
+# --- Кастомизация дизайна установщика (MUI2) ---
+# ВАЖНО: Пути должны быть абсолютными. Используем ${CMAKE_SOURCE_DIR}
+# NSIS принимает только формат .ico для иконок и .bmp для картинок!
+set(CPACK_NSIS_MUI_ICON "${CMAKE_SOURCE_DIR}/app/icons/logo.ico")
+# set(CPACK_NSIS_MUI_UNIICON "${CMAKE_SOURCE_DIR}/app/icons/uninstall_icon.ico")
+# Картинка слева на приветственном экране (рекомендуемый размер 164x314)
+# set(CPACK_NSIS_MUI_WELCOMEFINISHPAGE_BITMAP "${CMAKE_SOURCE_DIR}/app/icons/wizard_side.bmp")
+# Картинка в верхней панели (рекомендуемый размер 150x57)
+# set(CPACK_NSIS_MUI_HEADERIMAGE "${CMAKE_SOURCE_DIR}/app/icons/wizard_header.bmp")
+
+# --- Создание ярлыков ---
+# Добавляем программу в меню "Пуск"
+# Формат: "имя_исполняемого_файла_без_exe;Название_Ярлыка"
+set(CPACK_PACKAGE_EXECUTABLES "QSpace;QSpace")
+
+# Команды для создания ярлыка на рабочем столе (выполняются при установке)
+# Обрати внимание на экранирование слешей \\ для NSIS
+set(CPACK_NSIS_CREATE_ICONS_EXTRA "
+  CreateShortCut '$DESKTOP\\\\QSpace.lnk' '$INSTDIR\\\\bin\\\\QSpace.exe'
+")
+
+# Команды для удаления ярлыка с рабочего стола (выполняются при удалении)
+set(CPACK_NSIS_DELETE_ICONS_EXTRA "
+  Delete '$DESKTOP\\\\QSpace.lnk'
+")
 include(CPack)

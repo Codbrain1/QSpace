@@ -2,6 +2,7 @@
 #include "ColorMapComboBox.h"
 #include "ColorMapEditorDialog.h"
 #include "Common/Structures/RenderStructures.h"
+#include "Core/AppCore/AppCore.h"
 #include "Enums/RenderEnums.h"
 #include "Structures/CoreStructures.h"
 #include "Visualize/ColorMapManager/ColorMapManager.h"
@@ -50,9 +51,28 @@ void PropertyInspector::setupUiLogic() {
     }
     ui->combo_RenderMode->clear();
     for (auto mode : QSpace::Visualize::getAllRenderModes()) {
-        ui->combo_RenderMode->addItem(QSpace::Visualize::rendermodeToString(mode), QVariant::fromValue(mode));
+        ui->combo_RenderMode->addItem(QSpace::Visualize::rendermodeToString(mode),
+                                      QVariant::fromValue(mode));
     }
-    // 2. Коннектим сигналы UI к слотамв
+    ui->combo_interpolationRange->clear();
+    for (auto type : QSpace::Visualize::getAllScalarBarRangeInterpolationTypes()) {
+        ui->combo_interpolationRange->addItem(
+            QSpace::Visualize::scalarBarRangeInterpolationTypeToString(type),
+            QVariant::fromValue(type));
+    }
+    ui->combo_functionSplat->clear();
+    for (auto type : QSpace::Visualize::getAllShaderTypes()) {
+        ui->combo_functionSplat->addItem(QSpace::Visualize::shaderTypeToString(type),
+                                         QVariant::fromValue(type));
+    }
+
+    ui->combo_functionOpacity->clear();
+    for (auto type : QSpace::Visualize::getAllInterpolationOpacityFunctions()) {
+        ui->combo_functionOpacity->addItem(
+            QSpace::Visualize::interpolationOpacityFunctionToString(type),
+            QVariant::fromValue(type));
+    }
+    //  2. Коннектим сигналы UI к слотамв
     connect(ui->combo_colormap,
             QOverload<int>::of(&QComboBox::currentIndexChanged),
             this,
@@ -94,19 +114,94 @@ void PropertyInspector::setupUiLogic() {
             QOverload<int>::of(&QComboBox::currentIndexChanged),
             this,
             &PropertyInspector::onRenderModeChanged);
-    connect(ui->checkBox_useLogScale, &QCheckBox::toggled, this, &PropertyInspector::onUseLogscaleChanged);
-    connect(ui->checkBox_useEmissive, &QCheckBox::toggled, this, &PropertyInspector::onUseEmisiveChanged);
-    connect(ui->checkBox_isVisibleScalarBar, &QCheckBox::toggled, this, &PropertyInspector::onShowScalarBar);
-    connect(ui->checkBox_isAutomaticRange, &QCheckBox::toggled, this, &PropertyInspector::onCheckBoxAutoRangeChanged);
+    connect(ui->checkBox_useLogScale,
+            &QCheckBox::toggled,
+            this,
+            &PropertyInspector::onUseLogscaleChanged);
+    connect(ui->checkBox_useEmissive,
+            &QCheckBox::toggled,
+            this,
+            &PropertyInspector::onUseEmisiveChanged);
+    connect(ui->checkBox_isVisibleScalarBar,
+            &QCheckBox::toggled,
+            this,
+            &PropertyInspector::onShowScalarBar);
+    connect(ui->checkBox_isAutomaticRange,
+            &QCheckBox::toggled,
+            this,
+            &PropertyInspector::onCheckBoxAutoRangeChanged);
     connect(&Visualize::ColorMapManager::instance(),
             &Visualize::ColorMapManager::paleteAdded,
             this,
             &PropertyInspector::onColorMapAdded);
+
+    connect(ui->checkBox_hideOutOfRange,
+            &QCheckBox::toggled,
+            this,
+            &PropertyInspector::onCheckBox_hideOutOfRangeChanged);
+    connect(ui->doubleSpinBox_colorCorrection,
+            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this,
+            &PropertyInspector::onDoubleSpinBox_colorCorrectionChanged);
+    connect(ui->doubleSpinBox_gauianSharpnes,
+            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this,
+            &PropertyInspector::onDoubleSpinBox_gauianSharpnesChanged);
+    connect(ui->doubleSpinBox_sigmoidGammaOpacity,
+            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this,
+            &PropertyInspector::onDoubleSpinBox_sigmoidGammaOpacityChanged);
+    connect(ui->doubleSpinBox_sigmoidGammaColor,
+            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this,
+            &PropertyInspector::onDoubleSpinBox_sigmoidGammaColorChanged);
+    connect(ui->doubleSpinBox__sigmoidShiftOpacity,
+            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this,
+            &PropertyInspector::onDoubleSpinBox__sigmoidShiftOpacityChanged);
+    connect(ui->doubleSpinBox__sigmoidShiftColor,
+            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this,
+            &PropertyInspector::onDoubleSpinBox__sigmoidShiftColorChanged);
+    connect(ui->combo_functionSplat,
+            QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this,
+            &PropertyInspector::onCombo_functionSplatChanged);
+    connect(ui->combo_interpolationRange,
+            QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this,
+            &PropertyInspector::onCombo_interpolationRangeChanged);
+    connect(ui->combo_functionOpacity,
+            QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this,
+            &PropertyInspector::onCombo_functionOpacityChanged);
+    connect(ui->doubleSpinBox__alpha,
+            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this,
+            &PropertyInspector::onDoubleSpinBox__alphaChanged);
 }
+void PropertyInspector::onCombo_functionOpacityChanged(int index) {
+    if (m_currentNodeId.isNull())
+        return;
+    auto type =
+        ui->combo_functionOpacity->itemData(index).value<Visualize::InterpolationOpacityFunction>();
+    if (type == Visualize::InterpolationOpacityFunction::Sigmoid) {
+        ui->doubleSpinBox_sigmoidGammaOpacity->setEnabled(true);
+        ui->doubleSpinBox__sigmoidShiftOpacity->setEnabled(true);
+    } else {
+        ui->doubleSpinBox_sigmoidGammaOpacity->setEnabled(false);
+        ui->doubleSpinBox__sigmoidShiftOpacity->setEnabled(false);
+    }
+    m_app->updateNodeSettings(m_currentNodeId, [type](Core::VisualSettings& s) {
+        s.interpolationOpacityFunction = Visualize::interpolationOpacityFunctionToString(type);
+    });
+}
+
 void PropertyInspector::onColorMapAdded(const Visualize::ColorMap& map) {
     auto& manager = Visualize::ColorMapManager::instance();
     QIcon icon    = manager.createColorMapIcon(map);
-    ui->combo_colormap->removeItem(ui->combo_colormap->findData(map.id)); // Удаляем старую запись, если она есть
+    ui->combo_colormap->removeItem(
+        ui->combo_colormap->findData(map.id)); // Удаляем старую запись, если она есть
     ui->combo_colormap->addItem(icon, map.name, map.id);
     // 6. Обновляем комбобокс без срабатывания сигналов
     QSignalBlocker blocker(ui->combo_colormap);
@@ -114,27 +209,42 @@ void PropertyInspector::onColorMapAdded(const Visualize::ColorMap& map) {
     ui->combo_colormap->setCurrentIndex(ui->combo_colormap->count() - 1);
     // 7. Обновляем ядро и рендер
     auto colorMapId = map.id;
-    m_app->updateNodeSettings(m_currentNodeId,
-                              [colorMapId](QSpace::Core::VisualSettings& s) { s.colorMapId = colorMapId; });
+    m_app->updateNodeSettings(m_currentNodeId, [colorMapId](QSpace::Core::VisualSettings& s) {
+        s.colorMapId = colorMapId;
+    });
 }
 void PropertyInspector::onNewCustomPaleteButtonClicked() {
     if (m_currentNodeId.isNull())
         return;
 
     // 1. Берем текущую палитру как базовую (чтобы было что редактировать)
-    auto node       = m_app->getObjectRegistry()->getNode(m_currentNodeId);
-    auto baseMapOpt = QSpace::Visualize::ColorMapManager::instance().getMap(node->settings.colorMapId);
+    auto paleteId   = m_app->getNodePaletteId(m_currentNodeId);
+    auto baseMapOpt = QSpace::Visualize::ColorMapManager::instance().getMap(paleteId);
     if (!baseMapOpt.has_value()) {
-        QMessageBox::warning(this, "Ошибка", "Текущая палитра не найдена. Невозможно создать на ее основе.");
+        QMessageBox::warning(this,
+                             "Ошибка",
+                             "Текущая палитра не найдена. Невозможно создать на ее основе.");
         return;
     }
     // Если палитра не найдена, берем первую дефолтную
-    Visualize::ColorMap baseMap =
-        baseMapOpt.has_value() ? baseMapOpt.value() : Visualize::ColorMapManager::instance().getAllMaps().first();
+    Visualize::ColorMap baseMap = baseMapOpt.has_value()
+                                      ? baseMapOpt.value()
+                                      : Visualize::ColorMapManager::instance().getAllMaps().first();
 
     // 2. Создаем диалог, передавая базовую палитру
-    ColorMapEditorDialog dialog(baseMap, m_app->getSessionManager(), this);
-
+    ColorMapEditorDialog dialog(baseMap, this);
+    connect(&dialog,
+            &ColorMapEditorDialog::savePaletteRequested,
+            m_app,
+            &QSpace::Core::AppCore::savePalette);
+    connect(&dialog,
+            &ColorMapEditorDialog::loadPaletteRequested,
+            m_app,
+            &QSpace::Core::AppCore::loadPalette);
+    connect(m_app,
+            &QSpace::Core::AppCore::paletteLoaded,
+            &dialog,
+            &ColorMapEditorDialog::onPaletteLoaded);
     // 3. Открываем окно и ждем. Выполнение кода здесь останавливается,
     // пока пользователь не нажмет Ok или Cancel
     if (dialog.exec() == QDialog::Accepted) {
@@ -150,22 +260,37 @@ void PropertyInspector::onEditPaleteButtonClicked() {
     if (m_currentNodeId.isNull())
         return;
 
-    auto node       = m_app->getObjectRegistry()->getNode(m_currentNodeId);
-    auto baseMapOpt = QSpace::Visualize::ColorMapManager::instance().getMap(node->settings.colorMapId);
+    auto nodeId     = m_app->getNodePaletteId(m_currentNodeId);
+    auto baseMapOpt = QSpace::Visualize::ColorMapManager::instance().getMap(nodeId);
 
     if (!baseMapOpt.has_value()) {
-        QMessageBox::warning(this, "Ошибка", "Текущая палитра не найдена. Невозможно отредактировать.");
+        QMessageBox::warning(this,
+                             "Ошибка",
+                             "Текущая палитра не найдена. Невозможно отредактировать.");
         return;
     }
     if (baseMapOpt.value().isPreset) {
-        QMessageBox::warning(this,
-                             "Ошибка",
-                             "Невозможно редактировать пресет. Создайте копию палитры и редактируйте ее.");
+        QMessageBox::warning(
+            this,
+            "Ошибка",
+            "Невозможно редактировать пресет. Создайте копию палитры и редактируйте ее.");
         return;
     }
     Visualize::ColorMap baseMap = baseMapOpt.value();
 
-    ColorMapEditorDialog dialog(baseMap, m_app->getSessionManager(), this);
+    ColorMapEditorDialog dialog(baseMap, this);
+    connect(&dialog,
+            &ColorMapEditorDialog::savePaletteRequested,
+            m_app,
+            &QSpace::Core::AppCore::savePalette);
+    connect(&dialog,
+            &ColorMapEditorDialog::loadPaletteRequested,
+            m_app,
+            &QSpace::Core::AppCore::loadPalette);
+    connect(m_app,
+            &QSpace::Core::AppCore::paletteLoaded,
+            &dialog,
+            &ColorMapEditorDialog::onPaletteLoaded);
     if (dialog.exec() == QDialog::Accepted) {
         Visualize::ColorMap editedMap = dialog.getEditedMap();
         // Если палитра была загружена из файла, сохраняем ее ID и имя
@@ -180,7 +305,8 @@ void PropertyInspector::onEditPaleteButtonClicked() {
 void PropertyInspector::onShowScalarBar(bool checked) {
     if (m_currentNodeId.isNull())
         return;
-    m_app->updateNodeSettings(m_currentNodeId, [checked](Core::VisualSettings& s) { s.showScalarBar = checked; });
+    m_app->updateNodeSettings(m_currentNodeId,
+                              [checked](Core::VisualSettings& s) { s.showScalarBar = checked; });
 }
 
 void PropertyInspector::onCheckBoxAutoRangeChanged(bool checked) {
@@ -193,7 +319,8 @@ void PropertyInspector::onCheckBoxAutoRangeChanged(bool checked) {
         ui->spin_maxValue->setEnabled(true);
         ui->spin_minValue->setEnabled(true);
     }
-    m_app->updateNodeSettings(m_currentNodeId, [checked](Core::VisualSettings& s) { s.autoRange = checked; });
+    m_app->updateNodeSettings(m_currentNodeId,
+                              [checked](Core::VisualSettings& s) { s.autoRange = checked; });
 }
 
 void PropertyInspector::onCurrentVisColumnChanged(int index) {
@@ -201,14 +328,16 @@ void PropertyInspector::onCurrentVisColumnChanged(int index) {
         return;
 
     QString fieldName = ui->combo_current_column->itemText(index);
-    m_app->updateNodeSettings(m_currentNodeId, [fieldName](Core::VisualSettings& s) { s.colorByField = fieldName; });
+    m_app->updateNodeSettings(m_currentNodeId,
+                              [fieldName](Core::VisualSettings& s) { s.colorByField = fieldName; });
 }
 void PropertyInspector::onParticleSizeChanged(double val) {
     if (m_currentNodeId.isNull())
         return;
     double size = val;
-    m_app->updateNodeSettings(m_currentNodeId,
-                              [size](QSpace::Core::VisualSettings& settings) { settings.PointSize = size; });
+    m_app->updateNodeSettings(m_currentNodeId, [size](QSpace::Core::VisualSettings& settings) {
+        settings.PointSize = size;
+    });
 }
 void PropertyInspector::setCurrentNode(const QUuid& id) {
     m_currentNodeId = id;
@@ -223,7 +352,7 @@ void PropertyInspector::setCurrentNode(const QUuid& id) {
 }
 
 void PropertyInspector::updateWidgets() {
-    auto node = m_app->getObjectRegistry()->getNode(m_currentNodeId);
+    auto node = m_app->getNodeById(m_currentNodeId);
     if (!node)
         return;
 
@@ -240,6 +369,17 @@ void PropertyInspector::updateWidgets() {
     QSignalBlocker spinBlocker4(ui->checkBox_useLogScale);
     QSignalBlocker spinBlocker5(ui->checkBox_useEmissive);
     QSignalBlocker spinBlocker6(ui->checkBox_isVisibleScalarBar);
+    QSignalBlocker spinBlocker7(ui->checkBox_hideOutOfRange);
+    QSignalBlocker spinBlocker8(ui->doubleSpinBox_colorCorrection);
+    QSignalBlocker spinBlocker9(ui->doubleSpinBox_gauianSharpnes);
+    QSignalBlocker spinBlocker10(ui->doubleSpinBox_sigmoidGammaOpacity);
+    QSignalBlocker spinBlocker11(ui->doubleSpinBox_sigmoidGammaColor);
+    QSignalBlocker spinBlocker12(ui->doubleSpinBox__sigmoidShiftOpacity);
+    QSignalBlocker spinBlocker13(ui->doubleSpinBox__sigmoidShiftColor);
+    QSignalBlocker spinBlocker14(ui->combo_functionSplat);
+    QSignalBlocker spinBlocker15(ui->combo_interpolationRange);
+    QSignalBlocker spinBlocker16(ui->combo_functionOpacity);
+    QSignalBlocker spinBlocker17(ui->doubleSpinBox__alpha);
 
     ui->combo_current_column->clear();
     auto pointData = node->data->GetPointData();
@@ -271,8 +411,20 @@ void PropertyInspector::updateWidgets() {
     // Здесь же обновляем другие виджеты (чекбоксы, слайдеры...)
     ui->doubleSpinBox_Opacity->setValue(node->settings.opacity);
     ui->doubleSpinBox_ParticleSize->setValue(node->settings.PointSize);
-    ui->checkBox_isAutomaticRange->setCheckState(node->settings.autoRange ? Qt::CheckState::Checked
-                                                                          : Qt::CheckState::Unchecked);
+    ui->checkBox_isAutomaticRange->setCheckState(
+        node->settings.autoRange ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
+    if (node->settings.autoRange) {
+        ui->spin_maxValue->setEnabled(false);
+        ui->spin_minValue->setEnabled(false);
+    } else {
+        ui->spin_maxValue->setEnabled(true);
+        ui->spin_minValue->setEnabled(true);
+    }
+    ui->spin_maxValue->setMaximum(node->settings.baseRangeMax);
+    ui->spin_maxValue->setMinimum(node->settings.baseRangeMin);
+    ui->spin_minValue->setMaximum(node->settings.baseRangeMax);
+    ui->spin_minValue->setMinimum(node->settings.baseRangeMin);
+
     if (node->settings.autoRange) {
         ui->spin_maxValue->setValue(node->settings.rangeMax);
         ui->spin_minValue->setValue(node->settings.rangeMin);
@@ -281,20 +433,160 @@ void PropertyInspector::updateWidgets() {
                                                                        : Qt::CheckState::Unchecked);
     ui->checkBox_useEmissive->setCheckState(node->settings.isEmmisive ? Qt::CheckState::Checked
                                                                       : Qt::CheckState::Unchecked);
-    ui->checkBox_isVisibleScalarBar->setCheckState(node->settings.showScalarBar ? Qt::CheckState::Checked
-                                                                                : Qt::CheckState::Unchecked);
+    ui->checkBox_isVisibleScalarBar->setCheckState(
+        node->settings.showScalarBar ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
+    ui->checkBox_hideOutOfRange->setCheckState(
+        node->settings.hideOutOfRange ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
+
+    ui->doubleSpinBox_colorCorrection->setValue(node->settings.exposureClamp);
+    ui->doubleSpinBox_gauianSharpnes->setValue(node->settings.gaussianSharpness);
+    ui->doubleSpinBox_sigmoidGammaOpacity->setValue(node->settings.sigmoidGammaOpacity);
+    ui->doubleSpinBox__sigmoidShiftOpacity->setValue(node->settings.sigmoidShiftOpacity);
+    ui->doubleSpinBox_sigmoidGammaColor->setValue(node->settings.sigmoidGammaColor);
+    ui->doubleSpinBox__sigmoidShiftColor->setValue(node->settings.sigmoidShiftColor);
+    ui->doubleSpinBox__alpha->setValue(node->settings.alpha);
+
+    ui->combo_functionSplat->setCurrentIndex(
+        ui->combo_functionSplat->findData(QVariant::fromValue(node->settings.ShaderType)));
+    ui->combo_interpolationRange->setCurrentIndex(ui->combo_interpolationRange->findData(
+        QVariant::fromValue(node->settings.interpolationRangeType)));
+    auto shader = ui->combo_functionSplat->currentData().value<Visualize::ShaderType>();
+    if (shader == Visualize::ShaderType::Default) {
+        ui->doubleSpinBox_colorCorrection->setEnabled(false);
+        ui->doubleSpinBox_gauianSharpnes->setEnabled(false);
+    } else {
+        ui->doubleSpinBox_colorCorrection->setEnabled(true);
+        ui->doubleSpinBox_gauianSharpnes->setEnabled(true);
+    }
+    auto type =
+        ui->combo_functionOpacity->currentData().value<Visualize::InterpolationOpacityFunction>();
+    if (type == Visualize::InterpolationOpacityFunction::Sigmoid) {
+        ui->doubleSpinBox_sigmoidGammaOpacity->setEnabled(true);
+        ui->doubleSpinBox__sigmoidShiftOpacity->setEnabled(true);
+    } else {
+        ui->doubleSpinBox_sigmoidGammaOpacity->setEnabled(false);
+        ui->doubleSpinBox__sigmoidShiftOpacity->setEnabled(false);
+    }
+    auto mode = ui->combo_interpolationRange->currentData()
+                    .value<QSpace::Visualize::ScalarBarRangeInterpolation>();
+    if (mode == Visualize::ScalarBarRangeInterpolation::Sigmoid) {
+        ui->doubleSpinBox_sigmoidGammaColor->setEnabled(true);
+        ui->doubleSpinBox__sigmoidShiftColor->setEnabled(true);
+    } else {
+        ui->doubleSpinBox_sigmoidGammaColor->setEnabled(false);
+        ui->doubleSpinBox__sigmoidShiftColor->setEnabled(false);
+    }
+    if (mode == Visualize::ScalarBarRangeInterpolation::Asinh) {
+        ui->doubleSpinBox__alpha->setEnabled(true);
+    } else {
+        ui->doubleSpinBox__alpha->setEnabled(false);
+    }
+}
+void PropertyInspector::onCheckBox_hideOutOfRangeChanged(bool checked) {
+    if (m_currentNodeId.isNull())
+        return;
+    m_app->updateNodeSettings(m_currentNodeId, [checked](QSpace::Core::VisualSettings& settings) {
+        settings.hideOutOfRange = checked;
+    });
+}
+void PropertyInspector::onDoubleSpinBox_colorCorrectionChanged(double val) {
+    if (m_currentNodeId.isNull())
+        return;
+    m_app->updateNodeSettings(m_currentNodeId, [val](QSpace::Core::VisualSettings& settings) {
+        settings.exposureClamp = val;
+    });
+}
+void PropertyInspector::onDoubleSpinBox_gauianSharpnesChanged(double val) {
+    if (m_currentNodeId.isNull())
+        return;
+    m_app->updateNodeSettings(m_currentNodeId, [val](QSpace::Core::VisualSettings& settings) {
+        settings.gaussianSharpness = val;
+    });
+}
+void PropertyInspector::onDoubleSpinBox_sigmoidGammaOpacityChanged(double val) {
+    if (m_currentNodeId.isNull())
+        return;
+    m_app->updateNodeSettings(m_currentNodeId, [val](QSpace::Core::VisualSettings& settings) {
+        settings.sigmoidGammaOpacity = val;
+    });
+}
+void PropertyInspector::onDoubleSpinBox__sigmoidShiftOpacityChanged(double val) {
+    if (m_currentNodeId.isNull())
+        return;
+    m_app->updateNodeSettings(m_currentNodeId, [val](QSpace::Core::VisualSettings& settings) {
+        settings.sigmoidShiftOpacity = val;
+    });
+}
+void PropertyInspector::onDoubleSpinBox_sigmoidGammaColorChanged(double val) {
+    if (m_currentNodeId.isNull())
+        return;
+    m_app->updateNodeSettings(m_currentNodeId, [val](QSpace::Core::VisualSettings& settings) {
+        settings.sigmoidGammaColor = val;
+    });
+}
+void PropertyInspector::onDoubleSpinBox__sigmoidShiftColorChanged(double val) {
+    if (m_currentNodeId.isNull())
+        return;
+    m_app->updateNodeSettings(m_currentNodeId, [val](QSpace::Core::VisualSettings& settings) {
+        settings.sigmoidShiftColor = val;
+    });
+}
+void PropertyInspector::onDoubleSpinBox__alphaChanged(double val) {
+    if (m_currentNodeId.isNull())
+        return;
+    m_app->updateNodeSettings(m_currentNodeId, [val](QSpace::Core::VisualSettings& settings) {
+        settings.alpha = val;
+    });
+}
+void PropertyInspector::onCombo_functionSplatChanged(int index) {
+    if (m_currentNodeId.isNull())
+        return;
+    auto type = ui->combo_functionSplat->itemData(index).value<QSpace::Visualize::ShaderType>();
+    if (type == Visualize::ShaderType::Default) {
+        ui->doubleSpinBox_gauianSharpnes->setEnabled(false);
+        ui->doubleSpinBox_colorCorrection->setEnabled(false);
+    } else {
+        ui->doubleSpinBox_gauianSharpnes->setEnabled(true);
+        ui->doubleSpinBox_colorCorrection->setEnabled(true);
+    }
+    m_app->updateNodeSettings(m_currentNodeId, [type](QSpace::Core::VisualSettings& settings) {
+        settings.ShaderType = Visualize::shaderTypeToString(type);
+    });
+}
+void PropertyInspector::onCombo_interpolationRangeChanged(int index) {
+    if (m_currentNodeId.isNull())
+        return;
+    auto mode = ui->combo_interpolationRange->itemData(index)
+                    .value<QSpace::Visualize::ScalarBarRangeInterpolation>();
+    if (mode == Visualize::ScalarBarRangeInterpolation::Sigmoid) {
+        ui->doubleSpinBox_sigmoidGammaColor->setEnabled(true);
+        ui->doubleSpinBox__sigmoidShiftColor->setEnabled(true);
+    } else {
+        ui->doubleSpinBox_sigmoidGammaColor->setEnabled(false);
+        ui->doubleSpinBox__sigmoidShiftColor->setEnabled(false);
+    }
+    if (mode == Visualize::ScalarBarRangeInterpolation::Asinh) {
+        ui->doubleSpinBox__alpha->setEnabled(true);
+    } else {
+        ui->doubleSpinBox__alpha->setEnabled(false);
+    }
+    m_app->updateNodeSettings(m_currentNodeId, [mode](QSpace::Core::VisualSettings& settings) {
+        settings.interpolationRangeType = Visualize::scalarBarRangeInterpolationTypeToString(mode);
+    });
 }
 void PropertyInspector::onRangeMaxValueChanged(double val) {
     if (m_currentNodeId.isNull())
         return;
-    m_app->updateNodeSettings(m_currentNodeId,
-                              [val](QSpace::Core::VisualSettings& settings) { settings.rangeMax = val; });
+    m_app->updateNodeSettings(m_currentNodeId, [val](QSpace::Core::VisualSettings& settings) {
+        settings.rangeMax = val;
+    });
 }
 void PropertyInspector::onRangeMinValueChanged(double val) {
     if (m_currentNodeId.isNull())
         return;
-    m_app->updateNodeSettings(m_currentNodeId,
-                              [val](QSpace::Core::VisualSettings& settings) { settings.rangeMin = val; });
+    m_app->updateNodeSettings(m_currentNodeId, [val](QSpace::Core::VisualSettings& settings) {
+        settings.rangeMin = val;
+    });
 }
 
 void PropertyInspector::onPaletteChanged(int index) {
@@ -305,18 +597,32 @@ void PropertyInspector::onPaletteChanged(int index) {
     auto colorMapId = ui->combo_colormap->itemData(index).value<QUuid>();
 
     // Обновляем Core (PipelineManager поймает это изменение сам)
-    m_app->updateNodeSettings(m_currentNodeId,
-                              [colorMapId](QSpace::Core::VisualSettings& s) { s.colorMapId = colorMapId; });
+    m_app->updateNodeSettings(m_currentNodeId, [colorMapId](QSpace::Core::VisualSettings& s) {
+        s.colorMapId = colorMapId;
+    });
 }
 void PropertyInspector::onUseLogscaleChanged(bool checked) {
     if (m_currentNodeId.isNull())
         return;
-    m_app->updateNodeSettings(m_currentNodeId, [checked](QSpace::Core::VisualSettings& s) { s.useLogScale = checked; });
+    m_app->updateNodeSettings(m_currentNodeId, [checked](QSpace::Core::VisualSettings& s) {
+        s.useLogScale = checked;
+    });
+    auto   node = m_app->getNodeById(m_currentNodeId);
+    double minV = node->settings.baseRangeMin;
+    double maxV = node->settings.baseRangeMax;
+    ui->spin_maxValue->setMaximum(maxV);
+    ui->spin_minValue->setMaximum(maxV);
+    ui->spin_maxValue->setMinimum(minV);
+    ui->spin_minValue->setMinimum(minV);
+    ui->spin_maxValue->setValue(maxV);
+    ui->spin_minValue->setValue(minV);
 }
 void PropertyInspector::onUseEmisiveChanged(bool checked) {
     if (m_currentNodeId.isNull())
         return;
-    m_app->updateNodeSettings(m_currentNodeId, [checked](QSpace::Core::VisualSettings& s) { s.isEmmisive = checked; });
+    m_app->updateNodeSettings(m_currentNodeId, [checked](QSpace::Core::VisualSettings& s) {
+        s.isEmmisive = checked;
+    });
 }
 
 // изменяет тип отображения всего их 3: Points, GausianSplat,Volume -- в разработке
@@ -324,13 +630,15 @@ void PropertyInspector::onRenderModeChanged(int index) {
     if (m_currentNodeId.isNull())
         return;
     auto mode = ui->combo_RenderMode->itemData(index).value<QSpace::Visualize::RenderMode>();
-    m_app->updateNodeSettings(m_currentNodeId, [mode](QSpace::Core::VisualSettings& s) { s.mode = mode; });
+    m_app->updateNodeSettings(m_currentNodeId,
+                              [mode](QSpace::Core::VisualSettings& s) { s.mode = mode; });
 }
 void PropertyInspector::onOpacityChanged(double val) {
     if (m_currentNodeId.isNull())
         return;
 
     double opacity = val;
-    m_app->updateNodeSettings(m_currentNodeId, [opacity](QSpace::Core::VisualSettings& s) { s.opacity = opacity; });
+    m_app->updateNodeSettings(m_currentNodeId,
+                              [opacity](QSpace::Core::VisualSettings& s) { s.opacity = opacity; });
 }
 } // namespace QSpace::UI

@@ -1,4 +1,5 @@
 #include "ColorMapEditorDialog.h"
+#include "Structures/RenderStructures.h"
 #include "Visualize/ColorMapManager/ColorMapManager.h"
 #include "ui_ColorMapEditorDialog.h"
 #include <QColorDialog>
@@ -11,11 +12,8 @@
 
 namespace QSpace::UI {
 
-ColorMapEditorDialog::ColorMapEditorDialog(const Visualize::ColorMap&          baseMap,
-                                           const QSpace::Core::SessionManager* sessionManager,
-                                           QWidget*                            parent)
-    : QDialog(parent), ui(new Ui::ColorMapEditorDialog),
-      m_sessionManager(const_cast<QSpace::Core::SessionManager*>(sessionManager)), m_baseMap(baseMap) {
+ColorMapEditorDialog::ColorMapEditorDialog(const Visualize::ColorMap& baseMap, QWidget* parent)
+    : QDialog(parent), ui(new Ui::ColorMapEditorDialog), m_baseMap(baseMap) {
     ui->setupUi(this);
 
     // Связываем стандартные кнопки Ok и Cancel с закрытием диалога
@@ -33,12 +31,31 @@ ColorMapEditorDialog::ColorMapEditorDialog(const Visualize::ColorMap&          b
             this,
             &ColorMapEditorDialog::on_colorTable_cellDoubleClicked);
 
-    connect(ui->pushButtonAdd, &QPushButton::clicked, this, &ColorMapEditorDialog::on_addButton_clicked);
-    connect(ui->pushButtonDelete, &QPushButton::clicked, this, &ColorMapEditorDialog::on_removeButton_clicked);
-    connect(ui->pushButtonLoad, &QPushButton::clicked, this, &ColorMapEditorDialog::on_loadButton_clicked);
-    connect(ui->pushButtonSave, &QPushButton::clicked, this, &ColorMapEditorDialog::on_saveButton_clicked);
-    connect(ui->checkBoxIsInvert, &QCheckBox::clicked, this, &ColorMapEditorDialog::on_invertButton_clicked);
-    connect(ui->spinboxLevels, &QSpinBox::valueChanged, this, &ColorMapEditorDialog::on_spinBoxChanged);
+    connect(ui->pushButtonAdd,
+            &QPushButton::clicked,
+            this,
+            &ColorMapEditorDialog::on_addButton_clicked);
+    connect(ui->pushButtonDelete,
+            &QPushButton::clicked,
+            this,
+            &ColorMapEditorDialog::on_removeButton_clicked);
+    connect(ui->pushButtonLoad,
+            &QPushButton::clicked,
+            this,
+            &ColorMapEditorDialog::on_loadButton_clicked);
+    connect(ui->pushButtonSave,
+            &QPushButton::clicked,
+            this,
+            &ColorMapEditorDialog::on_saveButton_clicked);
+    connect(ui->checkBoxIsInvert,
+            &QCheckBox::clicked,
+            this,
+            &ColorMapEditorDialog::on_invertButton_clicked);
+    connect(ui->spinboxLevels,
+            &QSpinBox::valueChanged,
+            this,
+            &ColorMapEditorDialog::on_spinBoxChanged);
+
     populateTable();
 }
 
@@ -103,17 +120,15 @@ void ColorMapEditorDialog::on_addButton_clicked() {
     ui->spinboxLevels->blockSignals(false);
 }
 void ColorMapEditorDialog::on_loadButton_clicked() {
-    QString colorMapPath = QFileDialog::getOpenFileName(this, "Please variable colormap file", "", "*.json");
+    QString colorMapPath =
+        QFileDialog::getOpenFileName(this, "Please variable colormap file", "", "*.json");
     if (colorMapPath.isEmpty()) {
         return;
     }
-    auto colorMapPtr = m_sessionManager->loadPalete(colorMapPath);
-    if (!colorMapPtr.has_value()) {
-        QMessageBox::critical(this, "Ошибка", "Не удалось загрузить палитру из файла.");
-        return;
-    }
-    const auto& colorMap = colorMapPtr.value();
-    m_baseMap            = colorMap;
+    emit loadPaletteRequested(colorMapPath);
+}
+void ColorMapEditorDialog::onPaletteLoaded(QSpace::Visualize::ColorMap colorMap) {
+    m_baseMap = colorMap;
     populateTable();
 }
 void ColorMapEditorDialog::on_saveButton_clicked() {
@@ -123,7 +138,7 @@ void ColorMapEditorDialog::on_saveButton_clicked() {
     if (savePath.isEmpty()) {
         return;
     }
-    m_sessionManager->savePalete(editedMap, savePath);
+    emit savePaletteRequested(editedMap, savePath);
 }
 void ColorMapEditorDialog::on_removeButton_clicked() {
     auto selectedItems = ui->tableWidget->selectedItems();
@@ -131,8 +146,15 @@ void ColorMapEditorDialog::on_removeButton_clicked() {
         QMessageBox::warning(this, "Удаление", "Пожалуйста, выберите строку для удаления.");
         return;
     }
+    QSet<int> rowsToRemove;
     for (auto* item : selectedItems) {
-        ui->tableWidget->removeRow(item->row());
+        rowsToRemove.insert(item->row());
+    }
+    QList<int> sortedRows = rowsToRemove.values();
+    std::sort(sortedRows.begin(), sortedRows.end(), std::greater<int>());
+
+    for (int row : sortedRows) {
+        ui->tableWidget->removeRow(row);
     }
     ui->spinboxLevels->blockSignals(true);
     ui->spinboxLevels->setValue(ui->tableWidget->rowCount());
@@ -189,7 +211,9 @@ Visualize::ColorMap ColorMapEditorDialog::getEditedMap() const {
     }
 
     // Сортируем по 'x', так как для рендера точки должны идти по возрастанию
-    std::sort(newMap.points.begin(), newMap.points.end(), [](const auto& a, const auto& b) { return a.x < b.x; });
+    std::sort(newMap.points.begin(), newMap.points.end(), [](const auto& a, const auto& b) {
+        return a.x < b.x;
+    });
 
     return newMap;
 }

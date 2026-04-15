@@ -4,9 +4,9 @@
 
 namespace QSpace::Visualize {
 
-VideoExporter::VideoExporter(Renderer* renderer, QObject* parent) : QObject(parent), m_renderer(renderer) {
+VideoExporter::VideoExporter(VtkView* vtkview, QObject* parent) : QObject(parent), m_vtkView(vtkview) {
     m_windowToImage = vtkSmartPointer<vtkWindowToImageFilter>::New();
-    m_windowToImage->SetInput(m_renderer->getRenderWindow());
+    m_windowToImage->SetInput(m_vtkView->getRenderWindow());
     m_windowToImage->SetInputBufferTypeToRGB();
     m_windowToImage->ReadFrontBufferOff(); // Важно: читаем из заднего буфера (скрытого)
 
@@ -19,11 +19,11 @@ VideoExporter::~VideoExporter() {
 }
 
 bool VideoExporter::startExport(const QString& filepath, int fps) {
-    if (!m_renderer || !m_renderer->getRenderWindow()) {
+    if (!m_vtkView || !m_vtkView->getRenderWindow()) {
         qCCritical(LogRenderer) << "VideoExporter: Render window is null!";
         return false;
     }
-
+    m_windowToImage->SetInput(m_vtkView->getRenderWindow());
     m_writer->SetFileName(filepath.toStdString().c_str());
     m_writer->SetRate(fps);
     m_writer->Start();
@@ -38,7 +38,7 @@ void VideoExporter::captureFrame() {
         return;
 
     // Принудительно рендерим кадр в VTK
-    m_renderer->getRenderWindow()->Render();
+    m_vtkView->getRenderWindow()->Render();
 
     // Захватываем пиксели и пишем
     m_windowToImage->Modified();

@@ -1,7 +1,7 @@
 #include "Core/PipelineManager/PipelineManager.h"
+#include "Common/Interfaces/IView.h"
 #include "Common/Logger/Logger.h"
 #include "Core/ObjectRegistry/ObjectRegistry.h"
-#include "Visualize/Renderer.h"
 #include <memory>
 #include <qobject.h>
 #include <vtkActor.h>
@@ -9,6 +9,7 @@
 #include <vtkPolyData.h>
 #include <vtkPolyDataMapper.h>
 #include <vtkProperty.h>
+
 namespace QSpace::Core {
 PipelineManager::PipelineManager(ObjectRegistry* registry,
                                  ViewManager*    viewManager,
@@ -23,7 +24,7 @@ void PipelineManager::onNodeAdded(std::shared_ptr<DataNode> node) {
     qCInfo(LogCore) << "PipelineManager::onNodeAdded - Node added:" << node->label;
 
     // пробегаем по всем окнам
-    m_viewManager->forEachView([this, node](QSpace::Visualize::Renderer* renderer) {
+    m_viewManager->forEachView([this, node](QSpace::Visualize::IView* renderer) {
         qCInfo(LogCore) << "PipelineManager::onNodeAdded - Creating layer in renderer";
 
         // создаем слой
@@ -44,13 +45,13 @@ void PipelineManager::onObjectRemoved(const QUuid& id) {
     // Удаляем объект из ВСЕХ окон
     qCInfo(LogCore) << "PipelineManager::onObjectRemoved - Object removed:" << id;
     m_layerManager->removeLayer(id);
-    m_viewManager->forEachView([](QSpace::Visualize::Renderer* r) { r->render(); });
+    m_viewManager->forEachView([](QSpace::Visualize::IView* r) { r->render(); });
 }
 void PipelineManager::onViewCreated(const QUuid& viewId) {
     // Открылось НОВОЕ окно. Оно пустое.
     qCInfo(LogCore) << "PipelineManager::onViewCreated - View created:" << viewId;
-    QSpace::Visualize::Renderer* newRenderer = m_viewManager->getView(viewId);
-    if (!newRenderer)
+    QSpace::Visualize::IView* newIView = m_viewManager->getView(viewId);
+    if (!newIView)
         return;
 
     // Проходим по всем уже загруженным данным в Registry
@@ -58,9 +59,9 @@ void PipelineManager::onViewCreated(const QUuid& viewId) {
     auto allNodes = m_registry->getAllNodes(); // Предполагаем наличие метода
 
     for (auto node : allNodes) {
-        m_layerManager->createLayer(node, newRenderer);
+        m_layerManager->createLayer(node, newIView);
     }
 
-    newRenderer->resetCamera();
+    newIView->resetCamera();
 }
 } // namespace QSpace::Core

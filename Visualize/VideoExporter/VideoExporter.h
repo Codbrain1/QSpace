@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Visualize/Renderer.h"
+#include "Visualize/VtkView.h"
 #include <QObject>
 #include <QString>
 #include <vtkOggTheoraWriter.h>
@@ -12,7 +12,7 @@ namespace QSpace::Visualize {
 class VideoExporter : public QObject {
     Q_OBJECT
   public:
-    explicit VideoExporter(Renderer* renderer, QObject* parent = nullptr);
+    explicit VideoExporter(VtkView* view, QObject* parent = nullptr);
     ~VideoExporter();
     /**
      * @brief инициализирует создание видеофайла
@@ -22,7 +22,7 @@ class VideoExporter : public QObject {
     void finishExport();
 
   private:
-    Renderer*                               m_renderer;
+    VtkView*                                m_vtkView;
     vtkSmartPointer<vtkWindowToImageFilter> m_windowToImage;
     vtkSmartPointer<vtkOggTheoraWriter>     m_writer;
     bool                                    m_isRecording = false;

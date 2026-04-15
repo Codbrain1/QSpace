@@ -1,8 +1,7 @@
 #pragma once
 #include "Common/Structures/CoreStructures.h"
-#include "Core/ObjectRegistry/ObjectRegistry.h"
-#include "Core/ViewManager/ViewManager.h"
-#include "Visualize/Renderer.h"
+#include "Interfaces/IView.h"
+#include "Visualize/VtkView.h"
 #include <Common/Interfaces/IRenderLayer.h>
 #include <QMap>
 #include <memory>
@@ -15,9 +14,9 @@ class LayerManager : public QObject {
     Q_OBJECT
   public:
     LayerManager(QObject* parent = nullptr);
-    void createLayer(std::shared_ptr<DataNode> node, QSpace::Visualize::Renderer* Renderer);
+    void createLayer(std::shared_ptr<DataNode> node, QSpace::Visualize::IView* view);
     void removeLayer(const QUuid& nodeId);
-    std::shared_ptr<Visualize::IRenderLayer> getLayer(const QUuid& id, Visualize::Renderer* renderer);
+    std::shared_ptr<Visualize::IRenderLayer> getLayer(const QUuid& id, Visualize::IView* renderer);
     void                                     updateSettings(const QUuid& nodeId);
 
     ~LayerManager();
@@ -28,8 +27,8 @@ class LayerManager : public QObject {
 
   private:
     // Структура хранения:
-    // NodeID -> { Renderer* -> Layer }
+    // NodeID -> { View* -> Layer }
     // Т.е. для одного набора данных у нас может быть много слоев (по одному на каждое окно)
-    QMap<QUuid, QMap<QSpace::Visualize::Renderer*, std::shared_ptr<QSpace::Visualize::IRenderLayer>>> m_layers;
+    QMap<QUuid, QMap<QSpace::Visualize::IView*, std::shared_ptr<QSpace::Visualize::IRenderLayer>>> m_layers;
 };
 } // namespace QSpace::Core

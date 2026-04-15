@@ -23,12 +23,12 @@ std::optional<QSpace::Session::ProjectState> SessionManager::loadProject(const Q
     }
     return std::nullopt;
 }
-bool SessionManager::savePalete(const Visualize::ColorMap& map, const QString& filePath) {
+bool SessionManager::savePalette(const Visualize::ColorMap& map, const QString& filePath) {
     auto       jsonFile = QSpace::Session::ProjectSerializer::serializeColorMap(map);
     QByteArray data     = QJsonDocument(jsonFile).toJson(QJsonDocument::Indented);
     return m_storage_session->save(filePath, data);
 }
-std::optional<Visualize::ColorMap> SessionManager::loadPalete(const QString& filePath) {
+std::optional<Visualize::ColorMap> SessionManager::loadPalette(const QString& filePath) {
     auto        data = m_storage_session->load(filePath);
     QJsonObject jsonObj;
     if (data.has_value()) {

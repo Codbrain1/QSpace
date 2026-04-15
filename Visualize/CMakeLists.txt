@@ -5,8 +5,10 @@ add_library(Visualize STATIC)
 add_library(QSpace::Visualize ALIAS Visualize)
 
 target_sources(Visualize PRIVATE 
-            Renderer.h
-            Renderer.cpp
+            VtkView.h
+            VtkView.cpp
+            GalacticInteractorStyle.h
+            GalacticInteractorStyle.cpp
             LayerFactory.cpp
 )
 
@@ -21,4 +23,5 @@ target_link_libraries(Visualize PUBLIC
             Qt6::Widgets
             VTK::CommonCore
             VTK::RenderingAnnotation
+            VTK::InteractionStyle
 )

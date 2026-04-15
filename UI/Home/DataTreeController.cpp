@@ -13,16 +13,14 @@
 #include <quuid.h>
 
 namespace QSpace::UI {
-DataTreeController::DataTreeController(Core::AppCore*                app,
-                                       QTreeWidget*                  tree,
-                                       QSpace::Core::ObjectRegistry* registry,
-                                       QObject*                      parent)
-    : QObject(parent), m_app(app), m_tree(tree), m_registry(registry) {
+DataTreeController::DataTreeController(QTreeWidget* tree, QObject* parent)
+    : QObject(parent), m_tree(tree) {
     m_tree->setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(m_registry, &QSpace::Core::ObjectRegistry::nodeAdded, this, &DataTreeController::onNodeAdded);
-    connect(m_registry, &QSpace::Core::ObjectRegistry::objectRemoved, this, &DataTreeController::onNodeRemoved);
-    connect(m_tree, &QTreeWidget::customContextMenuRequested, this, &DataTreeController::showContextMenu);
-    connect(m_tree, &QTreeWidget::itemChanged, this, &DataTreeController::onItemChahged);
+    connect(m_tree,
+            &QTreeWidget::customContextMenuRequested,
+            this,
+            &DataTreeController::showContextMenu);
+    connect(m_tree, &QTreeWidget::itemChanged, this, &DataTreeController::onItemChanged);
     connect(m_tree, &QTreeWidget::itemSelectionChanged, this, &DataTreeController::onNodeSelected);
 }
 void DataTreeController::onNodeSelected() {
@@ -51,7 +49,7 @@ void DataTreeController::onNodeAdded(std::shared_ptr<QSpace::Core::DataNode> nod
     item->setCheckState(0, node->settings.isVisible ? Qt::Checked : Qt::Unchecked);
     m_tree->blockSignals(false);
 }
-void DataTreeController::onNodeRemoved(const QUuid& id) {
+void DataTreeController::onObjectRemoved(const QUuid& id) {
     QTreeWidgetItem* item = findTreeElementById(id);
     if (item) {
         delete item;
@@ -65,13 +63,15 @@ void DataTreeController::showContextMenu(const QPoint& pos) {
     QUuid id = QUuid::fromString(item->data(0, Qt::UserRole).toString());
     // создаем меню в данном месте
     QMenu    menu;
-    auto*    reg    = m_registry;
     QAction* action = menu.addAction(tr("delete layer"));
+    // QAction* action1 = menu.addAction((tr("open visual properties")));
+
     // если пользователь нажмет удалить то будет вызвано действие удаления объекта
-    connect(action, &QAction::triggered, this, [reg, id]() { reg->removeObject(id); });
+    connect(action, &QAction::triggered, this, [this, &id]() { emit removalRequested(id); });
+
     menu.exec(m_tree->viewport()->mapToGlobal(pos));
 }
-void DataTreeController::onItemChahged(QTreeWidgetItem* item, int col) {
+void DataTreeController::onItemChanged(QTreeWidgetItem* item, int col) {
     if (col != 0)
         return;
     QString idStr = item->data(0, Qt::UserRole).toString();
@@ -79,7 +79,9 @@ void DataTreeController::onItemChahged(QTreeWidgetItem* item, int col) {
         return;
     QUuid id      = QUuid::fromString(idStr);
     bool  checked = (item->checkState(0) == Qt::Checked);
-    m_app->updateNodeSettings(id, [checked](Core::VisualSettings& settings) { settings.isVisible = checked; });
+    emit  updateNodeSettingsRequested(id, [checked](Core::VisualSettings& settings) {
+        settings.isVisible = checked;
+    });
 }
 QTreeWidgetItem* DataTreeController::findTreeElementById(const QUuid& id) {
     QString idStr = id.toString();

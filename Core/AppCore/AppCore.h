@@ -10,6 +10,7 @@
 #include "Core/ViewManager/ViewManager.h"
 #include "Structures/CoreStructures.h"
 #include "Structures/IOStructures.h"
+#include "Structures/RenderStructures.h"
 #include "Structures/SessionStructures.h"
 #include <QObject>
 #include <functional>
@@ -19,6 +20,7 @@
 #include <qobject.h>
 #include <qtmetamacros.h>
 #include <quuid.h>
+#include <vtkRenderWindow.h>
 
 namespace QSpace::Core {
 class AppCore : public QObject {
@@ -38,13 +40,7 @@ class AppCore : public QObject {
      * @brief setGroupingEnabled(bool enabled) --- в разработке
      */
     void setGroupingEnabled(bool enabled);
-    /**
-     * @brief updateNodeSettings() --- обновляет данные записи в ObjectRegister
-     * @param id --- уникальный идентификатор записи
-     * @param modifer --- ссылка на функцию изменяющуюю данные записи, обязательно имеет единственный парметор
-     * VisualSettings
-     */
-    void updateNodeSettings(const QUuid& id, std::function<void(VisualSettings&)> modifer);
+
     /**
      * @brief  startVideoExport() --- инициализирует VideoExportManager для создания видео анимации
      * @param baseNodeId --- уникальный идентификатор слоя настройки которого исползуются для анимации
@@ -62,27 +58,41 @@ class AppCore : public QObject {
     /**
      * @brief отменяет рендеринг видео
      */
-    void         cancelVideoExport();
-    DataManager* getDataManager() const {
-        return m_dataManager.get();
-    }
-    ObjectRegistry* getObjectRegistry() const {
-        return m_objectRegistry.get();
-    }
-    ViewManager* getViewManager() const {
-        return m_viewManager.get();
-    }
-    LayerManager* getLayerManager() const {
-        return m_layerManager.get();
-    }
-    QSpace::Session::CurrentSession& getCurrentSessionState() {
-        return m_session_state;
-    }
-    QSpace::Core::SessionManager* getSessionManager() const {
-        return m_sessionManager.get();
-    }
+    void cancelVideoExport();
     void saveCurrentProject();
+    void saveCurrentProjectAs(const QString& projectPath);
     void openProject(const QString& projectPath);
+
+    QUuid createView(Visualize::ViewType type = Visualize::ViewType::VTK_3D, vtkRenderWindow* existingWindow = nullptr);
+    void  removeView(const QUuid& viewId);
+
+    void resetCameraInAllViews();
+    void setCameraViewInAllViews(Visualize::CameraViewType viewType);
+    void setBackgroundColorInAllViews(float r, float g, float b);
+    void setAxesVisibleInAllViews(bool visible);
+    void setGridVisibleInAllViews(bool visible);
+    void setGlobalExposureAllViews(double exposure);
+
+    void  resetCameraInView(const QUuid& viewId);
+    void  setCameraViewInView(const QUuid& viewId, Visualize::CameraViewType viewType);
+    void  setBackgroundColorInView(const QUuid& viewId, float r, float g, float b);
+    void  setAxesVisibleInView(const QUuid& viewId, bool visible);
+    void  setGridVisibleInView(const QUuid& viewId, bool visible);
+    void  setGlobalExposureView(const QUuid& viewId, double exposure);
+    QUuid getNodePaletteId(const QUuid& nodeId);
+    std::shared_ptr<QSpace::Core::DataNode> getNodeById(const QUuid& nodeId);
+
+  public slots:
+    /**
+     * @brief updateNodeSettings() --- обновляет данные записи в ObjectRegister
+     * @param id --- уникальный идентификатор записи
+     * @param modifer --- ссылка на функцию изменяющуюю данные записи, обязательно имеет единственный парметор
+     * VisualSettings
+     */
+    void updateNodeSettings(const QUuid& id, std::function<void(VisualSettings&)> modifer);
+    void removeObject(const QUuid& id);
+    void savePalette(const Visualize::ColorMap& map, const QString& filePath);
+    void loadPalette(const QString& filePath);
   signals:
     /**
      * @brief сообщает об обновлении процесса создания видео
@@ -94,8 +104,20 @@ class AppCore : public QObject {
      * @brief сигнал об окончании создания видео
      */
     void exportFinished(bool success);
+    /**
+     * @brief сигнал о запросе пути для сохранения проекта
+     */
     void requestSavePathFromUI();
+    /**
+     * @brief уведомляет об изменении состояния сессии
+     */
     void sessionStateChanged(QSpace::Session::CurrentSession session);
+    void nodeAdded(std::shared_ptr<QSpace::Core::DataNode> node);
+    void objectRemoved(const QUuid& id);
+    void sceneUpdateRequested();
+    void paletteLoaded(QSpace::Visualize::ColorMap colorMap);
+    void viewCreated(QUuid viewId, Visualize::ViewType type);
+    void viewRemoved(QUuid viewId);
   private slots:
     /**
      * @brief добавляет считанный файл в ObjectRegister
@@ -117,9 +139,9 @@ class AppCore : public QObject {
     QMap<QUuid, int>                    m_activeTasks;
     // Очередь восстановления: Путь файла -> Сохраненное состояние ноды
     QMap<QString, QSpace::Session::DataNodeState> m_restoringNodes;
-    bool                                          m_autoGrouping = true;
-
-    QString                        extractGroupName(const QString& filename);
-    std::shared_ptr<DataContainer> findOrCreateContainer(const QString& groupName);
+    bool                                          m_autoGrouping  = true;
+    bool                                          m_isInitialized = false;
+    QString                                       extractGroupName(const QString& filename);
+    std::shared_ptr<DataContainer>                findOrCreateContainer(const QString& groupName);
 };
 } // namespace QSpace::Core

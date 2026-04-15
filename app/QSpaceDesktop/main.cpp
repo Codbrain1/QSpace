@@ -13,14 +13,20 @@
 #include <qloggingcategory.h>
 #include <qmainwindow.h>
 #include <vtkAutoInit.h>
+#include <vtkGaussianSplatter.h>
+#include <vtkInteractionStyleModule.h>
+#include <vtkOutputWindow.h>
+#include <vtkRenderingOpenGL2Module.h>
+#include <vtkRenderingVolumeOpenGL2Module.h>
 #include <vtkType.h>
 
 int main(int argc, char* argv[]) {
+    vtkOutputWindow::SetGlobalWarningDisplay(0);
     QApplication app(argc, argv); // создание экземпляра приложения
     QSurfaceFormat::setDefaultFormat(QVTKOpenGLNativeWidget::defaultFormat());
     QSurfaceFormat fmt = QSurfaceFormat::defaultFormat();
-    fmt.setAlphaBufferSize(8); // КРИТИЧЕСКИ ВАЖНО ДЛЯ AMD! //TODO: добавить настройки для этого в UI
-    // fmt.setSamples(0);         // Если отключили MSAA в Renderer.cpp
+    fmt.setAlphaBufferSize(16);
+    fmt.setSamples(0);
     QSurfaceFormat::setDefaultFormat(fmt);
 
     QSpace::Core::LogManager::setup(); // инициализируем запись логов
@@ -43,7 +49,6 @@ int main(int argc, char* argv[]) {
     if (!isTanslatesLoaded)
         qCWarning(LogSystem, "No suitable translation found. Falling back to defult (English)");
 
-    core.initialize();
     qCInfo(LogSystem) << "Application (QSpace) Starting...";
 
     QSpace::UI::MainWindow window(&core); // создание экземпляра окна

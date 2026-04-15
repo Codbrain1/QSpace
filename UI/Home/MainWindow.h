@@ -1,8 +1,8 @@
 #pragma once
+#include "Common/Interfaces/IView.h"
 #include "Core/AppCore/AppCore.h"
 #include "DataTreeController.h"
 #include "PropertyInspector.h"
-#include "Visualize/Renderer.h"
 #include <QMainWindow>
 #include <QObject>
 #include <QProgressDialog>
@@ -37,14 +37,20 @@ class MainWindow : public QMainWindow {
     void on_action_exportVideoClicked();
     void on_action_saveProjectClicked();
     void on_action_openProjectClicked();
+    void on_savePathFromUIRequested();
+    void on_sessionStateChange(const QSpace::Session::CurrentSession& session);
+    void on_exportFinished(bool success);
+    void on_LayerSelectionChanged(const QList<QUuid>& ids);
 
   private:
-    std::unique_ptr<QProgressDialog>    m_exportProgressDialog;
     QSpace::Core::AppCore*              m_app;
-    QSpace::Visualize::Renderer*        m_renderer;
     Ui::MainWindow*                     ui;
+    std::unique_ptr<QProgressDialog>    m_exportProgressDialog;
     std::unique_ptr<DataTreeController> m_dataTreeController;
     std::unique_ptr<PropertyInspector>  m_propertyInspector;
-    void                                setupSlots();
+    QList<QVTKOpenGLNativeWidget*>
+        m_renderWidgets; // TODO: в будещем исправить хранение ококн и
+                         // добавить интеграцию с qt окнами для 2d графиков
+    void setupSlots();
 };
 } // namespace QSpace::UI
