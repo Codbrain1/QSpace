@@ -35,78 +35,92 @@
 #include <vtkType.h>
 
 namespace QSpace::Visualize {
-
 ParticleLayer::ParticleLayer(std::shared_ptr<Core::DataNode> node) : m_node(node) {
     m_mapper          = vtkSmartPointer<vtkPointGaussianMapper>::New();
     m_actor           = vtkSmartPointer<vtkActor>::New();
     m_lut             = vtkSmartPointer<vtkColorTransferFunction>::New();
     m_scalarBar       = vtkSmartPointer<vtkScalarBarActor>::New();
     m_opacityFunction = vtkSmartPointer<vtkPiecewiseFunction>::New();
-    m_mapper->SetEmissive(false);
+
+    // Инициализация пайплайна
     m_mapper->SetStatic(true);
+    m_mapper->SetEmissive(false);
     m_actor->SetMapper(m_mapper);
-    m_node->settings.colorByField = m_node->data->GetPointData()->GetArrayName(0);
-    // без этих строк видеокарта артефичит и экран мигает черным
+
+    // Настройка маппинга
     m_mapper->ScalarVisibilityOn();
     m_mapper->SetScalarModeToUsePointFieldData();
-    m_mapper->SetScalarModeToUsePointData();
-    m_lut->SetVectorModeToMagnitude();
-    setupScalarBar();
-    m_mapper->SetScalarModeToUsePointFieldData();
-    m_scalarBar->SetLookupTable(m_lut);
     m_mapper->SetColorModeToMapScalars();
-    m_mapper->ScalarVisibilityOn();
+
+    m_lut->SetVectorModeToMagnitude();
+    m_lut->SetColorSpaceToLab();
+
+    setupScalarBar();
+    m_scalarBar->SetLookupTable(m_lut);
     m_scalarBar->SetUseOpacity(true);
+
     m_actor->PickableOn();
-    // m_actor->GetMapper()->SetInterpolateScalarsBeforeMapping(true);
-    // m_actor->GetProperty()->SetAmbient(1.0);
-    // m_actor->GetProperty()->SetDiffuse(0.0);
-    // m_actor->GetProperty()->SetSpecular(0.0);
+
+    if (m_node && m_node->data && m_node->data->GetPointData()->GetNumberOfArrays() > 0) {
+        m_node->settings.colorByField = m_node->data->GetPointData()->GetArrayName(0);
+    }
+}
+void ParticleLayer::updateColorsForContrast(double contrast) {
+    if (!m_scalarBar)
+        return;
+
+    double color[3] = {contrast, contrast, contrast};
+
+    m_scalarBar->GetTitleTextProperty()->SetColor(color);
+    m_scalarBar->GetLabelTextProperty()->SetColor(color);
+    m_scalarBar->GetAnnotationTextProperty()->SetColor(color);
+
+    // Если есть рамка или другие элементы в репрезентации виджета:
+    if (m_scalarBarWidget) {
+        auto rep = vtkScalarBarRepresentation::SafeDownCast(m_scalarBarWidget->GetRepresentation());
+        if (rep) {
+        }
+    }
 }
 void ParticleLayer::update() {
     if (!m_node || !m_node->data) {
         qCCritical(LogRenderer) << "ParticleLayer::update() - Node or data is null";
         return;
     }
+
     auto data = vtkPolyData::SafeDownCast(m_node->data);
-    if (!data || data->GetNumberOfPoints() == 0) {
-        qCCritical(LogRenderer) << "Node" << m_node->label << "doesn't contain particles.";
+    if (!data || data->GetNumberOfPoints() == 0)
         return;
-    }
+
     auto& s = m_node->settings;
     m_actor->SetVisibility(s.isVisible);
+
     if (m_mapper->GetInput() != data) {
         m_mapper->SetInputData(data);
     }
-    // 1. Применяем базовые настройки рендера
+
     applyRenderModeSettings(s);
-    // 2. Настраиваем данные для раскраски
     setupDataArrays(data, s);
-    // 3. Обновляем видимость интерфейса
     updateScalarBarVisibility(s);
-    // 4. Обновляем шейдер
+
     if (s.mode == RenderMode::GausianSplat) {
         updateShader(s);
     }
-    m_mapper->Modified();
 }
 void ParticleLayer::applyRenderModeSettings(const Core::VisualSettings& s) {
     if (s.mode == RenderMode::GausianSplat) {
         m_mapper->SetScaleFactor(s.PointSize);
         m_mapper->SetScalarOpacityFunction(m_opacityFunction);
-        m_mapper->SetColorModeToMapScalars();
-        m_mapper->SetScalarModeToUsePointFieldData();
-        m_mapper->SetScalarModeToUsePointData();
         m_mapper->SetEmissive(s.isEmmisive);
     } else if (s.mode == RenderMode::Points) {
         m_mapper->SetScaleFactor(0.0);
         m_actor->GetProperty()->SetPointSize(s.PointSize);
-    } else {
     }
     bool isDensityLike = s.colorByField.contains("mass", Qt::CaseInsensitive) ||
                          s.colorByField.contains("rho", Qt::CaseInsensitive) ||
                          s.colorByField.contains("density", Qt::CaseInsensitive) ||
                          s.colorByField.contains("energy", Qt::CaseInsensitive);
+
     isDensityLike ? m_actor->ForceTranslucentOn() : m_actor->ForceTranslucentOff();
     m_actor->GetProperty()->SetOpacity(s.opacity);
 }
@@ -114,71 +128,67 @@ void ParticleLayer::setupDataArrays(vtkPolyData* data, Core::VisualSettings& s) 
     if (s.colorByField.isEmpty()) {
         m_mapper->ScalarVisibilityOff();
         m_actor->GetProperty()->SetColor(1.0, 1.0, 1.0);
-        m_scalarBar->SetVisibility(false);
         return;
     }
-    std::string sourceFieldName = s.colorByField.toStdString();
-    std::string targetFieldName = sourceFieldName;
-    std::string currentField    = sourceFieldName; // Поле, которое мы обрабатываем в данный момент
+    std::string sourceField         = s.colorByField.toStdString();
+    std::string currentWorkingField = sourceField;
     if (s.colorByField.contains("energy", Qt::CaseInsensitive)) {
-        std::string dimFieldName = "Dimension_" + sourceFieldName;
-        // Проверяем, не вычисляли ли мы логарифм для этого поля ранее
-        if (!data->GetPointData()->HasArray(dimFieldName.c_str())) {
-            vtkSmartPointer<vtkArrayCalculator> calc = vtkSmartPointer<vtkArrayCalculator>::New();
+        std::string dimField = "Dimension_" + sourceField;
+        if (!data->GetPointData()->HasArray(dimField.c_str())) {
+            auto calc = vtkSmartPointer<vtkArrayCalculator>::New();
             calc->SetInputData(data);
-            // Переменная "v" будет представлять текущее выбранное поле
-            calc->AddScalarVariable("v", currentField.c_str(), 0);
-            // Формула с предохранителем от нуля. 1e-10 можно вынести в настройки.
+            calc->AddScalarVariable("v", sourceField.c_str(), 0);
+            // Сохранена оригинальная формула SPH интерполяции
             calc->SetFunction("sqrt(1.66666666667 * 0.66666666667*v)^2 * 1.79E+6");
-            calc->SetResultArrayName(dimFieldName.c_str());
+            calc->SetResultArrayName(dimField.c_str());
             calc->Update();
-            // Добавляем результат обратно в исходные данные, чтобы не считать каждый раз
-            vtkDataArray* logArr = calc->GetDataSetOutput()->GetPointData()->GetArray(dimFieldName.c_str());
-            data->GetPointData()->AddArray(logArr);
+            data->GetPointData()->AddArray(calc->GetDataSetOutput()->GetPointData()->GetArray(dimField.c_str()));
         }
-        currentField = dimFieldName;
+        currentWorkingField = dimField;
     }
+    vtkDataArray* arr_temp = data->GetPointData()->GetArray(currentWorkingField.c_str());
+    int           comp     = (arr_temp->GetNumberOfComponents() == 3) ? -1 : 0;
+    double        range[2] = {0.0, 1.0};
+    arr_temp->GetRange(range, comp);
+
+    // устанавливаем базовый диапазон для возможности его использования при авто-диапазоне и в UI
+    s.baseRangeMin         = range[0];
+    s.baseRangeMax         = range[1];
+    std::string finalField = currentWorkingField;
     if (s.useLogScale) {
-        std::string logFieldName = "Log_" + currentField;
-        // Проверяем, не вычисляли ли мы логарифм для этого поля ранее
-        if (!data->GetPointData()->HasArray(logFieldName.c_str())) {
-            vtkSmartPointer<vtkArrayCalculator> calc = vtkSmartPointer<vtkArrayCalculator>::New();
+        finalField = "Log_" + currentWorkingField;
+        if (!data->GetPointData()->HasArray(finalField.c_str())) {
+            auto calc = vtkSmartPointer<vtkArrayCalculator>::New();
             calc->SetInputData(data);
-            // Переменная "v" будет представлять текущее выбранное поле
-            calc->AddScalarVariable("v", currentField.c_str(), 0);
-            // Формула с предохранителем от нуля. 1e-10 можно вынести в настройки.
-            calc->SetFunction("log10(abs(v)+ 1e-10)");
-            calc->SetResultArrayName(logFieldName.c_str());
+            calc->AddScalarVariable("v", currentWorkingField.c_str(), 0);
+            calc->SetFunction("log10(abs(v) + 1e-10)");
+            calc->SetResultArrayName(finalField.c_str());
             calc->Update();
-            // Добавляем результат обратно в исходные данные, чтобы не считать каждый раз
-            vtkDataArray* logArr = calc->GetDataSetOutput()->GetPointData()->GetArray(logFieldName.c_str());
-            data->GetPointData()->AddArray(logArr);
+            data->GetPointData()->AddArray(calc->GetDataSetOutput()->GetPointData()->GetArray(finalField.c_str()));
         }
-        targetFieldName = logFieldName;
-    } else {
-        targetFieldName = currentField;
     }
-    vtkDataArray* arr = data->GetPointData()->GetArray(targetFieldName.c_str());
+    vtkDataArray* arr = data->GetPointData()->GetArray(finalField.c_str());
     if (!arr)
         return;
-    int comp = arr->GetNumberOfComponents() == 3 ? -1 : 0;
-    data->GetPointData()->SetActiveScalars(targetFieldName.c_str());
-    m_mapper->SelectColorArray(targetFieldName.c_str());
-    m_mapper->SetOpacityArray(targetFieldName.c_str());
+
+    data->GetPointData()->SetActiveScalars(finalField.c_str());
+    m_mapper->SelectColorArray(finalField.c_str());
+    m_mapper->SetOpacityArray(finalField.c_str());
     m_mapper->SetArrayComponent(comp);
     m_mapper->SetOpacityArrayComponent(comp);
     m_mapper->SetLookupTable(m_lut);
-    double range[2] = {0.0, 1.0};
-    arr->GetRange(range, comp);
-    s.baseRangeMin = range[0];
 
-    s.baseRangeMax = range[1];
     if (s.autoRange) {
-        s.rangeMin = range[0];
-        s.rangeMax = range[1]; // TODO: исправить работу авто-диапазона
+        arr->GetRange(range, comp);
+        s.rangeMin = s.baseRangeMin;
+        s.rangeMax = s.baseRangeMax;
     } else {
         range[0] = s.rangeMin;
         range[1] = s.rangeMax;
+        if (s.useLogScale) {
+            range[0] = std::log10(std::abs(s.rangeMin) + 1e-10);
+            range[1] = std::log10(std::abs(s.rangeMax) + 1e-10);
+        }
     }
     applyColorMap(s.colorMapId, range);
     m_mapper->SetScalarRange(range);
@@ -186,111 +196,117 @@ void ParticleLayer::setupDataArrays(vtkPolyData* data, Core::VisualSettings& s) 
 void ParticleLayer::applyColorMap(QUuid& colorMapUuid, double range[2]) {
     m_lut->RemoveAllPoints();
     m_opacityFunction->RemoveAllPoints();
-    m_opacityFunction->ClampingOn();
-    m_lut->SetScaleToLinear();
-    m_lut->SetColorSpaceToLab();
+
     double minVal = range[0];
     double maxVal = range[1];
-    m_lut->SetUseBelowRangeColor(false);
-    m_lut->SetUseAboveRangeColor(false);
-    auto& colorMapManager = QSpace::Visualize::ColorMapManager::instance();
-    auto  colorMap        = colorMapManager.getMap(colorMapUuid);
-    if (!colorMap.has_value()) {
-        colorMap = Visualize::ColorMapPresets::getStandardPresets().first();
-    }
-    vtkSmartPointer<vtkColorTransferFunction> tempLut = vtkSmartPointer<vtkColorTransferFunction>::New();
+    double span   = maxVal - minVal + 1e-9;
+
+    auto& cmManager = ColorMapManager::instance();
+    auto  colorMap  = cmManager.getMap(colorMapUuid).value_or(ColorMapPresets::getStandardPresets().first());
+
+    // Временная LUT для интерполяции базовых цветов
+    auto tempLut = vtkSmartPointer<vtkColorTransferFunction>::New();
     tempLut->SetColorSpaceToLab();
-    for (const auto& pt : colorMap->points) {
+    for (const auto& pt : colorMap.points)
         tempLut->AddRGBPoint(pt.x, pt.r, pt.g, pt.b);
-    }
-    const int numSamples   = 256;
-    double    alpha        = m_node->settings.alpha;
-    auto interpolationType = Visualize::scalarBarRangeInterpolationFromString(m_node->settings.interpolationRangeType);
-    auto opacityInterpolationType =
-        Visualize::interpolationOpacityFunctionFromString(m_node->settings.interpolationOpacityFunction);
+
+    const int numSamples    = 256;
+    auto      interpColor   = scalarBarRangeInterpolationFromString(m_node->settings.interpolationRangeType);
+    auto      interpOpacity = interpolationOpacityFunctionFromString(m_node->settings.interpolationOpacityFunction);
+
     for (int i = 0; i < numSamples; ++i) {
-        double t_step = static_cast<double>(i) / (numSamples - 1);
-        // Линейно распределенные значения
-        double val = minVal + t_step * (maxVal - minVal);
-        // Применяем твои кастомные функции сглаживания к нормализованному шагу
-        if (interpolationType == Visualize::ScalarBarRangeInterpolation::Sigmoid) {
-            double gamma  = m_node->settings.sigmoidGammaColor;
-            double shift  = m_node->settings.sigmoidShiftColor;
-            double minSig = 1.0 / (1.0 + std::exp(gamma * shift));
-            double maxSig = 1.0 / (1.0 + std::exp(-gamma * (1.0 - shift)));
-            double s_val  = 1.0 / (1.0 + std::exp(-gamma * (t_step - shift)));
-            t_step        = (s_val - minSig) / (maxSig - minSig + 1e-9);
-        } else if (interpolationType == Visualize::ScalarBarRangeInterpolation::Asinh) {
-            t_step = std::asinh(t_step * alpha) / std::asinh(alpha);
+        double t   = static_cast<double>(i) / (numSamples - 1);
+        double val = minVal + t * (maxVal - minVal);
+
+        // --- 1. Интерполяция Цвета (сохранение всех типов) ---
+        double t_color = t;
+        if (interpColor == ScalarBarRangeInterpolation::Sigmoid) {
+            double g   = m_node->settings.sigmoidGammaColor;
+            double s   = m_node->settings.sigmoidShiftColor;
+            auto   sig = [&](double x) { return 1.0 / (1.0 + std::exp(-g * (x - s))); };
+            t_color    = (sig(t) - sig(0.0)) / (sig(1.0) - sig(0.0) + 1e-9);
+        } else if (interpColor == ScalarBarRangeInterpolation::Asinh) {
+            double a = m_node->settings.alpha;
+            t_color  = std::asinh(t * a) / std::asinh(a);
         }
-        t_step = std::clamp(t_step, 0.0, 1.0);
-        double color[3];
-        tempLut->GetColor(t_step, color);
-        double baseOpacity = m_node->settings.opacity;
-        if (opacityInterpolationType == Visualize::InterpolationOpacityFunction::Sigmoid) {
-            double gamma  = m_node->settings.sigmoidGammaOpacity;
-            double shift  = m_node->settings.sigmoidShiftOpacity;
-            double minSig = 1.0 / (1.0 + std::exp(gamma * shift));
-            double maxSig = 1.0 / (1.0 + std::exp(-gamma * (1.0 - shift)));
-            double s_val  = 1.0 / (1.0 + std::exp(-gamma * (t_step - shift)));
-            baseOpacity   = baseOpacity * ((s_val - minSig) / (maxSig - minSig + 1e-9));
-        } else if (opacityInterpolationType == Visualize::InterpolationOpacityFunction::Asinh) {
-            double asinhFactor = std::asinh(t_step * baseOpacity) / std::asinh(baseOpacity);
-            baseOpacity        = baseOpacity * asinhFactor;
-        } else if (opacityInterpolationType == Visualize::InterpolationOpacityFunction::Linear) {
-            baseOpacity = baseOpacity * t_step;
-        } else if (opacityInterpolationType == Visualize::InterpolationOpacityFunction::Quadro) {
-            baseOpacity = baseOpacity * t_step * t_step;
-        } else if (opacityInterpolationType == Visualize::InterpolationOpacityFunction::Qube) {
-            baseOpacity = baseOpacity * t_step * t_step * t_step;
-        } else if (opacityInterpolationType == Visualize::InterpolationOpacityFunction::Sqrt) {
-            baseOpacity = baseOpacity * std::sqrt(t_step);
+        t_color = std::clamp(t_color, 0.0, 1.0);
+
+        double rgb[3];
+        tempLut->GetColor(t_color, rgb);
+
+        // --- 2. Интерполяция Прозрачности (сохранение всех 6+ типов) ---
+        double baseAlpha = m_node->settings.opacity;
+        double t_opacity = 1.0;
+
+        if (interpOpacity == InterpolationOpacityFunction::Sigmoid) {
+            double g   = m_node->settings.sigmoidGammaOpacity;
+            double s   = m_node->settings.sigmoidShiftOpacity;
+            auto   sig = [&](double x) { return 1.0 / (1.0 + std::exp(-g * (x - s))); };
+            t_opacity  = (sig(t) - sig(0.0)) / (sig(1.0) - sig(0.0) + 1e-9);
+        } else if (interpOpacity == InterpolationOpacityFunction::Asinh) {
+            t_opacity = std::asinh(t * baseAlpha) / std::asinh(baseAlpha);
+        } else if (interpOpacity == InterpolationOpacityFunction::Linear) {
+            t_opacity = t;
+        } else if (interpOpacity == InterpolationOpacityFunction::Quadro) {
+            t_opacity = t * t;
+        } else if (interpOpacity == InterpolationOpacityFunction::Qube) {
+            t_opacity = t * t * t;
+        } else if (interpOpacity == InterpolationOpacityFunction::Sqrt) {
+            t_opacity = std::sqrt(t);
+        } else if (interpOpacity == InterpolationOpacityFunction::Constant) {
+            t_opacity = 1.0;
         }
-        baseOpacity = std::clamp(baseOpacity, 0.0, 1.0);
-        m_opacityFunction->AddPoint(val, baseOpacity);
-        m_lut->AddRGBPoint(val, color[0], color[1], color[2]);
+
+        double finalOpacity = std::clamp(baseAlpha * t_opacity, 0.0, 1.0);
+
+        m_lut->AddRGBPoint(val, rgb[0], rgb[1], rgb[2]);
+        m_opacityFunction->AddPoint(val, finalOpacity);
     }
+
+    // Обработка выхода за диапазон
     if (m_node->settings.hideOutOfRange) {
-        double safeEps = (maxVal - minVal) * 1e-3;
-        m_opacityFunction->AddPoint(minVal - safeEps, 0.0);
-        m_opacityFunction->AddPoint(minVal,
-                                    (opacityInterpolationType == Visualize::InterpolationOpacityFunction::Constant)
-                                        ? m_node->settings.opacity
-                                        : 0.0);
-        m_opacityFunction->AddPoint(maxVal, m_node->settings.opacity);
-        m_opacityFunction->AddPoint(maxVal + safeEps, 0.0);
+        double eps = span * 0.001;
+        m_opacityFunction->AddPoint(minVal - eps, 0.0);
+        m_opacityFunction->AddPoint(maxVal + eps, 0.0);
     }
 }
 void ParticleLayer::updateShader(const Core::VisualSettings& s) {
-    auto shader = Visualize::shaderTypeFromString(s.ShaderType);
-    if (shader == ShaderType::Default) {
+    if (shaderTypeFromString(s.ShaderType) == ShaderType::Default) {
         m_mapper->SetSplatShaderCode(nullptr);
-    } else {
-        QString shaderCode = QString("//VTK::Color::Impl\n"
-                                     "float dist2 = dot(offsetVCVSOutput.xy, offsetVCVSOutput.xy);\n"
-                                     "if (dist2 > 1.0) discard;\n"
-                                     "float gaussian = exp(-%1 * dist2);\n"
-                                     "opacity = opacity * gaussian;\n"
-                                     "vec3 baseColor = vertexColorVSOutput.rgb;\n"
-                                     "if (%2) {\n" // Режим Emissive
-                                     "    diffuseColor = vec3(0.0);\n"
-                                     "    // ВАЖНО: Чтобы центр был желтым, мы ограничиваем вклад одной частицы.\n"
-                                     "    ambientColor = baseColor * opacity * %3;\n"
-                                     "} else {\n" // Обычный режим
-                                     "    diffuseColor = baseColor;\n"
-                                     "    ambientColor = baseColor * opacity*0.9;\n"
-                                     "}\n")
-                                 .arg(s.gaussianSharpness)
-                                 .arg(s.isEmmisive ? "true" : "false")
-                                 .arg(s.exposureClamp);
-        m_mapper->SetSplatShaderCode(shaderCode.toUtf8().constData());
+        return;
     }
-    m_actor->GetMapper()->Modified();
-    m_mapper->Modified();
+
+    // Улучшенный шейдер для SPH: добавлена имитация сферичности (fake normals)
+    // и корректное накопление плотности.
+    QString shaderCode = QString("//VTK::Color::Impl\n"
+                                 "float dist2 = dot(offsetVCVSOutput.xy, offsetVCVSOutput.xy);\n"
+                                 "if (dist2 > 1.0) discard;\n"
+
+                                 // SPH Улучшение: вычисление "нормали" спрайта для псевдо-освещения
+                                 "float z = sqrt(1.0 - dist2);\n"
+                                 "float diffuse = max(0.0, z); \n" // Свет сверху
+
+                                 "float gaussian = exp(-%1 * dist2);\n"
+                                 "opacity = opacity * gaussian;\n"
+                                 "vec3 baseColor = vertexColorVSOutput.rgb;\n"
+
+                                 "if (%2) {\n" // Emissive
+                                 "    ambientColor = baseColor * opacity * %3;\n"
+                                 "    diffuseColor = vec3(0.0);\n"
+                                 "} else {\n" // SPH Shaded
+                                 "    diffuseColor = baseColor * diffuse;\n"
+                                 "    ambientColor = baseColor * opacity * 0.5;\n"
+                                 "}\n")
+                             .arg(s.gaussianSharpness)
+                             .arg(s.isEmmisive ? "true" : "false")
+                             .arg(s.exposureClamp);
+
+    m_mapper->SetSplatShaderCode(shaderCode.toUtf8().constData());
 }
 void ParticleLayer::updateScalarBarVisibility(const Core::VisualSettings& s) {
     bool shouldShow = s.showScalarBar && s.isVisible;
     m_scalarBar->SetVisibility(shouldShow);
+    m_scalarBarWidget->SetEnabled(shouldShow);
     if (!shouldShow)
         return;
     m_scalarBar->SetLookupTable(m_lut);
@@ -353,9 +369,9 @@ void ParticleLayer::setupScalarBar() {
     m_scalarBar->GetPositionCoordinate()->SetValue(0.85, 0.05);
     // Настройка текста
     vtkTextProperty* txt = m_scalarBar->GetLabelTextProperty();
-    txt->SetColor(0, 0, 0); // Черный текст
+    txt->SetColor(1, 1, 1); // Черный текст
     txt->SetFontSize(16);
-    m_scalarBar->GetTitleTextProperty()->SetColor(0, 0, 0);
+    m_scalarBar->GetTitleTextProperty()->SetColor(1, 1, 1);
 }
 void ParticleLayer::attachInteractor(vtkRenderWindowInteractor* interactor) {
     if (!interactor)

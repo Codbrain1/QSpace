@@ -42,6 +42,9 @@ void LayerManager::createLayer(std::shared_ptr<DataNode> node, Visualize::IView*
             if (auto interactor = vtkView->getInteractor()) {
                 layer3D->attachInteractor(interactor);
             }
+            connect(vtkView, &QSpace::Visualize::VtkView::backgroundColorChanged, this, [layer3D](double contrast) {
+                layer3D->updateColorsForContrast(contrast);
+            });
         }
     }
     // TODO: раскоментировать когда будет добавлена поддержка 2d графиков

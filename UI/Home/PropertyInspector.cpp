@@ -330,6 +330,7 @@ void PropertyInspector::onCurrentVisColumnChanged(int index) {
     QString fieldName = ui->combo_current_column->itemText(index);
     m_app->updateNodeSettings(m_currentNodeId,
                               [fieldName](Core::VisualSettings& s) { s.colorByField = fieldName; });
+    updateWidgets();
 }
 void PropertyInspector::onParticleSizeChanged(double val) {
     if (m_currentNodeId.isNull())
@@ -446,10 +447,15 @@ void PropertyInspector::updateWidgets() {
     ui->doubleSpinBox__sigmoidShiftColor->setValue(node->settings.sigmoidShiftColor);
     ui->doubleSpinBox__alpha->setValue(node->settings.alpha);
 
-    ui->combo_functionSplat->setCurrentIndex(
-        ui->combo_functionSplat->findData(QVariant::fromValue(node->settings.ShaderType)));
-    ui->combo_interpolationRange->setCurrentIndex(ui->combo_interpolationRange->findData(
-        QVariant::fromValue(node->settings.interpolationRangeType)));
+    index = ui->combo_functionSplat->findData(QVariant::fromValue(node->settings.ShaderType));
+    if (index != -1)
+        ui->combo_functionSplat->setCurrentIndex(index);
+
+    index = ui->combo_interpolationRange->findData(
+        QVariant::fromValue(node->settings.interpolationRangeType));
+    if (index != -1)
+        ui->combo_interpolationRange->setCurrentIndex(index);
+
     auto shader = ui->combo_functionSplat->currentData().value<Visualize::ShaderType>();
     if (shader == Visualize::ShaderType::Default) {
         ui->doubleSpinBox_colorCorrection->setEnabled(false);

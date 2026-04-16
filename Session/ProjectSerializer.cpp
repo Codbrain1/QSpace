@@ -180,6 +180,10 @@ QJsonObject ProjectSerializer::serializeVisualSettings(const QSpace::Core::Visua
     obj.insert("rangeMax", settings.rangeMax);
     obj.insert("colorByField", settings.colorByField);
     obj.insert("isEmisive", settings.isEmmisive);
+    obj.insert("exposureClamp", settings.exposureClamp);
+    obj.insert("baseRangeMin", settings.baseRangeMin);
+    obj.insert("baseRangeMax", settings.baseRangeMax);
+    obj.insert("hideOutOfRange", settings.hideOutOfRange);
     return obj;
 }
 
@@ -220,6 +224,10 @@ QSpace::Core::VisualSettings ProjectSerializer::deserializeVisualSettings(const 
     vs.sigmoidGammaColor            = json["sigmoidGammaColor"].toDouble(6.0);
     vs.sigmoidShiftColor            = json["sigmoidShiftColor"].toDouble(0.2);
     vs.alpha                        = json["alpha"].toDouble(3.0);
+    vs.baseRangeMin                 = json["baseRangeMin"].toDouble(0.0);
+    vs.baseRangeMax                 = json["baseRangeMax"].toDouble(100.0);
+    vs.hideOutOfRange               = json["hideOutOfRange"].toBool(true);
+    vs.exposureClamp                = json["exposureClamp"].toDouble(1.0);
     return vs;
 }
 

@@ -29,6 +29,7 @@ public:
   virtual vtkSmartPointer<vtkScalarBarActor> getScalarBar() const = 0;
   virtual void attachInteractor(vtkRenderWindowInteractor *interactor) = 0;
   virtual void detachInteractor() = 0;
+  virtual void updateColorsForContrast(double contrast) = 0;
 };
 
 // Задел для 2D виджетов (QtCharts, QCustomPlot и т.д.)

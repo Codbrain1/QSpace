@@ -41,6 +41,7 @@ class VtkView : public QSpace::Visualize::IView {
     void setGlobalExposure(double exposure) override;
   signals:
     void updateRequested(); // TODO: убрать в будущем?
+    void backgroundColorChanged(double contrast);
 
   private:
     vtkSmartPointer<vtkRenderer>                  m_vtkRenderer;

@@ -186,17 +186,8 @@ void VtkView::setBackgroundColor(double r, double g, double b) {
         m_axesActor->GetYAxesGridlinesProperty()->SetColor(gridGray, gridGray, gridGray);
         m_axesActor->GetZAxesGridlinesProperty()->SetColor(gridGray, gridGray, gridGray);
     }
-    double             contrast = (r + g + b > 1.5) ? 0.0 : 1.0;
-    vtkPropCollection* props    = m_vtkRenderer->GetViewProps();
-    props->InitTraversal();
-    vtkProp* prop;
-    while ((prop = props->GetNextProp())) {
-        auto scalarBar = vtkScalarBarActor::SafeDownCast(prop);
-        if (scalarBar) {
-            scalarBar->GetTitleTextProperty()->SetColor(contrast, contrast, contrast);
-            scalarBar->GetLabelTextProperty()->SetColor(contrast, contrast, contrast);
-        }
-    }
+    double contrast = (r + g + b > 1.5) ? 0.0 : 1.0;
+    emit   backgroundColorChanged(contrast);
     render();
 }
 void VtkView::setAxesVisible(bool visible) {
