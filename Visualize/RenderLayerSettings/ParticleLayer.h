@@ -1,38 +1,55 @@
-#pragma once
-#include "Common/Interfaces/IRenderLayer.h"
-#include "Common/Structures/CoreStructures.h"
-#include <cmath>
-#include <iomanip>
-#include <memory>
-#include <sstream>
-#include <vtkArrayCalculator.h>
-#include <vtkAxis.h>
-#include <vtkAxisActor2D.h>
-#include <vtkColorTransferFunction.h>
-#include <vtkContextScene.h>
-#include <vtkContextView.h>
-#include <vtkDoubleArray.h>
-#include <vtkGPUVolumeRayCastMapper.h>
-#include <vtkGaussianSplatter.h>
-#include <vtkLookupTable.h>
-#include <vtkObjectFactory.h>
-#include <vtkPiecewiseFunction.h>
-#include <vtkPointDensityFilter.h>
-#include <vtkPointGaussianMapper.h>
-#include <vtkProp.h>
-#include <vtkPropAssembly.h>
-#include <vtkRenderer.h>
-#include <vtkScalarBarActor.h>
-#include <vtkScalarBarWidget.h>
-#include <vtkSmartPointer.h>
-#include <vtkSmartVolumeMapper.h>
-#include <vtkStringArray.h>
-#include <vtkTextProperty.h>
-#include <vtkVolume.h>
-#include <vtkVolumeProperty.h>
 
-// или конкретно:
-#include <vtkFixedPointVolumeRayCastMapper.h>
+#pragma once
+
+#include "Common/Interfaces/IRenderLayer.h"
+
+#include "Common/Structures/CoreStructures.h"
+
+#include <cmath>
+
+#include <iomanip>
+
+#include <memory>
+
+#include <sstream>
+
+#include <vtkArrayCalculator.h>
+
+#include <vtkAxis.h>
+
+#include <vtkAxisActor2D.h>
+
+#include <vtkColorTransferFunction.h>
+
+#include <vtkContextScene.h>
+
+#include <vtkContextView.h>
+
+#include <vtkDoubleArray.h>
+
+#include <vtkLookupTable.h>
+
+#include <vtkObjectFactory.h>
+
+#include <vtkPiecewiseFunction.h>
+
+#include <vtkPointGaussianMapper.h>
+
+#include <vtkProp.h>
+
+#include <vtkRenderer.h>
+
+#include <vtkScalarBarActor.h>
+
+#include <vtkScalarBarWidget.h>
+
+#include <vtkSmartPointer.h>
+
+#include <vtkStringArray.h>
+
+#include <vtkTextProperty.h>
+
+#include "QSpaceScalarBar.h"
 
 namespace QSpace::Visualize {
 
@@ -58,16 +75,17 @@ class ParticleLayer : public IVtkRenderLayer {
     vtkSmartPointer<vtkActor>                 m_actor;
     vtkSmartPointer<vtkColorTransferFunction> m_lut;
     vtkSmartPointer<vtkPiecewiseFunction>     m_opacityFunction;
-    vtkSmartPointer<vtkScalarBarActor>        m_scalarBar;
-    vtkSmartPointer<vtkScalarBarWidget>       m_scalarBarWidget;
-    vtkSmartPointer<vtkArrayCalculator>       m_logCalculator;
-
-    void applyColorMap(QUuid& colorMapUuid, double range[2]);
-    void setupScalarBar();
-    void setupDataArrays(vtkPolyData* data, Core::VisualSettings& s);
-    void applyRenderModeSettings(const Core::VisualSettings& s);
-    void updateShader(const Core::VisualSettings& s);
-    void updateScalarBarVisibility(const Core::VisualSettings& s);
-    void updateDataPipeline();
+    // vtkSmartPointer<QSpaceScalarBar>          m_scalarBar;
+    vtkSmartPointer<vtkScalarBarActor>  m_scalarBar;
+    vtkSmartPointer<vtkScalarBarWidget> m_scalarBarWidget;
+    vtkSmartPointer<vtkArrayCalculator> m_logCalculator;
+    void                                applyColorMap(QUuid& colorMapUuid, double range[2]);
+    void                                setupScalarBar();
+    void                                setupDataArrays(vtkPolyData* data, Core::VisualSettings& s);
+    void                                applyRenderModeSettings(const Core::VisualSettings& s);
+    void                                updateShader(const Core::VisualSettings& s);
+    void                                updateScalarBarVisibility(const Core::VisualSettings& s);
+    void                                updateDataPipeline();
 };
+
 } // namespace QSpace::Visualize

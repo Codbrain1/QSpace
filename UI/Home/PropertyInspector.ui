@@ -23,8 +23,8 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-443</y>
-        <width>441</width>
+        <y>-4</y>
+        <width>442</width>
         <height>1087</height>
        </rect>
       </property>
@@ -89,6 +89,9 @@
                  <bold>false</bold>
                 </font>
                </property>
+               <property name="decimals">
+                <number>4</number>
+               </property>
               </widget>
              </item>
              <item row="1" column="0">
@@ -109,6 +112,9 @@
                 <font>
                  <bold>false</bold>
                 </font>
+               </property>
+               <property name="decimals">
+                <number>4</number>
                </property>
               </widget>
              </item>
@@ -152,6 +158,9 @@
                  <bold>false</bold>
                 </font>
                </property>
+               <property name="decimals">
+                <number>4</number>
+               </property>
               </widget>
              </item>
             </layout>
@@ -174,6 +183,9 @@
                 <font>
                  <bold>false</bold>
                 </font>
+               </property>
+               <property name="decimals">
+                <number>4</number>
                </property>
               </widget>
              </item>
@@ -228,6 +240,9 @@
                 <font>
                  <bold>false</bold>
                 </font>
+               </property>
+               <property name="decimals">
+                <number>4</number>
                </property>
               </widget>
              </item>
@@ -397,6 +412,9 @@
                     <underline>false</underline>
                    </font>
                   </property>
+                  <property name="decimals">
+                   <number>8</number>
+                  </property>
                   <property name="singleStep">
                    <double>0.100000000000000</double>
                   </property>
@@ -448,6 +466,9 @@
                     <bold>false</bold>
                     <underline>false</underline>
                    </font>
+                  </property>
+                  <property name="decimals">
+                   <number>8</number>
                   </property>
                   <property name="singleStep">
                    <double>0.100000000000000</double>
