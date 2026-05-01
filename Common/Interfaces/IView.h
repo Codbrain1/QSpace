@@ -2,6 +2,8 @@
 #include "Common/Enums/RenderEnums.h"
 #include <QObject>
 #include <QUuid>
+#include <QtWidgets/qwidget.h>
+#include <qcontainerfwd.h>
 
 namespace QSpace::Visualize
 {
@@ -13,6 +15,8 @@ public:
   explicit IView(QObject *parent = nullptr);
   virtual ~IView() = default;
 
+  virtual QWidget *getWidget() = 0; // встраивается в QDockWidget или QMainWindow
+  virtual QString getViewName() const = 0;
   // Общий контракт перерисовки
   virtual void render() = 0;
   virtual void renderForce() = 0;
@@ -24,7 +28,7 @@ public:
   virtual void setGridVisible(bool /* visible */) {};
   virtual void setCameraView(CameraViewType /* view */){}; // TODO: перечисление CameraViewType не подходит для 2d
   virtual void resetCamera() {};
-  virtual void setGlobalExposure(double /* exposure */) {};
+  virtual void setGlobalExposure(double /* exposure */) {}; // установка глобальной прозрачности
 
 signals:
   void updateRequested();

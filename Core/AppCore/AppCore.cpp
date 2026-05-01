@@ -1,16 +1,17 @@
-#include "AppCore.h" // Оставьте только один локальный include
+#include "AppCore.h"
+#include "Common/Enums/IOEnums.h"
+#include "Common/Interfaces/IView.h"
 #include "Common/Logger/Logger.h"
 #include "Core/DataManager/DataManager.h"
 #include "Core/ObjectRegistry/ObjectRegistry.h"
 #include "Core/PipelineManager/PipelineManager.h"
 #include "Core/TaskManager/TaskManager.h"
-// Добавьте эти инклуды, если их нет, чтобы типы были известны
-#include "Common/Enums/IOEnums.h"
-#include "Common/Interfaces/IView.h"
-#include "Enums/RenderEnums.h"
 #include "Interfaces/IOFactory.h"
 #include "Interfaces/IView.h"
 #include "Visualize/VtkView.h"
+#include "Enums/RenderEnums.h"
+
+
 
 #include <QFileInfo>
 #include <QRegularExpression>
@@ -22,32 +23,64 @@ namespace QSpace::Core {
 AppCore::AppCore(QObject* parent) : QObject(parent) {
     m_taskManager    = std::make_unique<TaskManager>();
     m_objectRegistry = std::make_unique<ObjectRegistry>();
-    m_dataManager    = std::make_unique<DataManager>(m_taskManager.get());
-    m_viewManager    = std::make_unique<ViewManager>();
-    m_layerManager   = std::make_unique<LayerManager>();
-    m_pipelineManager =
-        std::make_unique<PipelineManager>(m_objectRegistry.get(), m_viewManager.get(), m_layerManager.get());
-    m_sessionManager = std::make_unique<SessionManager>(m_objectRegistry.get(), this);
+    m_dataManager    = std::make_unique<DataManager>(
+        m_taskManager
+            .get()); // m_taskManager не имеет слотов, лишь методы для ассинхронного запуска задач
+    m_viewManager     = std::make_unique<ViewManager>();
+    m_layerManager    = std::make_unique<LayerManager>();
+    m_pipelineManager = std::make_unique<PipelineManager>(m_objectRegistry.get(),
+                                                          m_viewManager.get(),
+                                                          m_layerManager.get());
+    m_sessionManager  = std::make_unique<SessionManager>(m_objectRegistry.get(), this);
 }
+
 void AppCore::initialize() {
     if (m_isInitialized)
-        return; // Защитный гвард
-    connect(m_viewManager.get(), &Core::ViewManager::viewUpdateRequested, this, &AppCore::sceneUpdateRequested);
+        return;
+    // настройка менеджера окон
+    connect(m_viewManager.get(),
+            &Core::ViewManager::viewUpdateRequested,
+            this,
+            &AppCore::sceneUpdateRequested);
+
+    // настройка менеджера загрузки файлов
     connect(m_dataManager.get(), &DataManager::fileReady, this, &AppCore::onFileReady);
-    connect(m_dataManager.get(), &DataManager::ioStarted, this, [this](const QUuid& taskId, const QString&, int total) {
-        m_activeTasks[taskId] = total;
-    });
-    connect(m_dataManager.get(), &DataManager::ioFinished, this, [this](const QUuid& taskId, bool success) {
-        if (success) {
-            // Финальный рендер для пачки
-            emit sceneUpdateRequested();
-        }
-        m_activeTasks.remove(taskId);
-    });
+    connect(
+        m_dataManager.get(),
+        &DataManager::ioStarted,
+        this,
+        [this](const QUuid& taskId, const QString&, int total) { m_activeTasks[taskId] = total; });
+    connect(m_dataManager.get(),
+            &DataManager::ioFinished,
+            this,
+            [this](const QUuid& taskId, bool success) {
+                if (success) {
+                    // Финальный рендер для пачки
+                    emit sceneUpdateRequested();
+                }
+                m_activeTasks.remove(taskId);
+            });
+
+    // настройка PipelineManager для реагирования на изменения в ObjectRegistry и ViewManager
+    connect(m_objectRegistry.get(),
+            &ObjectRegistry::nodeAdded,
+            m_pipelineManager.get(),
+            &PipelineManager::onNodeAdded);
+    connect(m_objectRegistry.get(),
+            &ObjectRegistry::objectRemoved,
+            m_pipelineManager.get(),
+            &PipelineManager::onObjectRemoved);
+    connect(m_viewManager.get(),
+            &ViewManager::viewCreated,
+            m_pipelineManager.get(),
+            &PipelineManager::onViewCreated);
     m_isInitialized = true;
 }
+
 // 3. Обновленный onFileReady
-void AppCore::onFileReady(const QUuid& taskId, QSpace::IO::ReadResult result, QSpace::IO::ImportRole role) {
+void AppCore::onFileReady(const QUuid&           taskId,
+                          QSpace::IO::ReadResult result,
+                          QSpace::IO::ImportRole role) {
     if (role != QSpace::IO::ImportRole::ProjectData)
         return;
 
@@ -82,13 +115,15 @@ void AppCore::onFileReady(const QUuid& taskId, QSpace::IO::ReadResult result, QS
         node->settings.isVisible = (totalInThisTask == 1);
         node->path               = result.path;
         node->format             = result.format;
-        node->scheme = result.scheme; // TODO:: внимание существует проблемма при невалидной схеме приложение падает
+        node->scheme = result.scheme; // TODO:: внимание существует проблемма при невалидной схеме
+                                      // приложение падает
         m_session_state.isDirty = true;
         emit sessionStateChanged(m_session_state);
     }
     // ----------------------------
 
-    qCInfo(LogCore) << "AppCore::onFileReady - File loaded:" << fileName << "Points:" << node->stats.pointCount;
+    qCInfo(LogCore) << "AppCore::onFileReady - File loaded:" << fileName
+                    << "Points:" << node->stats.pointCount;
 
     if (m_autoGrouping) {
         QString groupName = extractGroupName(fileName);
@@ -99,30 +134,38 @@ void AppCore::onFileReady(const QUuid& taskId, QSpace::IO::ReadResult result, QS
             qInfo() << "Grouped" << fileName << "into" << groupName;
         } else {
             m_objectRegistry->registerNode(node);
-            m_viewManager->forEachView([&](Visualize::IView* view) { m_layerManager->createLayer(node, view); });
+            m_viewManager->forEachView(
+                [&](Visualize::IView* view) { m_layerManager->createLayer(node, view); });
             emit nodeAdded(node);
         }
     } else {
         m_objectRegistry->registerNode(node);
-        m_viewManager->forEachView([&](Visualize::IView* view) { m_layerManager->createLayer(node, view); });
+        m_viewManager->forEachView(
+            [&](Visualize::IView* view) { m_layerManager->createLayer(node, view); });
         emit nodeAdded(node);
     }
 }
+
 void AppCore::importFiles(const QStringList& paths) {
     if (paths.isEmpty())
         return;
     if (paths.size() == 1) {
-        QSpace::IO::FileFormat        format     = QSpace::IO::Utils::getFormat(paths[0]);
-        QSpace::Visualize::EntityType entityType = QSpace::IO::Utils::getEntityType(QFileInfo(paths[0]).fileName());
-        QSpace::IO::ReadScheme        scheme     = QSpace::IO::SchemeFactory::createDefaultSheme(entityType, format);
+        QSpace::IO::FileFormat        format = QSpace::IO::Utils::getFormat(paths[0]);
+        QSpace::Visualize::EntityType entityType =
+            QSpace::IO::Utils::getEntityType(QFileInfo(paths[0]).fileName());
+        QSpace::IO::ReadScheme scheme =
+            QSpace::IO::SchemeFactory::createDefaultSheme(entityType, format);
         m_dataManager->importDataAsync(paths[0], scheme);
     } else {
         QList<QSpace::IO::BatchTask> tasks;
         for (const auto& path : paths) {
-            QSpace::IO::FileFormat        format     = QSpace::IO::Utils::getFormat(QFileInfo(path).fileName());
-            QSpace::Visualize::EntityType entityType = QSpace::IO::Utils::getEntityType(QFileInfo(path).fileName());
-            QSpace::IO::ReadScheme        scheme = QSpace::IO::SchemeFactory::createDefaultSheme(entityType, format);
-            QSpace::IO::BatchTask         task;
+            QSpace::IO::FileFormat format =
+                QSpace::IO::Utils::getFormat(QFileInfo(path).fileName());
+            QSpace::Visualize::EntityType entityType =
+                QSpace::IO::Utils::getEntityType(QFileInfo(path).fileName());
+            QSpace::IO::ReadScheme scheme =
+                QSpace::IO::SchemeFactory::createDefaultSheme(entityType, format);
+            QSpace::IO::BatchTask task;
             task.path   = path;
             task.scheme = scheme;
             tasks.append(task);
@@ -130,9 +173,11 @@ void AppCore::importFiles(const QStringList& paths) {
         m_dataManager->importBatchDataAsync(tasks);
     }
 }
+
 std::shared_ptr<QSpace::Core::DataNode> AppCore::getNodeById(const QUuid& nodeId) {
     return m_objectRegistry->getNode(nodeId);
 }
+
 void AppCore::loadPalette(const QString& filePath) {
     auto colorMapOpt = m_sessionManager->loadPalette(filePath);
     if (colorMapOpt.has_value()) {
@@ -141,15 +186,18 @@ void AppCore::loadPalette(const QString& filePath) {
         qCWarning(LogCore) << "Failed to load palette from:" << filePath;
     }
 }
+
 void AppCore::savePalette(const Visualize::ColorMap& map, const QString& filePath) {
     bool ok = m_sessionManager->savePalette(map, filePath);
     if (!ok) {
         qCWarning(LogCore) << "Failed to save palette to:" << filePath;
     }
 }
+
 void AppCore::removeLayer(const QString& layerName) {
     m_objectRegistry->removeObject(QUuid::fromString(layerName));
 }
+
 QUuid AppCore::getNodePaletteId(const QUuid& nodeId) {
     auto node = m_objectRegistry->getNode(nodeId);
     if (node) {
@@ -157,6 +205,7 @@ QUuid AppCore::getNodePaletteId(const QUuid& nodeId) {
     }
     return QUuid();
 }
+
 std::shared_ptr<DataContainer> AppCore::findOrCreateContainer(const QString& groupName) {
     auto existing = m_objectRegistry->findContainerByName(groupName);
     if (existing)
@@ -169,7 +218,8 @@ std::shared_ptr<DataContainer> AppCore::findOrCreateContainer(const QString& gro
 
 QString AppCore::extractGroupName(const QString& filename) {
     // Ищем паттерны вида "snap_001", "step-500"
-    static QRegularExpression regex(R"((snap(shot)?|step)[_\-]?\d+)", QRegularExpression::CaseInsensitiveOption);
+    static QRegularExpression regex(R"((snap(shot)?|step)[_\-]?\d+)",
+                                    QRegularExpression::CaseInsensitiveOption);
     auto                      match = regex.match(filename);
     return match.hasMatch() ? match.captured(0) : QString();
 }
@@ -182,12 +232,14 @@ void AppCore::updateNodeSettings(const QUuid& id, std::function<void(VisualSetti
         emit sceneUpdateRequested();
     }
 }
+
 void AppCore::createNewProject(const QString& ProjectName) {
     m_objectRegistry->clear();
     m_session_state.projectName = ProjectName;
     m_session_state.isDirty     = false;
     emit sessionStateChanged(m_session_state);
 }
+
 void AppCore::saveCurrentProject() {
     if (m_session_state.projectFilePath.isEmpty()) {
         emit requestSavePathFromUI();
@@ -195,6 +247,7 @@ void AppCore::saveCurrentProject() {
     }
     saveCurrentProjectAs(m_session_state.projectFilePath);
 }
+
 void AppCore::saveCurrentProjectAs(const QString& projectPath) {
     if (projectPath.isEmpty())
         return;
@@ -214,6 +267,7 @@ void AppCore::saveCurrentProjectAs(const QString& projectPath) {
         qCCritical(LogCore) << "Failed to save project to:" << projectPath;
     }
 }
+
 // 2. Обновленный openProject
 void AppCore::openProject(const QString& projectPath) {
     auto newState = m_sessionManager->loadProject(projectPath);
@@ -237,6 +291,7 @@ void AppCore::openProject(const QString& projectPath) {
         qCCritical(LogCore) << "The project has not been opened: " << projectPath;
     }
 }
+
 void AppCore::startVideoExport(const QUuid&       baseNodeId,
                                const QStringList& files,
                                const QString&     outputPath,
@@ -256,38 +311,50 @@ void AppCore::startVideoExport(const QUuid&       baseNodeId,
     }
 
     // 2. Создаем экспортер
-    auto exporter = std::make_shared<QSpace::Visualize::VideoExporter>(dynamic_cast<Visualize::VtkView*>(vtkView));
+    auto exporter = std::make_shared<QSpace::Visualize::VideoExporter>(
+        dynamic_cast<Visualize::VtkView*>(vtkView));
     if (!exporter->startExport(outputPath, fps)) { // 30 FPS
         emit exportFinished(false);
         return;
     }
 
     // 3. Создаем менеджер
-    m_videoExportManager = std::make_shared<VideoExportManager>(m_dataManager.get(), targetLayer, exporter, this);
+    m_videoExportManager =
+        std::make_shared<VideoExportManager>(m_dataManager.get(), targetLayer, exporter, this);
 
     // 4. Пробрасываем сигналы в UI
-    connect(m_videoExportManager.get(), &VideoExportManager::progressUpdated, this, &AppCore::exportProgressUpdated);
-    connect(m_videoExportManager.get(), &VideoExportManager::exportFinished, this, [this](bool success) {
-        emit exportFinished(success); // Сначала уведомляем UI
-        QTimer::singleShot(0, this, [this]() { m_videoExportManager.reset(); });
-    });
+    connect(m_videoExportManager.get(),
+            &VideoExportManager::progressUpdated,
+            this,
+            &AppCore::exportProgressUpdated);
+    connect(m_videoExportManager.get(),
+            &VideoExportManager::exportFinished,
+            this,
+            [this](bool success) {
+                emit exportFinished(success); // Сначала уведомляем UI
+                QTimer::singleShot(0, this, [this]() { m_videoExportManager.reset(); });
+            });
 
     // Получаем формат из первого файла
     QSpace::IO::FileFormat        format = QSpace::IO::Utils::getFormat(files.first());
-    QSpace::Visualize::EntityType type   = QSpace::IO::Utils::getEntityType(QFileInfo(files.first()).fileName());
-    QSpace::IO::ReadScheme        scheme = QSpace::IO::SchemeFactory::createDefaultSheme(type, format);
+    QSpace::Visualize::EntityType type =
+        QSpace::IO::Utils::getEntityType(QFileInfo(files.first()).fileName());
+    QSpace::IO::ReadScheme scheme = QSpace::IO::SchemeFactory::createDefaultSheme(type, format);
 
     // 5. Погнали!
     m_videoExportManager->start(files, scheme, format, stride);
 }
+
 QUuid AppCore::createView(Visualize::ViewType type, vtkRenderWindow* existingWindow) {
     // TODO: исправить работу метода добавить поддержку 2D графиков
     if (type == QSpace::Visualize::ViewType::VTK_3D) {
-        QUuid viewId = m_viewManager->createView(QSpace::Visualize::CameraViewType::Iso, existingWindow);
+        QUuid viewId =
+            m_viewManager->createView(QSpace::Visualize::CameraViewType::Iso, existingWindow);
 
         if (!viewId.isNull()) {
             auto newView = m_viewManager->getView(viewId);
-            for (const auto& node : m_objectRegistry->getAllNodes()) { // Предполагается, что такой метод есть
+            for (const auto& node :
+                 m_objectRegistry->getAllNodes()) { // Предполагается, что такой метод есть
                 m_layerManager->createLayer(node, newView);
             }
             emit viewCreated(viewId, type);
@@ -301,65 +368,80 @@ void AppCore::removeView(const QUuid& viewId) {
     m_viewManager->removeView(viewId);
     emit viewRemoved(viewId);
 }
+
 void AppCore::cancelVideoExport() {
     if (m_videoExportManager) {
         m_videoExportManager->cancel();
     }
 }
+
 void AppCore::setGlobalExposureAllViews(double exposure) {
     m_viewManager->forEachView([exposure](Visualize::IView* r) { r->setGlobalExposure(exposure); });
 }
+
 void AppCore::setGlobalExposureView(const QUuid& viewId, double exposure) {
     auto renderer = m_viewManager->getView(viewId);
     if (renderer) {
         renderer->setGlobalExposure(exposure);
     }
 }
+
 void AppCore::resetCameraInAllViews() {
     m_viewManager->forEachView([](Visualize::IView* r) { r->resetCamera(); });
 }
+
 void AppCore::setCameraViewInAllViews(Visualize::CameraViewType viewType) {
     m_viewManager->forEachView([viewType](Visualize::IView* r) { r->setCameraView(viewType); });
 }
+
 void AppCore::setBackgroundColorInAllViews(float r, float g, float b) {
-    m_viewManager->forEachView([r, g, b](Visualize::IView* rw) { rw->setBackgroundColor(r, g, b); });
+    m_viewManager->forEachView(
+        [r, g, b](Visualize::IView* rw) { rw->setBackgroundColor(r, g, b); });
 }
+
 void AppCore::setAxesVisibleInAllViews(bool visible) {
     m_viewManager->forEachView([visible](Visualize::IView* rw) { rw->setAxesVisible(visible); });
 }
+
 void AppCore::setGridVisibleInAllViews(bool visible) {
     m_viewManager->forEachView([visible](Visualize::IView* rw) { rw->setGridVisible(visible); });
 }
+
 void AppCore::resetCameraInView(const QUuid& viewId) {
     auto renderer = m_viewManager->getView(viewId);
     if (renderer) {
         renderer->resetCamera();
     }
 }
+
 void AppCore::setCameraViewInView(const QUuid& viewId, Visualize::CameraViewType viewType) {
     auto renderer = m_viewManager->getView(viewId);
     if (renderer) {
         renderer->setCameraView(viewType);
     }
 }
+
 void AppCore::setBackgroundColorInView(const QUuid& viewId, float r, float g, float b) {
     auto renderer = m_viewManager->getView(viewId);
     if (renderer) {
         renderer->setBackgroundColor(r, g, b);
     }
 }
+
 void AppCore::setAxesVisibleInView(const QUuid& viewId, bool visible) {
     auto renderer = m_viewManager->getView(viewId);
     if (renderer) {
         renderer->setAxesVisible(visible);
     }
 }
+
 void AppCore::setGridVisibleInView(const QUuid& viewId, bool visible) {
     auto renderer = m_viewManager->getView(viewId);
     if (renderer) {
         renderer->setGridVisible(visible);
     }
 }
+
 void AppCore::removeObject(const QUuid& id) {
     m_objectRegistry->removeObject(id);
     m_layerManager->removeLayer(id); // TODO:: проверить не удаляет ло он данные из реестра

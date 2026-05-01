@@ -26,6 +26,7 @@ class LayerManager : public QObject {
     void layerRemoved(const QUuid& nodeId);
 
   private:
+    // void recreateLayer(std::shared_ptr<DataNode> node, Visualize::IView* view);
     // Структура хранения:
     // NodeID -> { View* -> Layer }
     // Т.е. для одного набора данных у нас может быть много слоев (по одному на каждое окно)

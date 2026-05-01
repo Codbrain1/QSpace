@@ -14,7 +14,7 @@ option(ENABLE_TESTS "Build Tests" ON) #опция переключения ме�
 #=========== Настройки для виндовс ==============
 if(WIN32) 
     set(CMAKE_PREFIX_PATH 
-    "C:/Qt/6.9.2/mingw_64"
+    "C:/Qt/6.11.0/mingw_64"
     "D:/NIR/NIR_6_semestr/vtk/vtk-install-ffmpeg-wmf-dll/lib/cmake/vtk-9.5")
     # Отключение Vulkan
     set(QT_NO_VULKAN ON)
@@ -28,6 +28,8 @@ endif()
 # Widgets - различные виджеты(окна, кнопки и т.д.)
 # LinguistTools - модуль с переводами
 find_package(Qt6 REQUIRED COMPONENTS 
+            Quick
+            Qml
             Core 
             Gui 
             Widgets 

@@ -18,6 +18,7 @@
 #include <memory>
 #include <qaction.h>
 #include <qcontainerfwd.h>
+#include <qdockwidget.h>
 #include <qfiledialog.h>
 #include <qfileinfo.h>
 #include <qlist.h>
@@ -36,7 +37,6 @@ MainWindow::MainWindow(Core::AppCore* app, QWidget* parent)
     : QMainWindow(parent), m_app(app), ui(new Ui::MainWindow) {
     // инициализируем ui файл
     ui->setupUi(this);
-
     m_renderWidgets.append(ui->vtkWidget);
     // Подключаем ГЛАВНЫЙ сигнал обновления от AppCore
     connect(m_app, &Core::AppCore::sceneUpdateRequested, this, &MainWindow::on_render_update);

@@ -1,77 +1,39 @@
-
 #pragma once
-#include <cmath>
-#include <iomanip>
-#include <sstream>
-#include <vtkLookupTable.h>
-#include <vtkObjectFactory.h> // Обязательно добавьте этот инклюд
+#include <vtkAxisActor2D.h>
 #include <vtkScalarBarActor.h>
+#include <vtkScalarsToColors.h>
 #include <vtkSmartPointer.h>
-#include <vtkStringArray.h>
+#include <vtkViewport.h>
 
 namespace QSpace::Visualize {
 
 class QSpaceScalarBar : public vtkScalarBarActor {
   public:
-    static QSpaceScalarBar* New();
     vtkTypeMacro(QSpaceScalarBar, vtkScalarBarActor);
+    static QSpaceScalarBar* New();
 
-    // Включает режим обратного логарифмирования для подписей
-    void SetUseInverseLogLabels(bool enable) {
-        if (this->UseInverseLogLabels != enable) {
-            this->UseInverseLogLabels = enable;
-            this->Modified();
-        }
+    // Установка режима логарифмической шкалы
+    void SetLogMode(bool enabled);
+    bool GetLogMode() const {
+        return this->LogMode;
     }
 
-    // Переопределяем метод отрисовки, чтобы обновлять аннотации перед рендером
-    int RenderOpaqueGeometry(vtkViewport* viewport) override {
-        if (this->UseInverseLogLabels) {
-            this->UpdateLogAnnotations();
-        }
-        return this->Superclass::RenderOpaqueGeometry(viewport);
-    }
+    int RenderOverlay(vtkViewport* viewport) override;
+    int RenderOpaqueGeometry(vtkViewport* viewport) override;
 
   protected:
-    QSpaceScalarBar() {
-        this->DrawTickLabelsOff(); // Выключаем стандартные "авто" цифры
-        this->DrawAnnotationsOn(); // Включаем наши кастомные подписи
-        this->AnnotationTextScalingOn();
-    }
+    QSpaceScalarBar();
+    ~QSpaceScalarBar() override = default;
 
-    void UpdateLogAnnotations() {
-        vtkScalarsToColors* lut = this->GetLookupTable();
-        if (!lut)
-            return;
-
-        // double range[2];
-        auto range = lut->GetRange();
-
-        // Очищаем старые аннотации
-        vtkSmartPointer<vtkStringArray> annNames  = vtkSmartPointer<vtkStringArray>::New();
-        vtkSmartPointer<vtkDoubleArray> annValues = vtkSmartPointer<vtkDoubleArray>::New();
-
-        int numTicks = this->GetNumberOfLabels();
-        for (int i = 0; i < numTicks; ++i) {
-            // Линейно распределяем значения в лог-пространстве (например 0, 1, 2, 3...)
-            double t      = (double)i / (numTicks - 1);
-            double logVal = range[0] + t * (range[1] - range[0]);
-
-            // Проводим операцию 10^x
-            double physVal = std::pow(10.0, logVal);
-
-            // Форматируем текст (научная нотация)
-            std::stringstream ss;
-            ss << std::scientific << std::setprecision(1) << physVal;
-
-            annValues->InsertNextValue(logVal);
-            annNames->InsertNextValue(ss.str());
-        }
-
-        lut->SetAnnotations(annValues, annNames);
-    }
+    bool                            LogMode;
+    vtkSmartPointer<vtkDoubleArray> CustomLabelsArray;
 
   private:
-    bool UseInverseLogLabels = false;
+    void PrepareCustomLabels();
+
+    // Запрещаем копирование
+    QSpaceScalarBar(const QSpaceScalarBar&) = delete;
+    void operator=(const QSpaceScalarBar&)  = delete;
 };
+
 } // namespace QSpace::Visualize

@@ -4,6 +4,8 @@ target_sources(RenderLayerSettings PRIVATE
             ParticleLayer.cpp
             QSpaceScalarBar.h
             QSpaceScalarBar.cpp
+            BaseLayer.h
+            BaseLayer.cpp
 )
 target_include_directories(RenderLayerSettings PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../.. )
 target_link_libraries(RenderLayerSettings PUBLIC

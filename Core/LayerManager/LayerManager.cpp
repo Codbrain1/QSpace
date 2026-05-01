@@ -1,14 +1,15 @@
 #include "LayerManager.h"
 #include "Common/Logger/Logger.h"
-#include "Enums/CoreEnums.h"
 #include "Interfaces/IRenderLayer.h"
 #include "Interfaces/IView.h"
 #include "Interfaces/LayerFactory.h"
 #include "Visualize/RenderLayerSettings/ParticleLayer.h"
-#include <memory>
 #include <qloggingcategory.h>
 #include <qobject.h>
 #include <quuid.h>
+#include "Enums/CoreEnums.h"
+#include <memory>
+
 
 namespace QSpace::Core {
 LayerManager::LayerManager(QObject* parent) : QObject(parent) {
@@ -19,6 +20,7 @@ void LayerManager::createLayer(std::shared_ptr<DataNode> node, Visualize::IView*
         qCWarning(LogCore) << "LayerManager::createLayer - Invalid node or renderer";
         return;
     }
+
     if (m_layers.contains(node->id) && m_layers[node->id].contains(view)) {
         qWarning() << "LayerManager::createLayer - Layer already exists for node:" << node->id;
         // Опционально: вызвать обновление существующего слоя вместо создания нового
@@ -29,7 +31,8 @@ void LayerManager::createLayer(std::shared_ptr<DataNode> node, Visualize::IView*
 
     auto layer = Visualize::LayerFactory::createLayer(node);
     if (!layer) {
-        qCWarning(LogCore) << "LayerManager::createLayer - Failed to create layer for node:" << node->label;
+        qCWarning(LogCore) << "LayerManager::createLayer - Failed to create layer for node:"
+                           << node->label;
         return;
     }
     // Фабрика слоев: выбираем реализацию в зависимости от типа данных
@@ -42,14 +45,16 @@ void LayerManager::createLayer(std::shared_ptr<DataNode> node, Visualize::IView*
             if (auto interactor = vtkView->getInteractor()) {
                 layer3D->attachInteractor(interactor);
             }
-            connect(vtkView, &QSpace::Visualize::VtkView::backgroundColorChanged, this, [layer3D](double contrast) {
-                layer3D->updateColorsForContrast(contrast);
-            });
+            connect(vtkView,
+                    &QSpace::Visualize::VtkView::backgroundColorChanged,
+                    this,
+                    [layer3D](double contrast) { layer3D->updateColorsForContrast(contrast); });
         }
     }
     // TODO: раскоментировать когда будет добавлена поддержка 2d графиков
     //   else if (auto widgetView = qobject_cast<Visualize::IWidgetView*>(view)) {
-    //      if (auto widgetLayer = std::dynamic_pointer_cast<Visualize::IWidgetRenderLayer>(layer)) {
+    //      if (auto widgetLayer = std::dynamic_pointer_cast<Visualize::IWidgetRenderLayer>(layer))
+    //      {
     //          // Окно 2D принимает виджет слоя для отображения
     //          widgetView->setWidget(widgetLayer->getWidget());
     //      }
@@ -62,6 +67,7 @@ void LayerManager::createLayer(std::shared_ptr<DataNode> node, Visualize::IView*
     emit layerCreated(node->id);
     qCDebug(LogCore) << "LayerManager::createLayer - Layer added to renderer";
 }
+
 void LayerManager::removeLayer(const QUuid& nodeId) {
     if (!m_layers.contains(nodeId)) {
         qCWarning(LogCore) << "LayerManager::removeLayer - Layer not found for node id:" << nodeId;
@@ -82,7 +88,8 @@ void LayerManager::removeLayer(const QUuid& nodeId) {
         }
         // TODO: раскоментировать когда будет добавлена поддержка 2d графиков
         // else if (auto widgetView = qobject_cast<Visualize::IWidgetView*>(view)) {
-        //     if (auto widgetLayer = std::dynamic_pointer_cast<Visualize::IWidgetRenderLayer>(layer)) {
+        //     if (auto widgetLayer =
+        //     std::dynamic_pointer_cast<Visualize::IWidgetRenderLayer>(layer)) {
         //         // Если слой удаляется, забираем его виджет из окна
         //         if (widgetView->getWidget() == widgetLayer->getWidget()) {
         //             widgetView->setWidget(nullptr);
@@ -94,7 +101,9 @@ void LayerManager::removeLayer(const QUuid& nodeId) {
     emit layerRemoved(nodeId);
     qCDebug(LogCore) << "LayerManager::removeLayer - Layer removed";
 }
-std::shared_ptr<Visualize::IRenderLayer> LayerManager::getLayer(const QUuid& id, Visualize::IView* renderer) {
+
+std::shared_ptr<Visualize::IRenderLayer> LayerManager::getLayer(const QUuid&      id,
+                                                                Visualize::IView* renderer) {
     if (!m_layers.contains(id)) {
         qCWarning(LogCore) << "LayerManager::getLayer - Layer not found for node id:" << id;
         return nullptr;
@@ -106,10 +115,12 @@ std::shared_ptr<Visualize::IRenderLayer> LayerManager::getLayer(const QUuid& id,
     }
     return rendererMap[renderer];
 }
+
 void LayerManager::updateSettings(const QUuid& nodeId) {
     // 1. Находим все слои для этого узла (во всех окнах)
     if (!m_layers.contains(nodeId)) {
-        qCWarning(LogCore) << "LayerManager::updateSettings - Layer not found for node id:" << nodeId;
+        qCWarning(LogCore) << "LayerManager::updateSettings - Layer not found for node id:"
+                           << nodeId;
         return;
     }
 
@@ -121,5 +132,6 @@ void LayerManager::updateSettings(const QUuid& nodeId) {
     }
     qCDebug(LogCore) << "LayerManager::updateSettings - Settings updated for node:" << nodeId;
 }
+
 LayerManager::~LayerManager() = default;
 } // namespace QSpace::Core

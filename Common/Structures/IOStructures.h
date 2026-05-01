@@ -12,7 +12,6 @@
 #include <vtkSmartPointer.h>
 #include <vtkType.h>
 
-
 namespace QSpace::IO {
 struct ColumnScheme {
     struct Mapping {

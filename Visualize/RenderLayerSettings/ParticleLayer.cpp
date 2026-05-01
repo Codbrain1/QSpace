@@ -2,17 +2,13 @@
 #include "Common/Enums/RenderEnums.h"
 #include "Common/Logger/Logger.h"
 #include "Common/Structures/CoreStructures.h"
-#include "Common/Structures/RenderStructures.h"
-#include "Visualize/ColorMapManager/ColorMapManager.h"
-#include <cmath>
-#include <memory>
 #include <qloggingcategory.h>
+#include <qnamespace.h>
 #include <qstring.h>
 #include <quuid.h>
 #include <vtkAbstractArray.h>
 #include <vtkActor.h>
 #include <vtkCell.h>
-#include <vtkColorTransferFunction.h>
 #include <vtkDataArray.h>
 #include <vtkDoubleArray.h>
 #include <vtkFloatArray.h>
@@ -33,80 +29,34 @@
 #include <vtkSmartPointerBase.h>
 #include <vtkTextProperty.h>
 #include <vtkType.h>
+#include "BaseLayer.h"
+#include <cmath>
+#include <memory>
+
 
 namespace QSpace::Visualize {
-ParticleLayer::ParticleLayer(std::shared_ptr<Core::DataNode> node) : m_node(node) {
-    m_mapper          = vtkSmartPointer<vtkPointGaussianMapper>::New();
-    m_actor           = vtkSmartPointer<vtkActor>::New();
-    m_lut             = vtkSmartPointer<vtkColorTransferFunction>::New();
-    m_scalarBar       = vtkSmartPointer<vtkScalarBarActor>::New();
-    m_opacityFunction = vtkSmartPointer<vtkPiecewiseFunction>::New();
+ParticleLayer::ParticleLayer(std::shared_ptr<Core::DataNode> node) : BaseLayer(node) {
+    m_mapper = vtkSmartPointer<vtkPointGaussianMapper>::New();
+    m_actor  = vtkSmartPointer<vtkActor>::New();
+    setupLayer();
 
     // Инициализация пайплайна
+    m_actor->SetMapper(m_mapper);
+    // m_actor->ForceTranslucentOn();
+    m_actor->GetProperty()->SetLighting(false);
     m_mapper->SetStatic(true);
     m_mapper->SetEmissive(false);
-    m_actor->SetMapper(m_mapper);
 
     // Настройка маппинга
     m_mapper->ScalarVisibilityOn();
     m_mapper->SetScalarModeToUsePointFieldData();
     m_mapper->SetColorModeToMapScalars();
 
-    m_lut->SetVectorModeToMagnitude();
-    m_lut->SetColorSpaceToLab();
-
-    setupScalarBar();
-    m_scalarBar->SetLookupTable(m_lut);
-    m_scalarBar->SetUseOpacity(true);
-
     m_actor->PickableOn();
-
-    if (m_node && m_node->data && m_node->data->GetPointData()->GetNumberOfArrays() > 0) {
-        m_node->settings.colorByField = m_node->data->GetPointData()->GetArrayName(0);
-    }
+    m_baseProp   = m_actor;
+    m_baseMapper = m_mapper;
 }
-void ParticleLayer::updateColorsForContrast(double contrast) {
-    if (!m_scalarBar)
-        return;
 
-    double color[3] = {contrast, contrast, contrast};
-
-    m_scalarBar->GetTitleTextProperty()->SetColor(color);
-    m_scalarBar->GetLabelTextProperty()->SetColor(color);
-    m_scalarBar->GetAnnotationTextProperty()->SetColor(color);
-
-    // Если есть рамка или другие элементы в репрезентации виджета:
-    if (m_scalarBarWidget) {
-        auto rep = vtkScalarBarRepresentation::SafeDownCast(m_scalarBarWidget->GetRepresentation());
-        if (rep) {
-        }
-    }
-}
-void ParticleLayer::update() {
-    if (!m_node || !m_node->data) {
-        qCCritical(LogRenderer) << "ParticleLayer::update() - Node or data is null";
-        return;
-    }
-
-    auto data = vtkPolyData::SafeDownCast(m_node->data);
-    if (!data || data->GetNumberOfPoints() == 0)
-        return;
-
-    auto& s = m_node->settings;
-    m_actor->SetVisibility(s.isVisible);
-
-    if (m_mapper->GetInput() != data) {
-        m_mapper->SetInputData(data);
-    }
-
-    applyRenderModeSettings(s);
-    setupDataArrays(data, s);
-    updateScalarBarVisibility(s);
-
-    if (s.mode == RenderMode::GausianSplat) {
-        updateShader(s);
-    }
-}
 void ParticleLayer::applyRenderModeSettings(const Core::VisualSettings& s) {
     if (s.mode == RenderMode::GausianSplat) {
         m_mapper->SetScaleFactor(s.PointSize);
@@ -124,7 +74,8 @@ void ParticleLayer::applyRenderModeSettings(const Core::VisualSettings& s) {
     isDensityLike ? m_actor->ForceTranslucentOn() : m_actor->ForceTranslucentOff();
     m_actor->GetProperty()->SetOpacity(s.opacity);
 }
-void ParticleLayer::setupDataArrays(vtkPolyData* data, Core::VisualSettings& s) {
+
+void ParticleLayer::setupDataArrays(Core::VisualSettings& s) {
     if (s.colorByField.isEmpty()) {
         m_mapper->ScalarVisibilityOff();
         m_actor->GetProperty()->SetColor(1.0, 1.0, 1.0);
@@ -132,6 +83,10 @@ void ParticleLayer::setupDataArrays(vtkPolyData* data, Core::VisualSettings& s) 
     }
     std::string sourceField         = s.colorByField.toStdString();
     std::string currentWorkingField = sourceField;
+    auto        data                = vtkPolyData::SafeDownCast(m_node->data);
+    if (!data)
+        return;
+
     if (s.colorByField.contains("energy", Qt::CaseInsensitive)) {
         std::string dimField = "Dimension_" + sourceField;
         if (!data->GetPointData()->HasArray(dimField.c_str())) {
@@ -142,7 +97,8 @@ void ParticleLayer::setupDataArrays(vtkPolyData* data, Core::VisualSettings& s) 
             calc->SetFunction("sqrt(1.66666666667 * 0.66666666667*v)^2 * 1.79E+6");
             calc->SetResultArrayName(dimField.c_str());
             calc->Update();
-            data->GetPointData()->AddArray(calc->GetDataSetOutput()->GetPointData()->GetArray(dimField.c_str()));
+            data->GetPointData()->AddArray(
+                calc->GetDataSetOutput()->GetPointData()->GetArray(dimField.c_str()));
         }
         currentWorkingField = dimField;
     }
@@ -164,13 +120,13 @@ void ParticleLayer::setupDataArrays(vtkPolyData* data, Core::VisualSettings& s) 
             calc->SetFunction("log10(abs(v) + 1e-10)");
             calc->SetResultArrayName(finalField.c_str());
             calc->Update();
-            data->GetPointData()->AddArray(calc->GetDataSetOutput()->GetPointData()->GetArray(finalField.c_str()));
+            data->GetPointData()->AddArray(
+                calc->GetDataSetOutput()->GetPointData()->GetArray(finalField.c_str()));
         }
     }
     vtkDataArray* arr = data->GetPointData()->GetArray(finalField.c_str());
     if (!arr)
         return;
-
     data->GetPointData()->SetActiveScalars(finalField.c_str());
     m_mapper->SelectColorArray(finalField.c_str());
     m_mapper->SetOpacityArray(finalField.c_str());
@@ -193,83 +149,7 @@ void ParticleLayer::setupDataArrays(vtkPolyData* data, Core::VisualSettings& s) 
     applyColorMap(s.colorMapId, range);
     m_mapper->SetScalarRange(range);
 }
-void ParticleLayer::applyColorMap(QUuid& colorMapUuid, double range[2]) {
-    m_lut->RemoveAllPoints();
-    m_opacityFunction->RemoveAllPoints();
 
-    double minVal = range[0];
-    double maxVal = range[1];
-    double span   = maxVal - minVal + 1e-9;
-
-    auto& cmManager = ColorMapManager::instance();
-    auto  colorMap  = cmManager.getMap(colorMapUuid).value_or(ColorMapPresets::getStandardPresets().first());
-
-    // Временная LUT для интерполяции базовых цветов
-    auto tempLut = vtkSmartPointer<vtkColorTransferFunction>::New();
-    tempLut->SetColorSpaceToLab();
-    for (const auto& pt : colorMap.points)
-        tempLut->AddRGBPoint(pt.x, pt.r, pt.g, pt.b);
-
-    const int numSamples    = 256;
-    auto      interpColor   = scalarBarRangeInterpolationFromString(m_node->settings.interpolationRangeType);
-    auto      interpOpacity = interpolationOpacityFunctionFromString(m_node->settings.interpolationOpacityFunction);
-
-    for (int i = 0; i < numSamples; ++i) {
-        double t   = static_cast<double>(i) / (numSamples - 1);
-        double val = minVal + t * (maxVal - minVal);
-
-        // --- 1. Интерполяция Цвета (сохранение всех типов) ---
-        double t_color = t;
-        if (interpColor == ScalarBarRangeInterpolation::Sigmoid) {
-            double g   = m_node->settings.sigmoidGammaColor;
-            double s   = m_node->settings.sigmoidShiftColor;
-            auto   sig = [&](double x) { return 1.0 / (1.0 + std::exp(-g * (x - s))); };
-            t_color    = (sig(t) - sig(0.0)) / (sig(1.0) - sig(0.0) + 1e-9);
-        } else if (interpColor == ScalarBarRangeInterpolation::Asinh) {
-            double a = m_node->settings.alpha;
-            t_color  = std::asinh(t * a) / std::asinh(a);
-        }
-        t_color = std::clamp(t_color, 0.0, 1.0);
-
-        double rgb[3];
-        tempLut->GetColor(t_color, rgb);
-
-        // --- 2. Интерполяция Прозрачности (сохранение всех 6+ типов) ---
-        double baseAlpha = m_node->settings.opacity;
-        double t_opacity = 1.0;
-
-        if (interpOpacity == InterpolationOpacityFunction::Sigmoid) {
-            double g   = m_node->settings.sigmoidGammaOpacity;
-            double s   = m_node->settings.sigmoidShiftOpacity;
-            auto   sig = [&](double x) { return 1.0 / (1.0 + std::exp(-g * (x - s))); };
-            t_opacity  = (sig(t) - sig(0.0)) / (sig(1.0) - sig(0.0) + 1e-9);
-        } else if (interpOpacity == InterpolationOpacityFunction::Asinh) {
-            t_opacity = std::asinh(t * baseAlpha) / std::asinh(baseAlpha);
-        } else if (interpOpacity == InterpolationOpacityFunction::Linear) {
-            t_opacity = t;
-        } else if (interpOpacity == InterpolationOpacityFunction::Quadro) {
-            t_opacity = t * t;
-        } else if (interpOpacity == InterpolationOpacityFunction::Qube) {
-            t_opacity = t * t * t;
-        } else if (interpOpacity == InterpolationOpacityFunction::Sqrt) {
-            t_opacity = std::sqrt(t);
-        } else if (interpOpacity == InterpolationOpacityFunction::Constant) {
-            t_opacity = 1.0;
-        }
-
-        double finalOpacity = std::clamp(baseAlpha * t_opacity, 0.0, 1.0);
-
-        m_lut->AddRGBPoint(val, rgb[0], rgb[1], rgb[2]);
-        m_opacityFunction->AddPoint(val, finalOpacity);
-    }
-
-    // Обработка выхода за диапазон
-    if (m_node->settings.hideOutOfRange) {
-        double eps = span * 0.001;
-        m_opacityFunction->AddPoint(minVal - eps, 0.0);
-        m_opacityFunction->AddPoint(maxVal + eps, 0.0);
-    }
-}
 void ParticleLayer::updateShader(const Core::VisualSettings& s) {
     if (shaderTypeFromString(s.ShaderType) == ShaderType::Default) {
         m_mapper->SetSplatShaderCode(nullptr);
@@ -300,121 +180,6 @@ void ParticleLayer::updateShader(const Core::VisualSettings& s) {
                              .arg(s.gaussianSharpness)
                              .arg(s.isEmmisive ? "true" : "false")
                              .arg(s.exposureClamp);
-
     m_mapper->SetSplatShaderCode(shaderCode.toUtf8().constData());
-}
-void ParticleLayer::updateScalarBarVisibility(const Core::VisualSettings& s) {
-    bool shouldShow = s.showScalarBar && s.isVisible;
-    m_scalarBar->SetVisibility(shouldShow);
-    m_scalarBarWidget->SetEnabled(shouldShow);
-    if (!shouldShow)
-        return;
-    m_scalarBar->SetLookupTable(m_lut);
-    m_scalarBar->SetTitle(s.colorByField.toStdString().c_str());
-    // Если режим выключен, возвращаем стандартные метки
-    if (!s.useLogScale) {
-        m_scalarBar->DrawTickLabelsOn();
-        m_scalarBar->DrawAnnotationsOff();
-        m_scalarBar->SetTextPositionToSucceedScalarBar();
-    } else {
-        m_scalarBar->DrawTickLabelsOff();
-        m_scalarBar->DrawAnnotationsOn();
-        vtkScalarsToColors* lut = m_scalarBar->GetLookupTable();
-        if (!lut)
-            return;
-        // double range[2];
-        auto range = lut->GetRange();
-        // Очищаем старые аннотации
-        vtkSmartPointer<vtkStringArray> annNames  = vtkSmartPointer<vtkStringArray>::New();
-        vtkSmartPointer<vtkDoubleArray> annValues = vtkSmartPointer<vtkDoubleArray>::New();
-        int                             numTicks  = m_scalarBar->GetNumberOfLabels();
-        for (int i = 0; i < numTicks; ++i) {
-            // Линейно распределяем значения в лог-пространстве (например 0, 1, 2, 3...)
-            double t      = (double)i / (numTicks - 1);
-            double logVal = range[0] + t * (range[1] - range[0]);
-            // Проводим операцию 10^x
-            double physVal = std::pow(10.0, logVal);
-            // Форматируем текст (научная нотация)
-            std::stringstream ss;
-            ss << std::scientific << std::setprecision(1) << physVal;
-            annValues->InsertNextValue(logVal);
-            annNames->InsertNextValue(ss.str());
-        }
-        m_scalarBar->SetTextPositionToPrecedeScalarBar();
-        lut->SetAnnotations(annValues, annNames);
-    }
-    m_scalarBar->GetAnnotationTextProperty()->ShallowCopy(m_scalarBar->GetLabelTextProperty());
-}
-void ParticleLayer::swapData(std::shared_ptr<QSpace::Core::DataNode> node) {
-    if (!node || !node->data)
-        return;
-    auto polyData = vtkPolyData::SafeDownCast(node->data);
-    if (!polyData)
-        return;
-    auto oldSettings = m_node->settings;
-    m_node           = node;
-    m_node->settings = oldSettings;
-    m_mapper->SetInputData(polyData);
-    m_mapper->Modified();
-    update();
-}
-void ParticleLayer::setupScalarBar() {
-    // TODO: параметризовать настройку colorBar
-    m_scalarBar->SetNumberOfLabels(6);
-    m_scalarBar->SetWidth(0.1);  // 10% ширины экрана
-    m_scalarBar->SetHeight(0.4); // 50% высоты экрана
-    m_scalarBar->SetVerticalTitleSeparation(15);
-    // Позиция справа
-    m_scalarBar->GetPositionCoordinate()->SetCoordinateSystemToNormalizedViewport();
-    m_scalarBar->GetPositionCoordinate()->SetValue(0.85, 0.05);
-    // Настройка текста
-    vtkTextProperty* txt = m_scalarBar->GetLabelTextProperty();
-    txt->SetColor(1, 1, 1); // Черный текст
-    txt->SetFontSize(16);
-    m_scalarBar->GetTitleTextProperty()->SetColor(1, 1, 1);
-}
-void ParticleLayer::attachInteractor(vtkRenderWindowInteractor* interactor) {
-    if (!interactor)
-        return;
-    if (!m_scalarBarWidget) {
-        m_scalarBarWidget = vtkSmartPointer<vtkScalarBarWidget>::New();
-        m_scalarBarWidget->SetScalarBarActor(m_scalarBar);
-        auto rep = vtkScalarBarRepresentation::SafeDownCast(m_scalarBarWidget->GetRepresentation());
-        if (rep) {
-            rep->SetShowBorderToActive();
-        }
-    }
-    m_scalarBarWidget->SetInteractor(interactor);
-    if (m_node->settings.showScalarBar && m_node->settings.isVisible) {
-        m_scalarBarWidget->EnabledOn();
-    }
-}
-void ParticleLayer::detachInteractor() {
-    if (m_scalarBarWidget) {
-        m_scalarBarWidget->EnabledOff();
-        m_scalarBarWidget->SetInteractor(nullptr);
-    }
-}
-void ParticleLayer::setVisible(bool visible) {
-    // 1. Управляем видимостью основного актора
-    if (m_actor) {
-        m_actor->SetVisibility(visible ? 1 : 0);
-    }
-    // 2. Управляем виджетом легенды (если он есть)
-    if (m_scalarBarWidget) {
-        if (visible && m_node->settings.showScalarBar) {
-            m_scalarBarWidget->EnabledOn();
-        } else {
-            m_scalarBarWidget->EnabledOff();
-        }
-    }
-    // Обновляем состояние в структуре настроек, чтобы оно синхронизировалось
-    m_node->settings.isVisible = visible;
-}
-bool ParticleLayer::isVisible() const {
-    if (m_actor) {
-        return m_actor->GetVisibility() != 0;
-    }
-    return false;
 }
 } // namespace QSpace::Visualize

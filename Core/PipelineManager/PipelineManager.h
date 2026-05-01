@@ -3,12 +3,13 @@
 #include "Core/ObjectRegistry/ObjectRegistry.h"
 #include "Core/ViewManager/ViewManager.h"
 #include <QObject>
-#include <memory>
 #include <qobject.h>
 #include <qtmetamacros.h>
 #include <quuid.h>
 #include <vtkProp.h>
 #include <vtkSmartPointer.h>
+#include <memory>
+
 
 namespace QSpace::Core {
 class PipelineManager : public QObject {
@@ -18,7 +19,7 @@ class PipelineManager : public QObject {
                              ViewManager*    viewManager,
                              LayerManager*   LayerManager,
                              QObject*        parent = nullptr);
-  private slots:
+  public slots:
     void onNodeAdded(std::shared_ptr<DataNode> node);
     void onObjectRemoved(const QUuid& id);
     void onViewCreated(const QUuid& viewId);

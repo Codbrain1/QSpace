@@ -33,6 +33,8 @@ target_link_libraries(QSpace PRIVATE
             Qt6::Core
             Qt6::Widgets
             Qt6::Gui
+            Qt6::Quick
+            Qt6::Qml
             VTK::GUISupportQt
             VTK::CommonColor
             VTK::ImagingHybrid   # Явное указание модуля для линкера
@@ -60,7 +62,7 @@ COMMAND ${CMAKE_COMMAND} -E copy_directory
 COMMENT "Copying VTK binaries..."
 )
 add_custom_command(TARGET QSpace POST_BUILD
-COMMAND "C:/Qt/6.9.2/mingw_64/bin/windeployqt.exe"
+COMMAND "C:/Qt/6.11.0/mingw_64/bin/windeployqt.exe"
 --compiler-runtime
     $<TARGET_FILE:QSpace>
         COMMENT "Running windeployqt..."
