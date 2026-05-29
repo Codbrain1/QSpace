@@ -1,137 +1,164 @@
 #include "LayerManager.h"
 #include "Common/Logger/Logger.h"
-#include "Interfaces/IRenderLayer.h"
-#include "Interfaces/IView.h"
+#include "Core/StyleManager/StyleManager.h"
 #include "Interfaces/LayerFactory.h"
-#include "Visualize/RenderLayerSettings/ParticleLayer.h"
-#include <qloggingcategory.h>
-#include <qobject.h>
-#include <quuid.h>
-#include "Enums/CoreEnums.h"
-#include <memory>
-
+#include "Visualize/VtkView.h"
 
 namespace QSpace::Core {
+
 LayerManager::LayerManager(QObject* parent) : QObject(parent) {
 }
 
-void LayerManager::createLayer(std::shared_ptr<DataNode> node, Visualize::IView* view) {
+LayerManager::~LayerManager() = default;
+
+QUuid LayerManager::createLayer(std::shared_ptr<DataNode>         node,
+                                std::shared_ptr<Visualize::IView> view) {
     if (!node || !view || !node->data) {
-        qCWarning(LogCore) << "LayerManager::createLayer - Invalid node or renderer";
-        return;
+        qCWarning(LogCore) << "LayerManager::createLayer - Invalid node or view";
+        return QUuid();
     }
 
-    if (m_layers.contains(node->id) && m_layers[node->id].contains(view)) {
-        qWarning() << "LayerManager::createLayer - Layer already exists for node:" << node->id;
-        // Опционально: вызвать обновление существующего слоя вместо создания нового
-        m_layers[node->id][view]->update();
-        return;
-    }
-    qCDebug(LogCore) << "LayerManager::createLayer - Creating layer for node:" << node->label;
+    // 1. Создаем обертку
+    auto layer = std::make_shared<Layer>(node, view);
 
-    auto layer = Visualize::LayerFactory::createLayer(node);
-    if (!layer) {
-        qCWarning(LogCore) << "LayerManager::createLayer - Failed to create layer for node:"
-                           << node->label;
-        return;
-    }
-    // Фабрика слоев: выбираем реализацию в зависимости от типа данных
-    qCDebug(LogCore) << "LayerManager::createLayer - Layer created, calling update()";
+    // 2. Создаем движок через фабрику
+    auto renderEngine = Visualize::LayerEngineFactory::createLayerEngine(node);
+    if (!renderEngine)
+        return QUuid();
 
-    if (auto vtkView = qobject_cast<QSpace::Visualize::VtkView*>(view)) {
-        if (auto layer3D = std::dynamic_pointer_cast<QSpace::Visualize::IVtkRenderLayer>(layer)) {
+    // 3. Инициализируем движок данными и настройками
+    layer->assignEngine(renderEngine);
+
+    // 4. Привязываем к VTK
+    if (auto vtkView = qobject_cast<QSpace::Visualize::VtkView*>(view.get())) {
+        if (auto layer3D = std::dynamic_pointer_cast<QSpace::Visualize::IVtkRenderLayer>(
+                layer->renderEngine)) {
             vtkView->addProp(layer3D->getVtkProp());
-            qCDebug(LogCore) << "LayerManager::createLayer - VtkProp added to renderer";
             if (auto interactor = vtkView->getInteractor()) {
                 layer3D->attachInteractor(interactor);
             }
-            connect(vtkView,
-                    &QSpace::Visualize::VtkView::backgroundColorChanged,
-                    this,
-                    [layer3D](double contrast) { layer3D->updateColorsForContrast(contrast); });
         }
     }
-    // TODO: раскоментировать когда будет добавлена поддержка 2d графиков
-    //   else if (auto widgetView = qobject_cast<Visualize::IWidgetView*>(view)) {
-    //      if (auto widgetLayer = std::dynamic_pointer_cast<Visualize::IWidgetRenderLayer>(layer))
-    //      {
-    //          // Окно 2D принимает виджет слоя для отображения
-    //          widgetView->setWidget(widgetLayer->getWidget());
-    //      }
-    //  }
-    //  TODO: убрать метод если он не нужен
-    layer->update(); // Применяем дефолтные настройки
 
-    m_layers[node->id][view] = layer; // Сохраняем
+    layer->update();
 
-    emit layerCreated(node->id);
-    qCDebug(LogCore) << "LayerManager::createLayer - Layer added to renderer";
+    // 5. Регистрация в индексах
+    m_layers.insert(layer->layerId, layer);
+    m_nodeToLayers[node->id].append(layer->layerId);
+    m_viewToLayers[view.get()].append(layer->layerId);
+
+    emit layerCreated(layer->layerId);
+    return layer->layerId;
 }
 
-void LayerManager::removeLayer(const QUuid& nodeId) {
-    if (!m_layers.contains(nodeId)) {
-        qCWarning(LogCore) << "LayerManager::removeLayer - Layer not found for node id:" << nodeId;
+void LayerManager::removeLayer(const QUuid& layerId) {
+    if (!m_layers.contains(layerId))
         return;
-    }
 
-    auto& renderersMap = m_layers[nodeId];
+    auto layer      = m_layers[layerId];
+    auto rawViewPtr = layer->view.lock().get(); // Получаем адрес окна, если оно живо
 
-    // Удаляем пропы из всех рендереров
-    for (auto it = renderersMap.begin(); it != renderersMap.end(); ++it) {
-        Visualize::IView* view  = it.key();
-        auto              layer = it.value();
-        if (auto vtkView = qobject_cast<Visualize::VtkView*>(view)) {
-            if (auto vtkLayer = std::dynamic_pointer_cast<Visualize::IVtkRenderLayer>(layer)) {
+    // Отвязываем от View (только если окно еще существует)
+    if (rawViewPtr) {
+        if (auto vtkView = qobject_cast<Visualize::VtkView*>(rawViewPtr)) {
+            if (auto vtkLayer =
+                    std::dynamic_pointer_cast<Visualize::IVtkRenderLayer>(layer->renderEngine)) {
                 vtkLayer->detachInteractor();
                 vtkView->removeProp(vtkLayer->getVtkProp());
             }
         }
-        // TODO: раскоментировать когда будет добавлена поддержка 2d графиков
-        // else if (auto widgetView = qobject_cast<Visualize::IWidgetView*>(view)) {
-        //     if (auto widgetLayer =
-        //     std::dynamic_pointer_cast<Visualize::IWidgetRenderLayer>(layer)) {
-        //         // Если слой удаляется, забираем его виджет из окна
-        //         if (widgetView->getWidget() == widgetLayer->getWidget()) {
-        //             widgetView->setWidget(nullptr);
-        //         }
-        //     }
-        // }
+        // Удаляем из индекса окна
+        if (m_viewToLayers.contains(rawViewPtr)) {
+            m_viewToLayers[rawViewPtr].removeOne(layerId);
+            if (m_viewToLayers[rawViewPtr].isEmpty())
+                m_viewToLayers.remove(rawViewPtr);
+        }
     }
-    m_layers.remove(nodeId);
-    emit layerRemoved(nodeId);
-    qCDebug(LogCore) << "LayerManager::removeLayer - Layer removed";
+
+    // Удаляем из остальных индексов
+    m_nodeToLayers[layer->dataNodeId].removeOne(layerId);
+    m_layers.remove(layerId);
+
+    emit layerRemoved(layerId);
 }
 
-std::shared_ptr<Visualize::IRenderLayer> LayerManager::getLayer(const QUuid&      id,
-                                                                Visualize::IView* renderer) {
-    if (!m_layers.contains(id)) {
-        qCWarning(LogCore) << "LayerManager::getLayer - Layer not found for node id:" << id;
-        return nullptr;
+void LayerManager::removeAllLayersForNode(const QUuid& nodeId) {
+    // Используем временный список, так как removeLayer модифицирует m_nodeToLayers
+    QList<QUuid> toRemove = m_nodeToLayers.value(nodeId);
+    for (const auto& id : toRemove) {
+        removeLayer(id);
     }
-    auto& rendererMap = m_layers[id];
-    if (!rendererMap.contains(renderer)) {
-        qCWarning(LogCore) << "LayerManager::removeLayer - Layer not found for node Renderer";
-        return nullptr;
-    }
-    return rendererMap[renderer];
 }
 
-void LayerManager::updateSettings(const QUuid& nodeId) {
-    // 1. Находим все слои для этого узла (во всех окнах)
-    if (!m_layers.contains(nodeId)) {
-        qCWarning(LogCore) << "LayerManager::updateSettings - Layer not found for node id:"
-                           << nodeId;
+void LayerManager::removeAllLayersForView(Visualize::IView* view) {
+    if (!m_viewToLayers.contains(view))
         return;
-    }
 
-    auto& rendererMap = m_layers[nodeId];
-    for (auto it = rendererMap.begin(); it != rendererMap.end(); ++it) {
-        auto layer = it.value();
-        // 2. Просим слой обновиться (он сам возьмет данные из node->settings)
-        layer->update();
+    QList<QUuid> toRemove = m_viewToLayers.value(view);
+    for (const auto& id : toRemove) {
+        removeLayer(id);
     }
-    qCDebug(LogCore) << "LayerManager::updateSettings - Settings updated for node:" << nodeId;
 }
 
-LayerManager::~LayerManager() = default;
+void LayerManager::populateNewView(std::shared_ptr<Visualize::IView>       newView,
+                                   const QList<std::shared_ptr<DataNode>>& allNodes) {
+    for (const auto& node : allNodes) {
+        createLayer(node, newView);
+    }
+}
+
+std::shared_ptr<Layer> LayerManager::getLayer(const QUuid& layerId) const {
+    return m_layers.value(layerId, nullptr);
+}
+
+QList<std::shared_ptr<Layer>> LayerManager::getLayersForNode(const QUuid& nodeId) const {
+    QList<std::shared_ptr<Layer>> result;
+    for (const auto& id : m_nodeToLayers.value(nodeId)) {
+        if (m_layers.contains(id))
+            result.append(m_layers[id]);
+    }
+    return result;
+}
+
+void LayerManager::updateNodeMasterSettings(const QUuid& nodeId) {
+    auto layers = getLayersForNode(nodeId);
+    for (auto& layer : layers) {
+        if (layer->isSyncedWithMaster) {
+            layer->update();
+        }
+    }
+}
+
+// 1. Создание слоев — оставляем как есть, это надежно
+void LayerManager::createLayersForContainer(std::shared_ptr<DataContainer>    container,
+                                            std::shared_ptr<Visualize::IView> view) {
+    if (!container || !view)
+        return;
+
+    for (auto& node : container->components) {
+        this->createLayer(node, view);
+    }
+}
+
+// 2. Управление видимостью — добавляем флаг блокировки рендера
+void LayerManager::setContainerVisibility(std::shared_ptr<DataContainer> container, bool visible) {
+    if (!container)
+        return;
+
+    // Обновляем узлы текущего контейнера
+    for (auto& node : container->components) {
+        // Мы используем прямой доступ к ID, это быстро
+        auto layerIds = m_nodeToLayers.value(node->id);
+        for (const auto& id : layerIds) {
+            if (auto layer = m_layers.value(id)) {
+                layer->settings->isVisible = visible;
+                // Вызываем обновление мапперов VTK, но БЕЗ немедленного рендера окна
+                if (layer->renderEngine) {
+                    layer->renderEngine->setVisible(visible);
+                }
+            }
+        }
+    }
+}
+
 } // namespace QSpace::Core

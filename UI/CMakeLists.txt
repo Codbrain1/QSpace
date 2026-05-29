@@ -5,8 +5,8 @@ target_sources(UI PRIVATE
     Home/MainWindow.h
     Home/MainWindow.cpp
     Home/newmainwindow.ui
-    Home/DataTreeController.h
-    Home/DataTreeController.cpp
+    Home/LayerExplorerWidget.h
+    Home/LayerExplorerWidget.cpp
     Home/PropertyInspector.h
     Home/PropertyInspector.cpp
     Home/PropertyInspector.ui

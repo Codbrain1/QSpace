@@ -4,14 +4,16 @@
 #include "Interfaces/IOFactory.h"
 #include <QFileInfo>
 
-
 namespace QSpace::Core {
 
-VideoExportManager::VideoExportManager(DataManager*                                      dataManager,
-                                       std::shared_ptr<QSpace::Visualize::IRenderLayer>  targetLayer,
+VideoExportManager::VideoExportManager(DataManager*                                     dataManager,
+                                       std::shared_ptr<QSpace::Visualize::IRenderLayer> targetLayer,
                                        std::shared_ptr<QSpace::Visualize::VideoExporter> exporter,
                                        QObject*                                          parent)
-    : QObject(parent), m_dataManager(dataManager), m_targetLayer(targetLayer), m_exporter(exporter) {
+    : QObject(parent),
+      m_dataManager(dataManager),
+      m_targetLayer(targetLayer),
+      m_exporter(exporter) {
     // Подписываемся на ответы от DataManager
     connect(m_dataManager, &DataManager::fileReady, this, &VideoExportManager::onFileReady);
 }
@@ -63,7 +65,8 @@ void VideoExportManager::onFileReady(const QUuid& taskId, IO::ReadResult result)
     int frameIndex = m_pendingTasks.take(taskId);
 
     if (!result.isSuccess()) {
-        qCCritical(LogCore) << "Video export failed on frame" << frameIndex << ":" << result.errMessage;
+        qCCritical(LogCore) << "Video export failed on frame" << frameIndex << ":"
+                            << result.errMessage;
         m_exporter->finishExport();
         emit exportFinished(false);
         return;
@@ -78,6 +81,7 @@ void VideoExportManager::onFileReady(const QUuid& taskId, IO::ReadResult result)
     // Буфер освободился - запрашиваем следующий файл
     fillBuffer();
 }
+
 void VideoExportManager::cancel() {
     m_isCancelled = true;
 }
@@ -94,10 +98,11 @@ void VideoExportManager::processReadyFrames() {
         auto           fileName   = QFileInfo(result.path).fileName();
         auto           entityType = IO::Utils::getEntityType(fileName);
         // 1. Создаем временную ноду для визуализатора
-        auto tempNode = std::make_shared<DataNode>(result.data, QFileInfo(result.path).fileName(), entityType);
+        auto tempNode =
+            std::make_shared<DataNode>(result.data, QFileInfo(result.path).fileName(), entityType);
 
         // 2. Подменяем данные. Так как targetLayer это интерфейс, безопасно кастуем его
-        m_targetLayer->swapData(tempNode);
+        m_targetLayer->setData(tempNode);
 
         // 3. Синхронный рендер кадра в файл
         m_exporter->captureFrame();

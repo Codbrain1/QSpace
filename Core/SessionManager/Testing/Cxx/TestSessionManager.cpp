@@ -1,10 +1,12 @@
 #include <QTemporaryDir>
 #include <QtTest>
-#include <memory>
 #include <vtkPolyData.h>
+#include <memory>
+
 
 
 #include "Common/Structures/CoreStructures.h"
+#include "Core/LayerManager/LayerManager.h"
 #include "Core/ObjectRegistry/ObjectRegistry.h"
 #include "Core/SessionManager/SessionManager.h"
 #include "Structures/SessionStructures.h"
@@ -17,13 +19,16 @@ class TestSessionManager : public QObject {
     Q_OBJECT
 
   private slots:
+
     void init() {
         m_registry       = new ObjectRegistry(this);
-        m_sessionManager = new SessionManager(m_registry, this);
+        m_layerManager   = new LayerManager(this);
+        m_sessionManager = new SessionManager(m_registry, m_layerManager, this);
     }
 
     void cleanup() {
         delete m_sessionManager;
+        delete m_layerManager;
         delete m_registry;
     }
 
@@ -53,10 +58,10 @@ class TestSessionManager : public QObject {
         QString       filePath = dir.path() + "/full_project.qsp";
 
         // 1. Подготовка данных в реестре
-        auto dummyData           = vtkSmartPointer<vtkPolyData>::New();
-        auto node                = std::make_shared<DataNode>(dummyData, "Node1");
-        node->path               = "/data/file.vtk";
-        node->settings.PointSize = 5.0f;
+        auto dummyData                  = vtkSmartPointer<vtkPolyData>::New();
+        auto node                       = std::make_shared<DataNode>(dummyData, "Node1");
+        node->path                      = "/data/file.vtk";
+        node->masterSettings->PointSize = 5.0f;
         m_registry->registerNode(node);
 
         CurrentSession session;
@@ -93,6 +98,7 @@ class TestSessionManager : public QObject {
 
   private:
     ObjectRegistry* m_registry;
+    LayerManager*   m_layerManager;
     SessionManager* m_sessionManager;
 };
 

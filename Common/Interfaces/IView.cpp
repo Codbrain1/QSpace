@@ -6,4 +6,8 @@ IView::IView(QObject *parent)
     : QObject(parent)
 {
 }
+IView3D::IView3D(QObject *parent)
+    : IView(parent)
+{
+}
 } // namespace QSpace::Visualize

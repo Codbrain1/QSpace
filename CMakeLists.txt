@@ -28,8 +28,8 @@ endif()
 # Widgets - различные виджеты(окна, кнопки и т.д.)
 # LinguistTools - модуль с переводами
 find_package(Qt6 REQUIRED COMPONENTS 
-            Quick
-            Qml
+            # Quick
+            # Qml
             Core 
             Gui 
             Widgets 
@@ -88,6 +88,7 @@ add_subdirectory(Common)
 add_subdirectory(Core)
 # add_subdirectory(Filtering)
 add_subdirectory(IO)
+add_subdirectory(Presentation)
 # add_subdirectory(Physics)
 # add_subdirectory(Remote)
 add_subdirectory(Visualize)

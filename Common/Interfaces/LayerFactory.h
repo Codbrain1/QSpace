@@ -5,9 +5,9 @@
 
 namespace QSpace::Visualize
 {
-class LayerFactory
+class LayerEngineFactory
 {
 public:
-  static std::shared_ptr<IRenderLayer> createLayer(const std::shared_ptr<Core::DataNode> node);
+  static std::shared_ptr<IRenderLayer> createLayerEngine(const std::shared_ptr<Core::DataNode> node);
 };
 } // namespace QSpace::Visualize

@@ -12,7 +12,6 @@
 #include <vtkMultiBlockDataSet.h>
 #include <vtkSmartPointer.h>
 
-
 namespace QSpace::Core {
 class DataManager : public QObject {
     Q_OBJECT
@@ -27,8 +26,8 @@ class DataManager : public QObject {
      * @brief чтение одного файла
      * создает объект ридера и читает файл в вызывающем потоке
      */
-    // void importData(const QString& path, const IO::ReadScheme& scheme); //TODO: реализовать чтение одного файла из
-    // вызывающего потока для анимерования данных с различной структурой
+    // void importData(const QString& path, const IO::ReadScheme& scheme); //TODO: реализовать
+    // чтение одного файла из вызывающего потока для анимерования данных с различной структурой
 
     /**
      * @brief чтение одного файла
@@ -43,7 +42,8 @@ class DataManager : public QObject {
      * создает для каждого файла отдельный ридер
      * Сигнал: batchFileReady(ReadResult result)
      */
-    void importBatchDataAsync(const QList<IO::BatchTask>& tasks, IO::ImportRole role = IO::ImportRole::ProjectData);
+    QUuid importBatchDataAsync(const QList<IO::BatchTask>& tasks,
+                               IO::ImportRole              role = IO::ImportRole::ProjectData);
     /**
      * @brief читает пакет файлов с одинаковой структурой
      * создается один ридер, но все данные независимы

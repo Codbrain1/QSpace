@@ -16,7 +16,8 @@ class IRenderLayer
 public:
   virtual ~IRenderLayer() = default;
   virtual void update() = 0;
-  virtual void swapData(std::shared_ptr<QSpace::Core::DataNode> node) = 0;
+  virtual void setData(std::weak_ptr<Core::DataNode> node) = 0;
+  virtual void setSettings(std::shared_ptr<Core::VisualSettings> settings) = 0;
   virtual void setVisible(bool visible) = 0;
   virtual bool isVisible() const = 0;
 };

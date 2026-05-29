@@ -18,9 +18,11 @@ target_link_libraries(Visualize PUBLIC
             RenderLayerSettings
             VideoExporter
             ColorMapManager
+            VTK::GUISupportQt
             QSpace::Common
             Qt6::Core
             Qt6::Widgets
+            Qt6::OpenGLWidgets
             VTK::CommonCore
             VTK::RenderingAnnotation
             VTK::InteractionStyle

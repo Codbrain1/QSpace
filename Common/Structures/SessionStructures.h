@@ -2,9 +2,9 @@
 #include "Common/Enums/IOEnums.h"
 #include "Common/Enums/RenderEnums.h"
 #include "Common/Structures/IOStructures.h"
-#include "CoreStructures.h"
 #include <qlist.h>
 #include <quuid.h>
+#include "CoreStructures.h"
 
 namespace QSpace::Session {
 struct DataNodeState {
@@ -17,14 +17,24 @@ struct DataNodeState {
     IO::FileFormat           format;
     IO::ReadScheme           scheme;
 };
+
+struct LayerState {
+    QUuid                layerId;
+    QUuid                nodeId;   // На какой DataNode ссылается
+    QUuid                viewId;   // В каком окне отрисовывается
+    Core::VisualSettings settings; // Настройки ИМЕННО ЭТОГО слоя
+};
+
 class DataContainerState { // TODO:: может оказаться излишним
 };
+
 struct ProjectState {
     QString              version = "1.0";
     QString              projectName;
     QList<DataNodeState> nodesStates;
-    // TODO добавить список окон и их настройки
+    QList<LayerState>    layersStates;
 };
+
 struct CurrentSession {
     QString projectName;
     QString projectFilePath;

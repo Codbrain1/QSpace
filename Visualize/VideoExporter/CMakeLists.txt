@@ -10,4 +10,6 @@ target_link_libraries(VideoExporter PUBLIC
              VTK::IOVideo
              VTK::IOOggTheora
              Qt6::Concurrent
+             VTK::GUISupportQt
+             
 )

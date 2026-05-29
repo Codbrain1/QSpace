@@ -1,7 +1,5 @@
 #include "VtkView.h"
 #include "Common/Logger/Logger.h"
-#include "GalacticInteractorStyle.h"
-#include <cstddef>
 #include <qloggingcategory.h>
 #include <qobject.h>
 #include <quuid.h>
@@ -25,15 +23,69 @@
 #include <vtkSmartPointerBase.h>
 #include <vtkTextProperty.h>
 #include <vtkToneMappingPass.h>
+#include "GalacticInteractorStyle.h"
+#include <cstddef>
 
 namespace QSpace::Visualize {
-VtkView::VtkView(QObject* parent) : IView(parent) {
+VtkView::VtkView(QObject* parent) : IView3D(parent) {
+    m_vtkWidget   = std::make_unique<QVTKOpenGLNativeWidget>();
     m_vtkRenderer = vtkSmartPointer<vtkRenderer>::New();
+
+    m_renderWindow = vtkGenericOpenGLRenderWindow::SafeDownCast(m_vtkWidget->renderWindow());
+    m_renderWindow->AddRenderer(m_vtkRenderer);
 
     auto colors = vtkSmartPointer<vtkNamedColors>::New();
     m_vtkRenderer->SetBackground(colors->GetColor3d("Black").GetData());
-    // Создаем оси координат
+    // 2. Получаем и настраиваем интерактор напрямую из окна виджета
+    if (auto interactor = m_renderWindow->GetInteractor()) {
+        // Настраиваем точечный пикер
+        vtkNew<vtkPointPicker> pointPicker;
+        pointPicker->SetTolerance(0.005);
+        interactor->SetPicker(pointPicker);
+
+        // Устанавливаем кастомный стиль (галактический)
+        vtkNew<GalacticInteractorStyle> style;
+        interactor->SetInteractorStyle(style);
+
+        // Важно: Инициализируем интерактор до добавления виджетов
+        interactor->Initialize();
+
+        // 3. Настройка осей и Orientation Marker
+        vtkSmartPointer<vtkAxesActor> axes = vtkSmartPointer<vtkAxesActor>::New();
+        axes->SetTotalLength(1.5, 1.5, 1.5);
+        axes->SetShaftTypeToCylinder();
+        axes->SetCylinderRadius(0.02);
+        axes->GetXAxisCaptionActor2D()->GetCaptionTextProperty()->SetColor(1.0, 0.0, 0.0);
+        axes->GetYAxisCaptionActor2D()->GetCaptionTextProperty()->SetColor(0.0, 1.0, 0.0);
+        axes->GetZAxisCaptionActor2D()->GetCaptionTextProperty()->SetColor(0.0, 0.0, 1.0);
+
+        axes->GetXAxisCaptionActor2D()->LeaderOff();
+        axes->GetXAxisCaptionActor2D()->BorderOff();
+        axes->GetYAxisCaptionActor2D()->LeaderOff();
+        axes->GetYAxisCaptionActor2D()->BorderOff();
+        axes->GetZAxisCaptionActor2D()->LeaderOff();
+        axes->GetZAxisCaptionActor2D()->BorderOff();
+
+        m_orientationMarker = vtkSmartPointer<vtkOrientationMarkerWidget>::New();
+        m_orientationMarker->SetOrientationMarker(axes);
+        m_orientationMarker->SetInteractor(interactor); // Теперь interactor валиден!
+        m_orientationMarker->SetViewport(0.0, 0.0, 0.3, 0.3);
+        m_orientationMarker->SetEnabled(1);
+    }
+
+    // 4. Настройки рендеринга и прозрачности
+    m_renderWindow->SetAlphaBitPlanes(1);
+    setupDepthPeeling();
+
+    // 5. Создаем сетку/оси сцены
     setupAxes();
+    if (m_axesActor) {
+        m_axesActor->SetCamera(m_vtkRenderer->GetActiveCamera());
+    }
+}
+
+QWidget* VtkView::getWidget() {
+    return m_vtkWidget.get();
 }
 
 void VtkView::setRenderWindow(vtkRenderWindow* renderWindow) {
@@ -63,9 +115,15 @@ void VtkView::setRenderWindow(vtkRenderWindow* renderWindow) {
             axes->SetTotalLength(1.5, 1.5, 1.5);
             axes->SetShaftTypeToCylinder(); // Делаем стрелки объемными цилиндрами
             axes->SetCylinderRadius(0.02);
-            axes->GetXAxisCaptionActor2D()->GetCaptionTextProperty()->SetColor(1.0, 0.0, 0.0); // Красный X
-            axes->GetYAxisCaptionActor2D()->GetCaptionTextProperty()->SetColor(0.0, 1.0, 0.0); // Зеленый Y
-            axes->GetZAxisCaptionActor2D()->GetCaptionTextProperty()->SetColor(0.0, 0.0, 1.0); // Синий Z
+            axes->GetXAxisCaptionActor2D()->GetCaptionTextProperty()->SetColor(1.0,
+                                                                               0.0,
+                                                                               0.0); // Красный X
+            axes->GetYAxisCaptionActor2D()->GetCaptionTextProperty()->SetColor(0.0,
+                                                                               1.0,
+                                                                               0.0); // Зеленый Y
+            axes->GetZAxisCaptionActor2D()->GetCaptionTextProperty()->SetColor(0.0,
+                                                                               0.0,
+                                                                               1.0); // Синий Z
             m_orientationMarker = vtkSmartPointer<vtkOrientationMarkerWidget>::New();
             m_orientationMarker->SetOrientationMarker(axes);
             m_orientationMarker->SetInteractor(interactor);
@@ -88,6 +146,7 @@ void VtkView::setRenderWindow(vtkRenderWindow* renderWindow) {
         render();
     }
 }
+
 void VtkView::setupDepthPeeling() {
     if (!m_vtkRenderer || !m_renderWindow)
         return;
@@ -109,6 +168,7 @@ void VtkView::setupDepthPeeling() {
     // toneMapping->SetContrast(1); // Можно вынести в UI как "Контраст сцены"
     m_vtkRenderer->SetPass(toneMapping);
 }
+
 void VtkView::setGlobalExposure(double exposure) {
     vtkRenderPass* pass = m_vtkRenderer->GetPass();
     if (auto toneMappingPass = vtkToneMappingPass::SafeDownCast(pass)) {
@@ -118,6 +178,7 @@ void VtkView::setGlobalExposure(double exposure) {
         render();
     }
 }
+
 void VtkView::setupAxes() {
     m_axesActor = vtkSmartPointer<vtkCubeAxesActor>::New();
     m_axesActor->SetCamera(m_vtkRenderer->GetActiveCamera());
@@ -153,26 +214,34 @@ void VtkView::setupAxes() {
 
     m_vtkRenderer->AddActor(m_axesActor);
 }
+
 vtkSmartPointer<vtkGenericOpenGLRenderWindow> VtkView::getRenderWindow() const {
     return m_renderWindow;
 }
+
 void VtkView::addProp(vtkSmartPointer<vtkProp> prop) {
     if (prop) {
         m_vtkRenderer->AddViewProp(prop);
     }
 }
+
 void VtkView::removeProp(vtkSmartPointer<vtkProp> prop) {
     if (prop)
         m_vtkRenderer->RemoveViewProp(prop);
 }
+
 void VtkView::setBackgroundColor(double r, double g, double b) {
     m_vtkRenderer->SetBackground(r, g, b);
     // Для осей меняем цвет текста инверсно (упрощенно)
     double contrastColor = (r + g + b > 1.5) ? 0.0 : 1.0;
     if (m_axesActor) {
         for (int i = 0; i < 3; ++i) {
-            m_axesActor->GetTitleTextProperty(i)->SetColor(contrastColor, contrastColor, contrastColor);
-            m_axesActor->GetLabelTextProperty(i)->SetColor(contrastColor, contrastColor, contrastColor);
+            m_axesActor->GetTitleTextProperty(i)->SetColor(contrastColor,
+                                                           contrastColor,
+                                                           contrastColor);
+            m_axesActor->GetLabelTextProperty(i)->SetColor(contrastColor,
+                                                           contrastColor,
+                                                           contrastColor);
         }
 
         // Линии осей
@@ -190,6 +259,7 @@ void VtkView::setBackgroundColor(double r, double g, double b) {
     emit   backgroundColorChanged(contrast);
     render();
 }
+
 void VtkView::setAxesVisible(bool visible) {
     if (!m_axesActor)
         return;
@@ -203,6 +273,7 @@ void VtkView::setAxesVisible(bool visible) {
     }
     render();
 }
+
 void VtkView::setGridVisible(bool visible) {
     if (!m_axesActor)
         return;
@@ -212,6 +283,7 @@ void VtkView::setGridVisible(bool visible) {
     // TODO: добавить настройку внешнего вида сетки
     render();
 }
+
 void VtkView::setCameraView(CameraViewType view) {
     vtkCamera* cam  = m_vtkRenderer->GetActiveCamera();
     double     dist = cam->GetDistance();
@@ -239,6 +311,7 @@ void VtkView::setCameraView(CameraViewType view) {
     m_vtkRenderer->ResetCameraClippingRange();
     render();
 }
+
 void VtkView::setCenterOfRotation(double x, double y, double z) {
     vtkCamera* cam = m_vtkRenderer->GetActiveCamera();
 
@@ -250,17 +323,20 @@ void VtkView::setCenterOfRotation(double x, double y, double z) {
     // (тут простая логика, можно усложнить)
     render();
 }
+
 void VtkView::resetCamera() {
     if (m_vtkRenderer) {
         qCInfo(LogRenderer) << "VtkView::resetCamera() - Resetting camera";
         m_vtkRenderer->ResetCamera();
         double bounds[6] = {0};
         m_vtkRenderer->ComputeVisiblePropBounds(bounds);
-        qCInfo(LogRenderer) << "VtkView::resetCamera() - Bounds:" << bounds[0] << "-" << bounds[1] << "," << bounds[2]
-                            << "-" << bounds[3] << "," << bounds[4] << "-" << bounds[5];
+        qCInfo(LogRenderer) << "VtkView::resetCamera() - Bounds:" << bounds[0] << "-" << bounds[1]
+                            << "," << bounds[2] << "-" << bounds[3] << "," << bounds[4] << "-"
+                            << bounds[5];
     }
     render();
 }
+
 void VtkView::render() {
     qCDebug(LogRenderer) << "VtkView::render() called";
     if (m_renderWindow) {
@@ -268,12 +344,14 @@ void VtkView::render() {
     }
     emit updateRequested();
 }
+
 void VtkView::renderForce() {
     // TODO:: может привести к непонятным последствиям при рендеринге или замедлению его работы
     if (m_renderWindow && !m_renderWindow->GetNeverRendered()) {
         m_renderWindow->Render();
     }
 }
+
 vtkRenderWindowInteractor* VtkView::getInteractor() const {
     if (m_renderWindow) {
         return m_renderWindow->GetInteractor();

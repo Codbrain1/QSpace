@@ -1,8 +1,9 @@
 #pragma once
+#include "Core/LayerManager/LayerManager.h"
 #include "Core/ObjectRegistry/ObjectRegistry.h"
+#include <QObject>
 #include "Session/SessionStorage.h"
 #include "Structures/SessionStructures.h"
-#include <QObject>
 #include <memory>
 #include <optional>
 
@@ -10,12 +11,14 @@ namespace QSpace::Core {
 class SessionManager : public QObject { // Исправлена опечатка в имени
     Q_OBJECT
   public:
-    explicit SessionManager(QSpace::Core::ObjectRegistry* registry, QObject* parent = nullptr);
+    explicit SessionManager(QSpace::Core::ObjectRegistry* registry,
+                            QSpace::Core::LayerManager*   layerManager,
+                            QObject*                      parent = nullptr);
 
-    bool                                         saveProject(const QSpace::Session::CurrentSession& curSession);
+    bool saveProject(const QSpace::Session::CurrentSession& curSession);
     std::optional<QSpace::Session::ProjectState> loadProject(const QString& filePath);
-    bool                                         savePalette(const Visualize::ColorMap& map, const QString& filePath);
-    std::optional<Visualize::ColorMap>           loadPalette(const QString& filePath);
+    bool savePalette(const Visualize::ColorMap& map, const QString& filePath);
+    std::optional<Visualize::ColorMap> loadPalette(const QString& filePath);
 
   signals:
     void projectLoaded(const QSpace::Session::ProjectState& state);
@@ -23,6 +26,7 @@ class SessionManager : public QObject { // Исправлена опечатка
 
   private:
     QSpace::Core::ObjectRegistry*                    m_registry;
+    QSpace::Core::LayerManager*                      m_layerManager;
     std::unique_ptr<QSpace::Session::SessionStorage> m_storage_session;
 };
 } // namespace QSpace::Core

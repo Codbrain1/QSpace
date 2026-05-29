@@ -2,9 +2,11 @@
 #include "Core/LogManager/LogManager.h"
 #include <QApplication> //заголовок включающий основной графический класс приложения
 #include <QApplication>
+#include <QFile>
 #include <QLocale> //заголовок включающий класс конвертации чисел и их строковых предсталений на различные языки
 #include <QMainWindow>
 #include <QPushButton>
+#include <QTextStream>
 #include <QTranslator> //заголовок класса для перевода на различные языки
 #include <QVBoxLayout>
 #include <QVTKOpenGLNativeWidget.h>
@@ -24,6 +26,21 @@
 int main(int argc, char* argv[]) {
     vtkOutputWindow::SetGlobalWarningDisplay(0);
     QApplication app(argc, argv); // создание экземпляра приложения
+
+    // --- ИНИЦИАЛИЗАЦИЯ СТИЛЕЙ (QSS) ---
+    qCInfo(LogSystem) << "Loading Application Stylesheets...";
+    // Обращаемся по виртуальному пути внутри ресурсов Qt
+    QFile styleFile(":/styles/defaultStyle.qss");
+    if (styleFile.open(QFile::ReadOnly | QFile::Text)) {
+        QTextStream ts(&styleFile);
+        app.setStyleSheet(ts.readAll());
+        styleFile.close();
+        qCInfo(LogSystem) << "Stylesheets applied successfully.";
+    } else {
+        qCWarning(LogSystem) << "Failed to open defaultStyle.qss! Check resource paths.";
+    }
+    // --------------------------------------------
+
     QSurfaceFormat::setDefaultFormat(QVTKOpenGLNativeWidget::defaultFormat());
     QSurfaceFormat fmt = QSurfaceFormat::defaultFormat();
 
@@ -56,6 +73,7 @@ int main(int argc, char* argv[]) {
     qCInfo(LogSystem) << "Application (QSpace) Starting...";
     qCDebug(LogSystem) << "Built with Qt version:" << QT_VERSION_STR;
     qCDebug(LogSystem) << "Running with Qt version:" << qVersion();
+
     QSpace::UI::MainWindow window(&core); // создание экземпляра окна
     window.show();                        // отображение окна
     return app.exec();

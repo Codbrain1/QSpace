@@ -14,7 +14,8 @@ RESOURCE_PREFIX "/i18n"
 qt_add_executable(QSpace
     MANUAL_FINALIZATION
     main.cpp
-    ${PROJECT_SOURCE_DIR}/app/icons/resources.rc
+    ${PROJECT_SOURCE_DIR}/app/resources/icons.qrc
+    ${PROJECT_SOURCE_DIR}/app/resources/styles.qrc
     ${QM_FILES}
 )
 
@@ -24,6 +25,7 @@ target_link_libraries(QSpace PRIVATE
             QSpace::Core
             QSpace::IO
             QSpace::Visualize
+            QSpace::Presentation
             # Charting
             # Filtering
             # Physics
@@ -33,11 +35,11 @@ target_link_libraries(QSpace PRIVATE
             Qt6::Core
             Qt6::Widgets
             Qt6::Gui
-            Qt6::Quick
-            Qt6::Qml
+            # Qt6::Quick
+            # Qt6::Qml
             VTK::GUISupportQt
             VTK::CommonColor
-            VTK::ImagingHybrid   # Явное указание модуля для линкера
+            VTK::ImagingHybrid 
             VTK::RenderingVolumeOpenGL2
             VTK::RenderingOpenGL2
             VTK::InteractionStyle
@@ -49,39 +51,39 @@ vtk_module_autoinit(
 )
 
 if(WIN32) # на виндовс только gui
-set_target_properties(QSpace PROPERTIES
-    WIN32_EXECUTABLE TRUE
+    set_target_properties(QSpace PROPERTIES
+        WIN32_EXECUTABLE TRUE
+    )
+    target_sources(QSpace PRIVATE ${PROJECT_SOURCE_DIR}/app/resources/app_icon.rc)
+    set(VTK_BIN_DIR "D:/NIR/NIR_6_semestr/vtk/vtk-install-ffmpeg-wmf-dll/bin")
+
+    add_custom_command(TARGET QSpace POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory 
+    "${VTK_BIN_DIR}" 
+    "$<TARGET_FILE_DIR:QSpace>"
+    COMMENT "Copying VTK binaries..."
+    )
+    add_custom_command(TARGET QSpace POST_BUILD
+    COMMAND "C:/Qt/6.11.0/mingw_64/bin/windeployqt.exe"
+    --compiler-runtime
+        $<TARGET_FILE:QSpace>
+            COMMENT "Running windeployqt..."
+            )
+endif()
+        
+include(GNUInstallDirs)
+install(TARGETS QSpace
+BUNDLE DESTINATION .
+LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
-set(VTK_BIN_DIR "D:/NIR/NIR_6_semestr/vtk/vtk-install-ffmpeg-wmf-dll/bin")
-
-add_custom_command(TARGET QSpace POST_BUILD
-COMMAND ${CMAKE_COMMAND} -E copy_directory 
-"${VTK_BIN_DIR}" 
-"$<TARGET_FILE_DIR:QSpace>"
-COMMENT "Copying VTK binaries..."
+install(DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/" 
+DESTINATION bin 
+FILES_MATCHING 
+PATTERN "*.dll"        # Забираем библиотеки
+PATTERN "platforms/*"  # Забираем критический плагин qwindows.dll
+PATTERN "styles/*"
+PATTERN "imageformats/*"
 )
-add_custom_command(TARGET QSpace POST_BUILD
-COMMAND "C:/Qt/6.11.0/mingw_64/bin/windeployqt.exe"
---compiler-runtime
-    $<TARGET_FILE:QSpace>
-        COMMENT "Running windeployqt..."
-        )
-        endif()
-        
-        include(GNUInstallDirs)
-        install(TARGETS QSpace
-        BUNDLE DESTINATION .
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        )
-        
-        install(DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/" 
-        DESTINATION bin 
-        FILES_MATCHING 
-        PATTERN "*.dll"        # Забираем библиотеки
-        PATTERN "platforms/*"  # Забираем критический плагин qwindows.dll
-        PATTERN "styles/*"
-        PATTERN "imageformats/*"
-        )
 qt_finalize_executable(QSpace)

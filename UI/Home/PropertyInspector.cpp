@@ -396,63 +396,64 @@ void PropertyInspector::updateWidgets() {
     }
     int index;
     // Устанавливаем текущее выбранное поле из настроек ноды
-    index = ui->combo_current_column->findText(node->settings.colorByField);
+    index = ui->combo_current_column->findText(node->masterSettings->colorByField);
     if (index != -1) {
         ui->combo_current_column->setCurrentIndex(index);
     }
     // Устанавливаем текущую палитру в комбобоксе
-    index = ui->combo_colormap->findData(QVariant::fromValue(node->settings.colorMapId));
+    index = ui->combo_colormap->findData(QVariant::fromValue(node->masterSettings->colorMapId));
     if (index != -1) {
         ui->combo_colormap->setCurrentIndex(index);
     }
-    index = ui->combo_RenderMode->findData(QVariant::fromValue(node->settings.mode));
+    index = ui->combo_RenderMode->findData(QVariant::fromValue(node->masterSettings->mode));
     if (index != -1) {
         ui->combo_RenderMode->setCurrentIndex(index);
     }
     // Здесь же обновляем другие виджеты (чекбоксы, слайдеры...)
-    ui->doubleSpinBox_Opacity->setValue(node->settings.opacity);
-    ui->doubleSpinBox_ParticleSize->setValue(node->settings.PointSize);
+    ui->doubleSpinBox_Opacity->setValue(node->masterSettings->opacity);
+    ui->doubleSpinBox_ParticleSize->setValue(node->masterSettings->PointSize);
     ui->checkBox_isAutomaticRange->setCheckState(
-        node->settings.autoRange ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
-    if (node->settings.autoRange) {
+        node->masterSettings->autoRange ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
+    if (node->masterSettings->autoRange) {
         ui->spin_maxValue->setEnabled(false);
         ui->spin_minValue->setEnabled(false);
     } else {
         ui->spin_maxValue->setEnabled(true);
         ui->spin_minValue->setEnabled(true);
     }
-    ui->spin_maxValue->setMaximum(node->settings.baseRangeMax);
-    ui->spin_maxValue->setMinimum(node->settings.baseRangeMin);
-    ui->spin_minValue->setMaximum(node->settings.baseRangeMax);
-    ui->spin_minValue->setMinimum(node->settings.baseRangeMin);
+    ui->spin_maxValue->setMaximum(node->masterSettings->baseRangeMax);
+    ui->spin_maxValue->setMinimum(node->masterSettings->baseRangeMin);
+    ui->spin_minValue->setMaximum(node->masterSettings->baseRangeMax);
+    ui->spin_minValue->setMinimum(node->masterSettings->baseRangeMin);
 
-    if (node->settings.autoRange) {
-        ui->spin_maxValue->setValue(node->settings.rangeMax);
-        ui->spin_minValue->setValue(node->settings.rangeMin);
+    if (node->masterSettings->autoRange) {
+        ui->spin_maxValue->setValue(node->masterSettings->rangeMax);
+        ui->spin_minValue->setValue(node->masterSettings->rangeMin);
     }
-    ui->checkBox_useLogScale->setCheckState(node->settings.useLogScale ? Qt::CheckState::Checked
-                                                                       : Qt::CheckState::Unchecked);
-    ui->checkBox_useEmissive->setCheckState(node->settings.isEmmisive ? Qt::CheckState::Checked
-                                                                      : Qt::CheckState::Unchecked);
+    ui->checkBox_useLogScale->setCheckState(
+        node->masterSettings->useLogScale ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
+    ui->checkBox_useEmissive->setCheckState(
+        node->masterSettings->isEmmisive ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
     ui->checkBox_isVisibleScalarBar->setCheckState(
-        node->settings.showScalarBar ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
+        node->masterSettings->showScalarBar ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
     ui->checkBox_hideOutOfRange->setCheckState(
-        node->settings.hideOutOfRange ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
+        node->masterSettings->hideOutOfRange ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
 
-    ui->doubleSpinBox_colorCorrection->setValue(node->settings.exposureClamp);
-    ui->doubleSpinBox_gauianSharpnes->setValue(node->settings.gaussianSharpness);
-    ui->doubleSpinBox_sigmoidGammaOpacity->setValue(node->settings.sigmoidGammaOpacity);
-    ui->doubleSpinBox__sigmoidShiftOpacity->setValue(node->settings.sigmoidShiftOpacity);
-    ui->doubleSpinBox_sigmoidGammaColor->setValue(node->settings.sigmoidGammaColor);
-    ui->doubleSpinBox__sigmoidShiftColor->setValue(node->settings.sigmoidShiftColor);
-    ui->doubleSpinBox__alpha->setValue(node->settings.alpha);
+    ui->doubleSpinBox_colorCorrection->setValue(node->masterSettings->exposureClamp);
+    ui->doubleSpinBox_gauianSharpnes->setValue(node->masterSettings->gaussianSharpness);
+    ui->doubleSpinBox_sigmoidGammaOpacity->setValue(node->masterSettings->sigmoidGammaOpacity);
+    ui->doubleSpinBox__sigmoidShiftOpacity->setValue(node->masterSettings->sigmoidShiftOpacity);
+    ui->doubleSpinBox_sigmoidGammaColor->setValue(node->masterSettings->sigmoidGammaColor);
+    ui->doubleSpinBox__sigmoidShiftColor->setValue(node->masterSettings->sigmoidShiftColor);
+    ui->doubleSpinBox__alpha->setValue(node->masterSettings->alpha);
 
-    index = ui->combo_functionSplat->findData(QVariant::fromValue(node->settings.ShaderType));
+    index =
+        ui->combo_functionSplat->findData(QVariant::fromValue(node->masterSettings->ShaderType));
     if (index != -1)
         ui->combo_functionSplat->setCurrentIndex(index);
 
     index = ui->combo_interpolationRange->findData(
-        QVariant::fromValue(node->settings.interpolationRangeType));
+        QVariant::fromValue(node->masterSettings->interpolationRangeType));
     if (index != -1)
         ui->combo_interpolationRange->setCurrentIndex(index);
 
@@ -614,8 +615,8 @@ void PropertyInspector::onUseLogscaleChanged(bool checked) {
         s.useLogScale = checked;
     });
     auto   node = m_app->getNodeById(m_currentNodeId);
-    double minV = node->settings.baseRangeMin;
-    double maxV = node->settings.baseRangeMax;
+    double minV = node->masterSettings->baseRangeMin;
+    double maxV = node->masterSettings->baseRangeMax;
     ui->spin_maxValue->setMaximum(maxV);
     ui->spin_minValue->setMaximum(maxV);
     ui->spin_maxValue->setMinimum(minV);

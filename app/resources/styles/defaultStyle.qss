@@ -1,0 +1,19 @@
+/* Адаптивное меню: цвета подтягиваются из текущей темы Windows/Linux/macOS */
+QMenu {
+    background-color: palette(window);       /* Цвет фона окон системы */
+    color: palette(window-text);             /* Цвет стандартного текста */
+    border: 1px solid palette(mid);          /* Цвет границ разделителей */
+    padding: 4px 0px;
+}
+
+/* Элемент меню при наведении (тоже берет системный цвет выделения) */
+QMenu::item:selected {
+    background-color: palette(highlight);     /* Системный цвет выделения (акцента) */
+    color: palette(highlighted-text);        /* Цвет текста на выделении */
+}
+
+QMenu::separator {
+    height: 1px;
+    background-color: palette(mid);
+    margin: 4px 0px;
+}

@@ -1,16 +1,18 @@
 #pragma once
 #include "Common/Interfaces/IView.h"
 #include "Core/AppCore/AppCore.h"
-#include "DataTreeController.h"
+#include "LayerExplorerWidget.h"
 #include "PropertyInspector.h"
 #include <QMainWindow>
 #include <QObject>
 #include <QProgressDialog>
 #include <memory>
 #include <qaction.h>
+#include <qdockwidget.h>
 #include <qmainwindow.h>
 #include <qobject.h>
 #include <qtmetamacros.h>
+#include <quuid.h>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -41,16 +43,16 @@ class MainWindow : public QMainWindow {
     void on_sessionStateChange(const QSpace::Session::CurrentSession& session);
     void on_exportFinished(bool success);
     void on_LayerSelectionChanged(const QList<QUuid>& ids);
+    void on_viewCreated(const QUuid& viewId, Visualize::ViewType type);
+    void on_viewRemoved(const QUuid& viewId); // TODO: реализовать удаление доков для удаленных окон
 
   private:
-    QSpace::Core::AppCore*              m_app;
-    Ui::MainWindow*                     ui;
-    std::unique_ptr<QProgressDialog>    m_exportProgressDialog;
-    std::unique_ptr<DataTreeController> m_dataTreeController;
-    std::unique_ptr<PropertyInspector>  m_propertyInspector;
-    QList<QVTKOpenGLNativeWidget*>
-        m_renderWidgets; // TODO: в будещем исправить хранение ококн и
-                         // добавить интеграцию с qt окнами для 2d графиков
-    void setupSlots();
+    QSpace::Core::AppCore*               m_app;
+    Ui::MainWindow*                      ui;
+    std::unique_ptr<QProgressDialog>     m_exportProgressDialog;
+    std::unique_ptr<LayerExplorerWidget> m_layerExplorerWidget;
+    std::unique_ptr<PropertyInspector>   m_propertyInspector;
+    QMap<QUuid, QDockWidget*> m_viewDockWidgets; // для хранения соответствия между viewId и их доками
+    void                      setupSlots();
 };
 } // namespace QSpace::UI

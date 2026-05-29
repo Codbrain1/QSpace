@@ -33,13 +33,10 @@
 #include <cmath>
 #include <memory>
 
-
 namespace QSpace::Visualize {
 ParticleLayer::ParticleLayer(std::shared_ptr<Core::DataNode> node) : BaseLayer(node) {
     m_mapper = vtkSmartPointer<vtkPointGaussianMapper>::New();
     m_actor  = vtkSmartPointer<vtkActor>::New();
-    setupLayer();
-
     // Инициализация пайплайна
     m_actor->SetMapper(m_mapper);
     // m_actor->ForceTranslucentOn();
@@ -83,7 +80,10 @@ void ParticleLayer::setupDataArrays(Core::VisualSettings& s) {
     }
     std::string sourceField         = s.colorByField.toStdString();
     std::string currentWorkingField = sourceField;
-    auto        data                = vtkPolyData::SafeDownCast(m_node->data);
+    auto        lockedNode          = m_node.lock();
+    if (!lockedNode)
+        return;
+    auto data = vtkPolyData::SafeDownCast(lockedNode->data);
     if (!data)
         return;
 

@@ -1,17 +1,23 @@
 #include "ViewManager.h"
-#include "Enums/RenderEnums.h"
 #include "Interfaces/IView.h"
 #include "Visualize/VtkView.h"
-#include <memory>
 #include <qobject.h>
 #include <quuid.h>
+#include "Enums/RenderEnums.h"
+#include <memory>
 
 namespace QSpace::Core {
 ViewManager::ViewManager(QObject* parent) : QObject(parent) {
 }
+
 QUuid ViewManager::createView(Visualize::ViewType type) {
     std::unique_ptr<QSpace::Visualize::IView> newView = nullptr;
-    switch (type) { // TODO: добавить фабрику окон
+
+    // 1. Генерируем ID заранее, так как он понадобится нам для настройки связей
+    QUuid id = QUuid::createUuid();
+
+    // 2. Фабричная логика: создаем нужную реализацию
+    switch (type) {
         case QSpace::Visualize::ViewType::VTK_3D: {
             auto vtkView = std::make_unique<Visualize::VtkView>();
             vtkView->setCameraView(Visualize::CameraViewType::Iso);
@@ -20,55 +26,68 @@ QUuid ViewManager::createView(Visualize::ViewType type) {
             break;
         }
         case QSpace::Visualize::ViewType::Widget_2D: {
+            // TODO: реализовать создание 2D окна
+            // auto plotView = std::make_unique<Visualize::PlotView>();
+            // newView = std::move(plotView);
             break;
         }
+        default:
+            // Можно добавить qWarning() << "Unknown ViewType requested";
+            break;
     }
+
+    // Проверка на случай неудачного создания или нереализованного типа (как Widget_2D сейчас)
     if (!newView) {
         return QUuid();
     }
-    connect(newView.get(), &Visualize::IView::updateRequested, this, &ViewManager::viewUpdateRequested);
-    QUuid id = QUuid::createUuid();
+
+    // 3. Настройка связей (ВАЖНО: Делаем это ДО перемещения unique_ptr в мапу)
+    // Используем лямбду, чтобы захватить наш сгенерированный id и передать его дальше
+    connect(newView.get(), &Visualize::IView::updateRequested, this, [this, id]() {
+        emit viewUpdateRequested(id); // Адресное уведомление!
+    });
+
+    // Опционально: если у твоего интерфейса IView есть метод setId, самое время его вызвать
+    // newView->setId(id);
+
+    // 4. Перемещаем владение объектом в контейнер менеджера
     m_views.emplace(id, std::move(newView));
+
+    // 5. Устанавливаем главное окно, если оно еще не задано
     if (m_mainViewId.isNull()) {
         m_mainViewId = id;
     }
-    emit viewCreated(id);
-    return id;
-}
-QUuid ViewManager::createView(Visualize::CameraViewType cameraType, vtkRenderWindow* existingWindow) {
-    QUuid id = createView(Visualize::ViewType::VTK_3D);
-    if (auto vtkView = dynamic_cast<Visualize::VtkView*>(getView(id))) {
-        vtkView->setCameraView(cameraType);
-        if (existingWindow) {
-            vtkView->setRenderWindow(existingWindow);
-        } else {
-            // vtkView->initDefaultWindow(); // Создать свое, если не передали //TODO: исправить
-        }
-    }
+
+    // 6. Уведомляем систему (AppCore -> MainWindow) о том, что окно создано
+    emit viewCreated(id, type);
+
     return id;
 }
 
-Visualize::IView* ViewManager::getView(const QUuid& viewId) {
+std::shared_ptr<Visualize::IView> ViewManager::getView(const QUuid& viewId) {
     if (m_views.contains(viewId)) {
-        return m_views[viewId].get();
+        return m_views[viewId];
     }
     return nullptr;
 }
+
 void ViewManager::setMainView(const QUuid& viewId) {
     if (m_views.contains(viewId)) {
         m_mainViewId = viewId;
     }
 }
+
 QUuid ViewManager::getMainViewId() const {
     return m_mainViewId;
 }
+
 void ViewManager::removeView(const QUuid& id) {
     if (m_views.contains(id)) {
         m_views.erase(id);
         if (m_mainViewId == id && !m_views.empty()) {
             m_mainViewId = m_views.begin()->first;
         }
-        emit viewRemoved(id);
+        emit viewRemoved(id, m_views[id]->getViewType());
     }
 }
 } // namespace QSpace::Core

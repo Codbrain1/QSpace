@@ -7,15 +7,17 @@
 #include "Core/ObjectRegistry/ObjectRegistry.h"
 #include "Core/PipelineManager/PipelineManager.h"
 #include "Core/ViewManager/ViewManager.h"
-#include "Enums/RenderEnums.h"
 #include <vtkPolyData.h>
 #include <vtkSmartPointer.h>
+#include "Enums/RenderEnums.h"
+
 using namespace QSpace::Core;
 
 class TestPipelineManager : public QObject {
     Q_OBJECT
 
   private slots:
+
     void init() {
         m_registry     = new ObjectRegistry(this);
         m_viewManager  = new ViewManager(this);
@@ -31,7 +33,7 @@ class TestPipelineManager : public QObject {
     }
 
     void testNodeAddition() {
-        QUuid      vId = m_viewManager->createView(QSpace::Visualize::CameraViewType::Iso);
+        QUuid      vId = m_viewManager->createView(QSpace::Visualize::ViewType::VTK_3D);
         QSignalSpy spy(m_layerManager, &LayerManager::layerCreated);
 
         // СОЗДАЕМ МИНИМАЛЬНЫЕ ДАННЫЕ
@@ -51,7 +53,7 @@ class TestPipelineManager : public QObject {
         m_registry->registerNode(node);
 
         QSignalSpy spy(m_layerManager, &LayerManager::layerCreated);
-        m_viewManager->createView(QSpace::Visualize::CameraViewType::Iso);
+        m_viewManager->createView(QSpace::Visualize::ViewType::VTK_3D);
 
         QCOMPARE(spy.count(), 1);
     }

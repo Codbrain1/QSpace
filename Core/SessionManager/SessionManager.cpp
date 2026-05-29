@@ -1,13 +1,15 @@
 #include "SessionManager.h"
-#include "Session/ProjectSerializer.h"
 #include <qfileinfo.h>
 #include <qjsonobject.h>
 #include <qstringview.h>
+#include "Session/ProjectSerializer.h"
 
 namespace QSpace::Core {
 
-SessionManager::SessionManager(QSpace::Core::ObjectRegistry* registry, QObject* parent)
-    : QObject(parent), m_registry(registry) {
+SessionManager::SessionManager(QSpace::Core::ObjectRegistry* registry,
+                               QSpace::Core::LayerManager*   layerManager,
+                               QObject*                      parent)
+    : QObject(parent), m_registry(registry), m_layerManager(layerManager) {
     // ВАЖНО: Инициализируем хранилище, иначе будет краш!
     m_storage_session = std::make_unique<QSpace::Session::SessionStorage>();
 }
@@ -23,11 +25,13 @@ std::optional<QSpace::Session::ProjectState> SessionManager::loadProject(const Q
     }
     return std::nullopt;
 }
+
 bool SessionManager::savePalette(const Visualize::ColorMap& map, const QString& filePath) {
     auto       jsonFile = QSpace::Session::ProjectSerializer::serializeColorMap(map);
     QByteArray data     = QJsonDocument(jsonFile).toJson(QJsonDocument::Indented);
     return m_storage_session->save(filePath, data);
 }
+
 std::optional<Visualize::ColorMap> SessionManager::loadPalette(const QString& filePath) {
     auto        data = m_storage_session->load(filePath);
     QJsonObject jsonObj;
@@ -38,6 +42,7 @@ std::optional<Visualize::ColorMap> SessionManager::loadPalette(const QString& fi
     }
     return std::nullopt;
 }
+
 bool SessionManager::saveProject(const QSpace::Session::CurrentSession& curSession) {
     if (curSession.projectFilePath.isEmpty())
         return false;
@@ -50,13 +55,29 @@ bool SessionManager::saveProject(const QSpace::Session::CurrentSession& curSessi
         ds.id       = node->id;
         ds.label    = node->label;
         ds.path     = node->path;
-        ds.settings = node->settings;
+        ds.settings = *node->masterSettings.get();
         ds.stats    = node->stats;
         ds.type     = node->type;
         ds.format   = node->format;
         ds.scheme   = node->scheme;
         state.nodesStates.append(ds);
     }
+    // 2. Сохраняем ВИЗУАЛЬНОЕ ПРЕДСТАВЛЕНИЕ (Слои)
+    // Предполагается, что в LayerManager есть метод getAllLayers() возвращающий
+    // QList<shared_ptr<Layer>>
+    // for (const auto& layer : m_layerManager->getAllLayers()) {
+    //     QSpace::Session::LayerState ls;
+    //     ls.layerId = layer->layerId;
+    //     ls.nodeId  = layer->dataNodeId;
+
+    //     // Предполагаем, что у IView есть метод для получения его ID
+    //     if (auto view = layer->view.lock()) {
+    //         ls.viewId = view->get();
+    //     }
+
+    //     ls.settings = *(layer->settings); // Сохраняем индивидуальные настройки слоя
+    //     state.layersStates.append(ls);
+    // }
 
     QByteArray data = QSpace::Session::ProjectSerializer::serialize(state);
     return m_storage_session->save(curSession.projectFilePath, data);

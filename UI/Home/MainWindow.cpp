@@ -1,9 +1,9 @@
 #include "MainWindow.h"
 #include "Common/Logger/Logger.h"
 #include "Core/AppCore/AppCore.h"
-#include "DataTreeController.h"
 #include "Enums/RenderEnums.h"
 #include "Interfaces/IView.h"
+#include "LayerExplorerWidget.h"
 #include "PropertyInspector.h"
 #include "ui_newmainwindow.h"
 #include <QDoubleSpinBox>
@@ -22,6 +22,7 @@
 #include <qfiledialog.h>
 #include <qfileinfo.h>
 #include <qlist.h>
+#include <qloggingcategory.h>
 #include <qmainwindow.h>
 #include <qmenu.h>
 #include <qmessagebox.h>
@@ -29,6 +30,7 @@
 #include <qpushbutton.h>
 #include <qsharedpointer.h>
 #include <qtoolbutton.h>
+#include <quuid.h>
 #include <vtkDataSetAttributes.h>
 #include <vtkType.h>
 
@@ -37,16 +39,16 @@ MainWindow::MainWindow(Core::AppCore* app, QWidget* parent)
     : QMainWindow(parent), m_app(app), ui(new Ui::MainWindow) {
     // инициализируем ui файл
     ui->setupUi(this);
-    m_renderWidgets.append(ui->vtkWidget);
+    setDockNestingEnabled(true);
+    this->setCentralWidget(nullptr);
     // Подключаем ГЛАВНЫЙ сигнал обновления от AppCore
     connect(m_app, &Core::AppCore::sceneUpdateRequested, this, &MainWindow::on_render_update);
     m_app->initialize();
-    m_app->createView(Visualize::ViewType::VTK_3D, ui->vtkWidget->renderWindow());
 
-    // инициализируем меню слоев DataTreeController
+    // инициализируем меню слоев LayerExplorerWidget
     //--------------------------------------------------
-    m_dataTreeController = std::make_unique<DataTreeController>(ui->tree_layers);
-
+    m_layerExplorerWidget = std::make_unique<LayerExplorerWidget>(app);
+    ui->dockWidget_LayerExplorer->setWidget(m_layerExplorerWidget.get());
     // инициализируем меню настроек слоя PropertyInspector
     //--------------------------------------------------
     m_propertyInspector = std::make_unique<PropertyInspector>(app);
@@ -103,31 +105,105 @@ MainWindow::MainWindow(Core::AppCore* app, QWidget* parent)
     ui->mainToolBar->addSeparator(); // Отделим от остальных кнопок
     ui->mainToolBar->addWidget(container);
 
-    // 4. Подключаем сигнал
-    connect(spinBox,
-            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-            m_app,
-            &Core::AppCore::setGlobalExposureAllViews);
+    // // 4. Подключаем сигнал
+    // connect(spinBox,
+    //         QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+    //         m_app,
+    //         &Core::AppCore::setGlobalExposureAllViews);
     // подключаем слоты
     setupSlots();
+    m_app->createView(Visualize::ViewType::VTK_3D);
+}
+void MainWindow::on_viewCreated(const QUuid& viewId, Visualize::ViewType type) {
+    if (viewId.isNull()) {
+        qCCritical(LogUI) << "Failed to create view!";
+        return;
+    }
+    auto view       = m_app->getView(viewId);
+    auto viewWidget = view->getWidget();
+    if (!view || !viewWidget) {
+        qCCritical(LogUI) << "View created but not found in AppCore!";
+        return;
+    }
+    QString      dockTitle = tr("View - %1").arg(view->getViewName());
+    QDockWidget* dock      = new QDockWidget(dockTitle, this);
+    dock->setObjectName(viewId.toString()); // Устанавливаем имя для поиска при удалении
+    // стандартное поведение дока
+    dock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable |
+                      QDockWidget::DockWidgetFloatable);
+    dock->setWidget(viewWidget);
+
+    // Используем лямбду для передачи viewId
+    connect(dock, &QDockWidget::visibilityChanged, this, [this, viewId](bool visible) {
+        // Если окно стало невидимым (пользователь нажал на 'x'),
+        // значит пора очистить ресурсы в ядре
+        if (!visible) {
+            // Вызываем удаление через фасад.
+            // Использование Qt::QueuedConnection гарантирует, что удаление произойдет
+            // только когда текущий цикл обработки событий UI завершится.
+            QMetaObject::invokeMethod(m_app,
+                                      "requestViewRemoval",
+                                      Qt::QueuedConnection,
+                                      Q_ARG(QUuid, viewId));
+        }
+    });
+    // 5. Размещение дока на форме
+    // Если это не первое окно — создаем вкладки (Tabbed Layout)
+    if (!m_viewDockWidgets.isEmpty()) {
+        // Берем любое существующее окно и группируем новое с ним
+        tabifyDockWidget(m_viewDockWidgets.values().first(), dock);
+    } else {
+        // Если окон еще нет, прижимаем вправо
+        splitDockWidget(ui->dockWidget_LayerExplorer, dock, Qt::Horizontal);
+        resizeDocks({ui->dockWidget_LayerExplorer, dock, ui->dock_properties},
+                    {250, 600, 300}, // Желаемые ширины в пикселях
+                    Qt::Horizontal);
+    }
+    // Сохраняем в карту для управления жизненным циклом
+    m_viewDockWidgets.insert(viewId, dock);
+
+    // Выводим на передний план
+    dock->show();
+    dock->raise();
+}
+void MainWindow::on_viewRemoved(const QUuid& viewId) {
+    if (!m_viewDockWidgets.contains(viewId))
+        return;
+
+    // Извлекаем указатель из мапы
+    QDockWidget* dock = m_viewDockWidgets.take(viewId);
+
+    if (dock) {
+        // 1. Отключаем виджет от дока.
+        // ЭТО ВАЖНО: Если этого не сделать, деструктор QDockWidget
+        // попытается удалить renderWidget. Но им владеет ViewManager!
+        // Обнуление предотвращает double-free crash.
+        dock->setWidget(nullptr);
+
+        // 2. Убираем из интерфейса
+        removeDockWidget(dock);
+
+        // 3. Планируем безопасное удаление самого объекта дока
+        dock->deleteLater();
+    }
 }
 void MainWindow::setupSlots() {
-    //----- ПОДКЛЮЧЕНИЕ СЛОТОТОВ DataTreeController -----
+    //----- ПОДКЛЮЧЕНИЕ СЛОТОТОВ LayerExplorerWidget -----
     connect(m_app,
             &QSpace::Core::AppCore::nodeAdded,
-            m_dataTreeController.get(),
-            &DataTreeController::onNodeAdded);
+            m_layerExplorerWidget.get(),
+            &LayerExplorerWidget::onNodeAdded);
     connect(m_app,
             &QSpace::Core::AppCore::objectRemoved,
-            m_dataTreeController.get(),
-            &DataTreeController::onObjectRemoved);
+            m_layerExplorerWidget.get(),
+            &LayerExplorerWidget::onObjectRemoved);
 
-    connect(m_dataTreeController.get(),
-            &DataTreeController::removalRequested,
+    connect(m_layerExplorerWidget.get(),
+            &LayerExplorerWidget::removalRequested,
             m_app,
             &QSpace::Core::AppCore::removeObject);
-    connect(m_dataTreeController.get(),
-            &DataTreeController::updateNodeSettingsRequested,
+    connect(m_layerExplorerWidget.get(),
+            &LayerExplorerWidget::updateNodeSettingsRequested,
             m_app,
             &QSpace::Core::AppCore::updateNodeSettings);
 
@@ -177,11 +253,8 @@ void MainWindow::setupSlots() {
     });
     connect(m_app, &Core::AppCore::exportFinished, this, &MainWindow::on_exportFinished);
 
-    // Добавление новых данных
-    connect(ui->btn_add_data, &QPushButton::clicked, this, &MainWindow::on_btn_add_data);
-    connect(ui->btn_remove_data, &QPushButton::clicked, this, &MainWindow::on_btn_remove_data);
-    connect(m_dataTreeController.get(),
-            &DataTreeController::selectionChanged,
+    connect(m_layerExplorerWidget.get(),
+            &LayerExplorerWidget::selectionChanged,
             this,
             &MainWindow::on_LayerSelectionChanged);
 
@@ -194,6 +267,8 @@ void MainWindow::setupSlots() {
             &MainWindow::on_savePathFromUIRequested);
     // 2. Обновление заголовка окна при изменении состояния сессии
     connect(m_app, &Core::AppCore::sessionStateChanged, this, &MainWindow::on_sessionStateChange);
+    connect(m_app, &Core::AppCore::viewCreated, this, &MainWindow::on_viewCreated);
+    connect(m_app, &Core::AppCore::viewRemoved, this, &MainWindow::on_viewRemoved);
 }
 void MainWindow::on_LayerSelectionChanged(const QList<QUuid>& ids) {
     if (ids.isEmpty()) {
@@ -234,7 +309,7 @@ void MainWindow::on_savePathFromUIRequested() {
 }
 void MainWindow::on_action_exportVideoClicked() {
     // 1. Проверяем, выбран ли слой, который будем анимировать
-    auto selectedItems = m_dataTreeController->getSelectedIds();
+    auto selectedItems = m_layerExplorerWidget->getSelectedIds();
     if (selectedItems.isEmpty()) {
         QMessageBox::warning(
             this,
@@ -281,8 +356,8 @@ void MainWindow::on_action_ChangedViewClicked(QAction* action) {
         return;
 
     // Меняем камеру
-    auto type = static_cast<Visualize::CameraViewType>(action->data().toInt());
-    m_app->setCameraViewInAllViews(type);
+    // auto type = static_cast<Visualize::CameraViewType>(action->data().toInt());
+    // m_app->setCameraViewInAllViews(type);
 
     ui->action_view_top->setText(action->text());
     ui->action_view_top->setIcon(action->icon());
@@ -310,13 +385,13 @@ void MainWindow::on_action_toggleGridChanged(bool checked) {
 }
 // ------------------------- слоты обработка действий пользователя ------------------------------
 void MainWindow::on_render_update() {
-    for (auto widget : m_renderWidgets) {
-        if (widget && widget->isVisible()) {
-            if (auto renderer = widget->renderWindow()) {
-                renderer->Render();
-            }
-        }
-    }
+    // for (auto widget : m_renderWidgets) {
+    //     if (widget && widget->isVisible()) {
+    //         if (auto renderer = widget->renderWindow()) {
+    //             renderer->Render();
+    //         }
+    //     }
+    // }
 }
 void MainWindow::on_btn_add_data() {
     QStringList paths =
@@ -324,7 +399,7 @@ void MainWindow::on_btn_add_data() {
     m_app->importFiles(paths);
 }
 void MainWindow::on_btn_remove_data() {
-    auto SelectedIds = m_dataTreeController->getSelectedIds();
+    auto SelectedIds = m_layerExplorerWidget->getSelectedIds();
     if (SelectedIds.isEmpty())
         return;
 

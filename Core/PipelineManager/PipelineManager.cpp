@@ -10,7 +10,6 @@
 #include <vtkProperty.h>
 #include <memory>
 
-
 namespace QSpace::Core {
 PipelineManager::PipelineManager(ObjectRegistry* registry,
                                  ViewManager*    viewManager,
@@ -27,14 +26,14 @@ void PipelineManager::onNodeAdded(std::shared_ptr<DataNode> node) {
 
     // пробегаем по всем окнам
     m_viewManager->forEachView(
-        [this, node](QSpace::Visualize::IView* renderer) {
+        [this, node](std::shared_ptr<QSpace::Visualize::IView> renderer) {
             qCInfo(LogCore) << "PipelineManager::onNodeAdded - Creating layer in renderer";
 
             // создаем слой
             m_layerManager->createLayer(node, renderer);
             // Вызываем resetCamera() чтобы камера была настроена на новые данные
             try {
-                if (node->settings.isVisible) {
+                if (node->masterSettings->isVisible) {
                     renderer->resetCamera();
                     renderer->render();
                     qCInfo(LogCore) << "PipelineManager::onNodeAdded - Camera reset";
@@ -50,13 +49,13 @@ void PipelineManager::onObjectRemoved(const QUuid& id) {
     // Удаляем объект из ВСЕХ окон
     qCInfo(LogCore) << "PipelineManager::onObjectRemoved - Object removed:" << id;
     m_layerManager->removeLayer(id);
-    m_viewManager->forEachView([](QSpace::Visualize::IView* r) { r->render(); });
+    m_viewManager->forEachView([](std::shared_ptr<QSpace::Visualize::IView> r) { r->render(); });
 }
 
 void PipelineManager::onViewCreated(const QUuid& viewId) {
     // Открылось НОВОЕ окно. Оно пустое.
     qCInfo(LogCore) << "PipelineManager::onViewCreated - View created:" << viewId;
-    QSpace::Visualize::IView* newIView = m_viewManager->getView(viewId);
+    std::shared_ptr<QSpace::Visualize::IView> newIView = m_viewManager->getView(viewId);
     if (!newIView)
         return;
 
