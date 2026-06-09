@@ -18,9 +18,9 @@ target_link_libraries(AppCore PUBLIC
                 QSpace::IO
                 QSpace::Visualize
                 QSpace::Session
+                QSpace::Models
                 ObjectRegistry
                 DataManager
-                # PipelineManager
                 TaskManager
                 SessionManager
                 Qt6::Core

@@ -10,11 +10,11 @@ class ObjectRegistry;
 class DataManager;
 } // namespace QSpace::Core
 
-namespace QSpace::Controllers {
+namespace QSpace::Core::Controllers {
 class DataController;
 }
 
-namespace QSpace::Controllers {
+namespace QSpace::Core::Controllers {
 // ---------------------------------------------------------
 // @SECTION: обработка проектов и палитр
 // ---------------------------------------------------------
@@ -57,4 +57,4 @@ class ProjectController : public QObject {
     Session::CurrentSession m_sessionState;
 };
 
-} // namespace QSpace::Controllers
+} // namespace QSpace::Core::Controllers

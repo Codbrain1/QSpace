@@ -2,11 +2,13 @@
 #include "Core/AppCore/AppCore.h"
 #include "Core/ObjectRegistry/ObjectRegistry.h"
 #include "Enums/CoreEnums.h"
+#include "SelectExperimentDialog.h"
 #include "Structures/CoreStructures.h"
 #include <QObject>
 #include <QWidget>
 #include <functional>
 #include <memory>
+#include <qabstractitemmodel.h>
 #include <qcontainerfwd.h>
 #include <qlist.h>
 #include <qobject.h>
@@ -32,7 +34,7 @@ enum TreeDataRole {
 class LayerExplorerWidget : public QWidget {
     Q_OBJECT
   public:
-    explicit LayerExplorerWidget(Core::AppCore* m_app, QWidget* parent = nullptr);
+    explicit LayerExplorerWidget(Core::AppCore* app, QWidget* parent = nullptr);
     ~LayerExplorerWidget();
     QList<QUuid> getSelectedIds() const;
 
@@ -44,92 +46,102 @@ class LayerExplorerWidget : public QWidget {
     // ------ отвечает за отображение меню с настройками ------
     void propertyInspectorVisibleRequested(const bool isVisible);
 
-  public slots:
-    void onNodeAdded(std::shared_ptr<QSpace::Core::DataNode> node);
-    void onObjectRemoved(const QUuid& id);
-
   private slots:
 
     // общие кнопки
-    void on_comboBox_fileStructure_changed(int index);
-    void on_comboBox_structureView_changed(int index);
+    void handleFileStructureChange(int index);
+    void handleStructureViewChange(int index);
     // ---------------------------------------------------------
     // @SECTION: Редактор слоев
     // ---------------------------------------------------------
 
     // поиск по слоям
-    void on_QLineEdit_findLayer_changed(const QString& line);
+    void handleFindLayerChange(const QString& line);
 
     // ------ сортировка слоев ------
     // true -- прямой порядок A - Я, A - Z; false -- обратный порядок Я - A , Z - A
-    void on_sortByAlphabetically(const bool direct);
-    void on_sortByTimestemp(const bool direct);
-    void on_resetSortToDefault();
+    void handleSortByAlphabetically(const bool direct);
+    void handleSortByTimestemp(const bool direct);
+    void handleResetSortToDefault();
 
     //  ------ добавление слоев в редактор слоев ------
     // порождают ноду/контейнер данных в ObjectRegistry
-    void on_actionAddLayer_clicked();      // добавление слоя (представления)
-    void on_actionAddSnapshot_clicked();   // добавление группы для слоев
-    void on_actionAddExperiment_clicked(); // добавление эксперимента
+    void handleAddLayer(); // добавление слоя (представления)
 
-    void on_pushButton_removeElement_clicked(); // удаляет объект в меню
+    // обработка запросов загрузки файлов из разных вкладок UI
+    void handleImportFilesRequestFromLayerEditor();
+    void handleImportFileRequestFromFileExplorer();
+
+    // void on_actionAddSnapshot_clicked();   // добавление группы для слоев
+    void handleAddExperiment(); // добавление эксперимента
+
+    void handleRemoveElement(); // удаляет объект в меню
 
     // ------ управление видимостью слоев ------
-    void on_pushButton_hideAll_clicked();        // скрывает все слои
-    void on_pushButton_showAll_clicked();        // отображает все слои
-    void on_pushButton_hideSelected_clicked();   // скрывает только выбранные слои
-    void on_pushButton_showSelected_clicked();   // отображает только выбранные слои
-    void on_pushButton_hideUnselected_clicked(); // скрывает невыбранные слои
+    void handleHideAll();        // скрывает все слои
+    void handleShowAll();        // отображает все слои
+    void handleHideSelected();   // скрывает только выбранные слои
+    void handleShowSelected();   // отображает только выбранные слои
+    void handleHideUnselected(); // скрывает невыбранные слои
 
     // ------ управление фильтрами слоев ------
-    void on_checkBox_showLoadedLayers_changed(const bool isChecked);          // только загруженные слои
-    void on_checkBox_showUnLoadedLayers_changed(const bool isChecked);        // только незагруженные слои
-    void on_checkBox_FilterEquation_changed(const bool isChecked);            // фильтр по выражению
-    void on_pushButton_changeFilterEquationLine_clicked(const QString& line); // изменить выражение фильтра
+    void handleShowLoadedLayers(const bool isChecked);        // только загруженные слои // TODO
+    void handleShowUnloadedLayers(const bool isChecked);      // только незагруженные слои // TODO
+    void handleFilterEquationToggled(const bool isChecked);   // фильтр по выражению // TODO
+    void handleFilterEquationLineChange(const QString& line); // изменить выражение фильтра // TODO
 
     // ------ урпавление структурой слоев ------
-    void on_pushButton_expandAll_clicked();   // разверныть все
-    void on_pushButton_collapseAll_clicked(); // скрыть все
+    void handleExpandAll();   // разверныть все
+    void handleCollapseAll(); // скрыть все
 
     // ---------------------------------------------------------
     // @SECTION: Проводник файлов
     // ---------------------------------------------------------
 
     // ------ управление корневой директорией ------
-    void on_pushButton_changeRootPath_clicked();
-    void on_QLineEdit_rootPath_changed(const QString& line);
+    // TODO: добавить лямбду для обработки нажатия кнопки выбора папки
+    void handleRootPathChange(const QString& line); // MINOR: возможно будет работать некорреткно
 
     //  ------ Добавление/удаление данных ------
-    void on_pushButton_importData_clicked(); // загружает данные в ОЗУ
-    void on_pushButton_removeData_clicked(); // удаляет данные из ОЗУ
-    void on_pushButton_CollapseAllFiles_clicked();
+    void handleCollapseAllFiles();
 
     // поиск по файлам
-    void on_QLineEdit_findFile_changed(const QString& line);
+    void handleFindFile(const QString& line); // TODO
 
-    // connect(ui->btn_add_data, &QPushButton::clicked, this, &MainWindow::on_btn_add_data);
-    // connect(ui->btn_remove_data, &QPushButton::clicked, this, &MainWindow::on_btn_remove_data);
-    void onNodeSelected();
-    void showContextMenu(const QPoint& pos);
-    void onItemChanged(QTreeWidgetItem* item, int col);
-    // void onActionOpenVisualSettingsTrigered();
+    void handleNodeSelected(); // TODO
+                               // void showContextMenu(const QPoint& pos);            // TODO
+                               // void onItemChanged(QTreeWidgetItem* item, int col); // TODO
+                               // void onActionOpenVisualSettingsTrigered();
+
+    void handleShowCustomContextMenuForFile(const QPoint& pos);
 
   private:
-    void                     setupSlots();
-    void                     setupToolButtons();
-    void                     sortTreeHierarchy(QTreeView*                                                  tree,
-                                               std::function<bool(const QModelIndex&, const QModelIndex&)> comparator);
+    void setupSlots();        // TODO
+    void setupToolButtons();  // TODO
+    void setupFileExplorer(); // TODO
+    void
+    sortTreeHierarchyInternal(QTreeView*                                                  tree,
+                              std::function<bool(const QModelIndex&, const QModelIndex&)> comparator); // TODO
+
+    // загрузка данных и добавление записи в реестр
+    void selectAndImportFilesInternal(const SelectExperimentDialogResult& result,
+                                      const QStringList&                  filePaths);
+    std::optional<SelectExperimentDialogResult>
+    selectExperimentDialogInternal(); // открывает диалог выбора эксперимента для добавления файлов
+
     Ui::LayerExplorerWidget* ui;
     Core::AppCore*           m_app;
     Models::DataTreeModel*   m_treeModel = nullptr;
 
-    QString          m_root_path; // по умолчанию равен корню диска
-    QTreeWidgetItem* findTreeElementById(const QUuid& id);
-
+    // по умолчанию равен корню диска
+    QString                       m_root_path;
     Core::ModelingProgrammVersion m_currentVersion = Core::ModelingProgrammVersion::V2;
-    void                          setupFileExplorer();
 
-    void addComponent(); // добавление контейнера над файлами
-    void addSnapshot();  // добавление снимка
+    QTreeWidgetItem* findTreeElementByIdInternal(const QUuid& id); // TODO
+
+    void setCheckStateRecursiveInternal(const QModelIndex& parentIndex, Qt::CheckState state);
+    void setCheckStateUnselectedRecursiveInternal(const QModelIndex&       parentIndex,
+                                                  const QSet<QModelIndex>& selectedIndexes,
+                                                  Qt::CheckState           state);
 };
 } // namespace QSpace::UI

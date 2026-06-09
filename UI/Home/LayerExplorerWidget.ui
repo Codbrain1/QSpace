@@ -384,12 +384,12 @@
     <widget class="QComboBox" name="comboBox_structureView">
      <item>
       <property name="text">
-       <string>Плоский вид</string>
+       <string>Временная структура</string>
       </property>
      </item>
      <item>
       <property name="text">
-       <string>Временная структура</string>
+       <string>Плоский вид</string>
       </property>
      </item>
     </widget>

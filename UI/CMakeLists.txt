@@ -15,9 +15,16 @@ target_sources(UI PRIVATE
     Home/ColorMapEditorDialog.h
     Home/ColorMapEditorDialog.cpp
     Home/ColorMapEditorDialog.ui
+    Home/TimeLineWidget.h
+    Home/TimeLineWidget.cpp
+    Home/TimeLineWidget.ui
+    Home/SelectExperimentDialog.h
+    Home/SelectExperimentDialog.cpp
+
 )
 target_include_directories(UI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 target_link_libraries(UI PUBLIC
+    project_config
     QSpace::Core
     QSpace::Visualize
     Qt6::Widgets

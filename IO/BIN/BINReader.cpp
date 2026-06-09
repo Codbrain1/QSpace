@@ -1,10 +1,8 @@
 #include "BINReader.h"
 #include "Common/Logger/Logger.h"
-#include "Structures/IOStructures.h"
 #include <QByteArray>
 #include <QDataStream>
 #include <QFile>
-#include <cstddef>
 #include <qassert.h>
 #include <qbytearrayview.h>
 #include <qcontainerfwd.h>
@@ -18,7 +16,6 @@
 #include <qsharedpointer.h>
 #include <qstringview.h>
 #include <qtypes.h>
-#include <variant>
 #include <vtkAbstractArray.h>
 #include <vtkCell.h>
 #include <vtkDataArray.h>
@@ -29,9 +26,13 @@
 #include <vtkPoints.h>
 #include <vtkPolyData.h>
 #include <vtkType.h>
+#include "Structures/IOStructures.h"
+#include <cstddef>
+#include <variant>
 
 namespace QSpace::IO {
 BINReader::~BINReader() = default;
+
 ReadResult BINReader::read(const QString& path, const ReadScheme& scheme) const {
     // >---------------   1. ===== Валидация данных =====   ---------------<
     const auto& config = std::get<ColumnScheme>(scheme);
@@ -40,6 +41,8 @@ ReadResult BINReader::read(const QString& path, const ReadScheme& scheme) const 
         return {nullptr,
                 path,
                 "BinReader requires .bin file format: " + path,
+                0,
+                0,
                 FileFormat::BIN,
                 scheme,
                 ReadStatus::InvalidFormat};
@@ -51,22 +54,34 @@ ReadResult BINReader::read(const QString& path, const ReadScheme& scheme) const 
         return {nullptr,
                 path,
                 "Unsupported file structure: " + path,
+                0,
+                0,
                 FileFormat::BIN,
                 scheme,
                 ReadStatus::InvalidFileStructure};
     }
     if (!file.open(QIODevice::ReadOnly)) {
         qCCritical(LogIO) << "file " << file.fileName() << "is not Open!";
-        return {nullptr, path, "Could not open file: " + path, FileFormat::BIN, scheme, ReadStatus::FileNotFound};
+        return {nullptr,
+                path,
+                "Could not open file: " + path,
+                0,
+                0,
+                FileFormat::BIN,
+                scheme,
+                ReadStatus::FileNotFound};
     }
     // обработка заголовка
     if (config.headerOffsetBytes > 0) {
         if (!file.seek(config.headerOffsetBytes)) { // пропуск незначимых данных
-            qCCritical(LogIO) << "BinReader requires file header: NumParticles, time (int,double)[realHeaderOffset]"
+            qCCritical(LogIO) << "BinReader requires file header: NumParticles, time "
+                                 "(int,double)[realHeaderOffset]"
                               << config.headerOffsetBytes;
             return {nullptr,
                     path,
                     "Could not read file header: " + path,
+                    0,
+                    0,
                     FileFormat::BIN,
                     scheme,
                     ReadStatus::InvalidFileStructure};
@@ -77,8 +92,8 @@ ReadResult BINReader::read(const QString& path, const ReadScheme& scheme) const 
     QDataStream headerStream(&file);
     headerStream.setByteOrder(QDataStream::LittleEndian);
     headerStream.setFloatingPointPrecision(
-        QDataStream::DoublePrecision); // TODO: может выдать некоорректные данные если в заголовке вместо double,
-                                       // записано float
+        QDataStream::DoublePrecision); // TODO: может выдать некоорректные данные если в заголовке
+                                       // вместо double, записано float
 
     int    N         = 0;
     double timestamp = 0;
@@ -89,11 +104,14 @@ ReadResult BINReader::read(const QString& path, const ReadScheme& scheme) const 
         return {nullptr,
                 path,
                 "Incorrect number of particles in file " + path,
+                0,
+                0,
                 FileFormat::BIN,
                 scheme,
                 ReadStatus::InvalidFileStructure};
     }
-    qCDebug(LogIO) << "Reading N = " << N << "; timestamp = " << timestamp << " in File: " << file.fileName();
+    qCDebug(LogIO) << "Reading N = " << N << "; timestamp = " << timestamp
+                   << " in File: " << file.fileName();
 
     // >---------------   3. ===== Подготовка контекста файла =====   ---------------<
     // Рассчет занимаемой памяти для одной частицы
@@ -114,15 +132,22 @@ ReadResult BINReader::read(const QString& path, const ReadScheme& scheme) const 
             }
             default: {
                 Q_ASSERT(false);
-                return {nullptr, path, "should never be called", FileFormat::BIN, scheme, ReadStatus::UnknownError};
+                return {nullptr,
+                        path,
+                        "should never be called",
+                        0,
+                        0,
+                        FileFormat::BIN,
+                        scheme,
+                        ReadStatus::UnknownError};
             }
         }
         // Используем numberOfComponents для учета всех компонент (не только координат)
         colSize *= col.numberOfComponents;
         particleSize += colSize;
     }
-    qCDebug(LogIO) << "ParticleSize calculation: total=" << particleSize << "bytes for" << config.columnsPolicy.size()
-                   << "columns";
+    qCDebug(LogIO) << "ParticleSize calculation: total=" << particleSize << "bytes for"
+                   << config.columnsPolicy.size() << "columns";
     qint64 dataStart = config.headerOffsetBytes + sizeof(int) + sizeof(double);
     // подготавливем vtk примитивы
     ReadContext context{vtkSmartPointer<vtkPolyData>::New(),
@@ -139,13 +164,16 @@ ReadResult BINReader::read(const QString& path, const ReadScheme& scheme) const 
         return {nullptr,
                 path,
                 "vtk couldn't create data structures",
+                0,
+                0,
                 FileFormat::BIN,
                 scheme,
                 ReadStatus::UnknownError};
 
     // >---------------   5. ===== Выбор политики чтения =====   ---------------<
     bool UseMap = false;
-    if (m_policy == FilePolicy::ForceMapped || (m_policy == FilePolicy::Auto && file.size() >= 100 * 1024 * 1024))
+    if (m_policy == FilePolicy::ForceMapped ||
+        (m_policy == FilePolicy::Auto && file.size() >= 100 * 1024 * 1024))
         UseMap = true;
     bool success = false;
 
@@ -153,7 +181,14 @@ ReadResult BINReader::read(const QString& path, const ReadScheme& scheme) const 
     qint64 expectedDataSize = static_cast<qint64>(context.N) * particleSize;
     if (file.size() - context.dataStartPos < expectedDataSize) {
         qCCritical(LogIO) << "File size less expected for " << context.N << " particles";
-        return {nullptr, path, "Error file size:" + path, FileFormat::BIN, scheme, ReadStatus::UnknownError};
+        return {nullptr,
+                path,
+                "Error file size:" + path,
+                0,
+                0,
+                FileFormat::BIN,
+                scheme,
+                ReadStatus::UnknownError};
     }
 
     // >---------------   6. ===== Чтение файлов =====   ---------------<
@@ -161,7 +196,8 @@ ReadResult BINReader::read(const QString& path, const ReadScheme& scheme) const 
         // проецирование в виртуальную память
         success = readMmap(file, context, expectedDataSize);
         if (!success) {
-            qCWarning(LogIO) << "Mmaping file into virtual memory failed/unsupported. Falling back to standart read";
+            qCWarning(LogIO) << "Mmaping file into virtual memory failed/unsupported. Falling back "
+                                "to standart read";
             file.seek(context.dataStartPos);
             success = readStream(file, context);
         }
@@ -172,7 +208,14 @@ ReadResult BINReader::read(const QString& path, const ReadScheme& scheme) const 
     }
     if (!success) {
         qCCritical(LogIO) << "Failed read file: " << file.fileName();
-        return {nullptr, path, "Failed read file: " + path, FileFormat::BIN, scheme, ReadStatus::UnknownError};
+        return {nullptr,
+                path,
+                "Failed read file: " + path,
+                0,
+                0,
+                FileFormat::BIN,
+                scheme,
+                ReadStatus::UnknownError};
     }
     context.polyData->SetPoints(context.points);
     auto pd = context.polyData->GetPointData();
@@ -189,7 +232,8 @@ ReadResult BINReader::read(const QString& path, const ReadScheme& scheme) const 
                     pd->SetAttribute(arr, col.vtkAttributeRole);
                 }
                 // вывод для отладки
-                //  for (int k = 0; k < context.polyData->GetPointData()->GetNumberOfArrays(); ++k) {
+                //  for (int k = 0; k < context.polyData->GetPointData()->GetNumberOfArrays(); ++k)
+                //  {
                 //      qCDebug(LogIO) << context.polyData->GetPointData()->GetArrayName(k);
                 //  }
                 //  qCDebug(LogIO) << "end";
@@ -202,11 +246,13 @@ ReadResult BINReader::read(const QString& path, const ReadScheme& scheme) const 
     res.data       = context.polyData;
     res.path       = path;
     res.errMessage = "";
+    res.timestamp  = timestamp;
     res.status     = ReadStatus::Succes;
     res.format     = FileFormat::BIN;
     res.scheme     = scheme;
     return res;
 }
+
 bool BINReader::validate(const QFile& file, const ReadScheme& scheme) const {
     if (!std::holds_alternative<ColumnScheme>(scheme)) {
         qCritical(LogIO) << "BinReader requires ComlumnScheme! file:" << file.fileName();
@@ -214,7 +260,8 @@ bool BINReader::validate(const QFile& file, const ReadScheme& scheme) const {
     }
     const auto& config = std::get<ColumnScheme>(scheme);
     for (const auto& col : config.columnsPolicy) {
-        if (col.vtkDataType != VTK_DOUBLE && col.vtkDataType != VTK_FLOAT && col.vtkDataType != VTK_INT) {
+        if (col.vtkDataType != VTK_DOUBLE && col.vtkDataType != VTK_FLOAT &&
+            col.vtkDataType != VTK_INT) {
             qCCritical(LogIO) << "Unsuported type in column: " << col.name;
             return false;
         }
@@ -229,6 +276,7 @@ bool BINReader::validate(const QFile& file, const ReadScheme& scheme) const {
     }
     return true;
 }
+
 bool BINReader::prepareVTK(BINReader::ReadContext& context) const {
     context.points->SetDataTypeToDouble();        // задаем double для координат
     context.points->SetNumberOfPoints(context.N); // задаем общее число точек
@@ -273,7 +321,9 @@ bool BINReader::prepareVTK(BINReader::ReadContext& context) const {
     }
     return true;
 }
-QList<BINReader::ParserFunc> BINReader::generateParsers(const ReadContext& context, double* rawPointsPtr) const {
+
+QList<BINReader::ParserFunc> BINReader::generateParsers(const ReadContext& context,
+                                                        double*            rawPointsPtr) const {
     QList<ParserFunc> parsers;
     int               attrrArrayIndex = 0;
     for (const auto& col : context.config.columnsPolicy) {
@@ -310,41 +360,44 @@ QList<BINReader::ParserFunc> BINReader::generateParsers(const ReadContext& conte
             switch (col.vtkDataType) {
                 case VTK_DOUBLE: {
                     vtkDoubleArray* doubleArr = vtkDoubleArray::SafeDownCast(arr);
-                    parsers.append([nComp = col.numberOfComponents, doubleArr](const uchar* ptr, int i) {
-                        const double* src = reinterpret_cast<const double*>(ptr);
-                        double        buffer[16]; // Запас для компонент (обычно их < 9)
-                        for (int k = 0; k < nComp; ++k) {
-                            buffer[k] = qFromLittleEndian(src[k]);
-                        }
-                        doubleArr->SetTypedTuple(i, buffer);
-                        return ptr + sizeof(double) * nComp;
-                    });
+                    parsers.append(
+                        [nComp = col.numberOfComponents, doubleArr](const uchar* ptr, int i) {
+                            const double* src = reinterpret_cast<const double*>(ptr);
+                            double        buffer[16]; // Запас для компонент (обычно их < 9)
+                            for (int k = 0; k < nComp; ++k) {
+                                buffer[k] = qFromLittleEndian(src[k]);
+                            }
+                            doubleArr->SetTypedTuple(i, buffer);
+                            return ptr + sizeof(double) * nComp;
+                        });
                     break;
                 }
                 case VTK_FLOAT: {
                     vtkFloatArray* floatArr = vtkFloatArray::SafeDownCast(arr);
-                    parsers.append([nComp = col.numberOfComponents, floatArr](const uchar* ptr, int i) {
-                        const float* src = reinterpret_cast<const float*>(ptr);
-                        float        buffer[16]; // Запас для компонент (обычно их < 9)
-                        for (int k = 0; k < nComp; ++k) {
-                            buffer[k] = qFromLittleEndian(src[k]);
-                        }
-                        floatArr->SetTypedTuple(i, buffer);
-                        return ptr + sizeof(float) * nComp;
-                    });
+                    parsers.append(
+                        [nComp = col.numberOfComponents, floatArr](const uchar* ptr, int i) {
+                            const float* src = reinterpret_cast<const float*>(ptr);
+                            float        buffer[16]; // Запас для компонент (обычно их < 9)
+                            for (int k = 0; k < nComp; ++k) {
+                                buffer[k] = qFromLittleEndian(src[k]);
+                            }
+                            floatArr->SetTypedTuple(i, buffer);
+                            return ptr + sizeof(float) * nComp;
+                        });
                     break;
                 }
                 case VTK_INT: {
                     vtkIntArray* intArr = vtkIntArray::SafeDownCast(arr);
-                    parsers.append([nComp = col.numberOfComponents, intArr](const uchar* ptr, int i) {
-                        const int* src = reinterpret_cast<const int*>(ptr);
-                        int        buffer[16]; // Запас для компонент (обычно их < 9)
-                        for (int k = 0; k < nComp; ++k) {
-                            buffer[k] = qFromLittleEndian(src[k]);
-                        }
-                        intArr->SetTypedTuple(i, buffer);
-                        return ptr + sizeof(int) * nComp;
-                    });
+                    parsers.append(
+                        [nComp = col.numberOfComponents, intArr](const uchar* ptr, int i) {
+                            const int* src = reinterpret_cast<const int*>(ptr);
+                            int        buffer[16]; // Запас для компонент (обычно их < 9)
+                            for (int k = 0; k < nComp; ++k) {
+                                buffer[k] = qFromLittleEndian(src[k]);
+                            }
+                            intArr->SetTypedTuple(i, buffer);
+                            return ptr + sizeof(int) * nComp;
+                        });
                     break;
                 }
                 default:
@@ -355,6 +408,7 @@ QList<BINReader::ParserFunc> BINReader::generateParsers(const ReadContext& conte
     }
     return parsers;
 }
+
 bool BINReader::readColumnMmap(const uchar*                 columnPtr,
                                int                          N,
                                const ColumnScheme::Mapping& col,
@@ -402,8 +456,9 @@ bool BINReader::readColumnMmap(const uchar*                 columnPtr,
                 for (int c = 0; c < nComp; ++c) {
                     const double* componentSrc = src + (c * N);
                     for (int i = 0; i < N; ++i) {
-                        dst[i * nComp + c] = qFromLittleEndian(componentSrc[i]); // TODO: оптимизировать чтение за счет
-                                                                                 // инкрементального dst
+                        dst[i * nComp + c] =
+                            qFromLittleEndian(componentSrc[i]); // TODO: оптимизировать чтение за
+                                                                // счет инкрементального dst
                     }
                 }
                 break;
@@ -440,6 +495,7 @@ bool BINReader::readColumnMmap(const uchar*                 columnPtr,
     }
     return true;
 }
+
 void BINReader::createCells(BINReader::ReadContext& context) const {
     auto cells = vtkSmartPointer<vtkCellArray>::New();
 #ifdef VTK_VERSION_NUMBER
@@ -459,6 +515,7 @@ void BINReader::createCells(BINReader::ReadContext& context) const {
 #endif
     context.polyData->SetVerts(cells);
 }
+
 bool BINReader::readMmap(QFile& file, ReadContext& context, qint64 expectedDataSize) const {
     // проецируем файл в виртуальную память
     uchar* mappedData = file.map(context.dataStartPos, expectedDataSize);
@@ -477,7 +534,10 @@ bool BINReader::readMmap(QFile& file, ReadContext& context, qint64 expectedDataS
     file.unmap(mappedData);
     return res;
 }
-bool BINReader::readInterleavedMmap(const uchar* startPtr, ReadContext& context, double* rawPointsPtr) const {
+
+bool BINReader::readInterleavedMmap(const uchar* startPtr,
+                                    ReadContext& context,
+                                    double*      rawPointsPtr) const {
     auto parsers = generateParsers(context, rawPointsPtr);
     if (parsers.isEmpty())
         return false;
@@ -489,7 +549,10 @@ bool BINReader::readInterleavedMmap(const uchar* startPtr, ReadContext& context,
     }
     return true;
 }
-bool BINReader::readNonInterleavedMmap(const uchar* startPtr, ReadContext& context, double* rawPointsPtr) const {
+
+bool BINReader::readNonInterleavedMmap(const uchar* startPtr,
+                                       ReadContext& context,
+                                       double*      rawPointsPtr) const {
     int          attrIndex  = 0;
     const uchar* currnetPtr = startPtr;
     for (const auto& col : context.config.columnsPolicy) {
@@ -525,6 +588,7 @@ bool BINReader::readNonInterleavedMmap(const uchar* startPtr, ReadContext& conte
     }
     return true;
 }
+
 bool BINReader::readStream(QFile& file, ReadContext& context) const {
     vtkDoubleArray* coordArray   = vtkDoubleArray::SafeDownCast(context.points->GetData());
     double*         rawPointsPtr = coordArray->GetPointer(0);
@@ -536,6 +600,7 @@ bool BINReader::readStream(QFile& file, ReadContext& context) const {
     }
     return res;
 }
+
 bool BINReader::readColumnStream(QFile&                       file,
                                  int                          N,
                                  const ColumnScheme::Mapping& col,
@@ -567,7 +632,8 @@ bool BINReader::readColumnStream(QFile&                       file,
     for (int i = 0; i < nComp; ++i) {
         size_t particlesRead = 0;
         while (particlesRead < static_cast<size_t>(N)) {
-            int toRead      = std::min(static_cast<size_t>(chunkElements), static_cast<size_t>(N) - particlesRead);
+            int toRead      = std::min(static_cast<size_t>(chunkElements),
+                                  static_cast<size_t>(N) - particlesRead);
             int bytesToRead = toRead * typeSize;
             if (file.read(bufferPtr, bytesToRead) != bytesToRead) {
                 qCCritical(LogIO) << "Unexpected end of file reading column:" << col.name;
@@ -577,11 +643,19 @@ bool BINReader::readColumnStream(QFile&                       file,
             if (col.isCoordiante) {
                 switch (col.vtkDataType) {
                     case VTK_DOUBLE: {
-                        processCoordChunk<double>(uBufferPtr, rawPointsPtr, particlesRead, toRead, i);
+                        processCoordChunk<double>(uBufferPtr,
+                                                  rawPointsPtr,
+                                                  particlesRead,
+                                                  toRead,
+                                                  i);
                         break;
                     }
                     case VTK_FLOAT: {
-                        processCoordChunk<float>(uBufferPtr, rawPointsPtr, particlesRead, toRead, i);
+                        processCoordChunk<float>(uBufferPtr,
+                                                 rawPointsPtr,
+                                                 particlesRead,
+                                                 toRead,
+                                                 i);
                         break;
                     }
                     default:
@@ -612,7 +686,12 @@ bool BINReader::readColumnStream(QFile&                       file,
                     }
                     case VTK_INT: {
                         vtkIntArray* arr = vtkIntArray::SafeDownCast(attributArrayPtr);
-                        processAttribChunk<int, int>(uBufferPtr, arr->GetPointer(0), particlesRead, toRead, nComp, i);
+                        processAttribChunk<int, int>(uBufferPtr,
+                                                     arr->GetPointer(0),
+                                                     particlesRead,
+                                                     toRead,
+                                                     nComp,
+                                                     i);
                         break;
                     }
                     default:
@@ -625,7 +704,10 @@ bool BINReader::readColumnStream(QFile&                       file,
     }
     return true;
 }
-bool BINReader::readInterleavedStream(QFile& file, ReadContext& context, double* rawPointsPtr) const {
+
+bool BINReader::readInterleavedStream(QFile&       file,
+                                      ReadContext& context,
+                                      double*      rawPointsPtr) const {
     QList<BINReader::ParserFunc> parsers = generateParsers(context, rawPointsPtr);
     if (parsers.isEmpty())
         return false;
@@ -650,14 +732,17 @@ bool BINReader::readInterleavedStream(QFile& file, ReadContext& context, double*
             const double* dptr = reinterpret_cast<const double*>(rowBuffer.data());
             qCDebug(LogIO) << "Particle" << i << ": pos=(" << qFromLittleEndian(dptr[0]) << ","
                            << qFromLittleEndian(dptr[1]) << "," << qFromLittleEndian(dptr[2]) << ")"
-                           << " vel=(" << qFromLittleEndian(dptr[3]) << "," << qFromLittleEndian(dptr[4]) << ","
-                           << qFromLittleEndian(dptr[5]) << ")"
+                           << " vel=(" << qFromLittleEndian(dptr[3]) << ","
+                           << qFromLittleEndian(dptr[4]) << "," << qFromLittleEndian(dptr[5]) << ")"
                            << " mass=" << qFromLittleEndian(dptr[6]);
         }
     }
     return true;
 }
-bool BINReader::readNonInterleavedStream(QFile& file, ReadContext& context, double* rawPointsPtr) const {
+
+bool BINReader::readNonInterleavedStream(QFile&       file,
+                                         ReadContext& context,
+                                         double*      rawPointsPtr) const {
     int attrrArrayIndex = 0;
     for (const auto& col : context.config.columnsPolicy) {
         vtkAbstractArray* arr = nullptr;

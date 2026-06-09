@@ -1,6 +1,10 @@
 #include "MainWindow.h"
 #include "Common/Logger/Logger.h"
 #include "Core/AppCore/AppCore.h"
+#include "Core/AppCore/DataController.h"
+#include "Core/AppCore/ProjectController.h"
+#include "Core/AppCore/VideoController.h"
+#include "Core/AppCore/ViewController.h"
 #include "Enums/RenderEnums.h"
 #include "Interfaces/IView.h"
 #include "LayerExplorerWidget.h"
@@ -41,8 +45,8 @@ MainWindow::MainWindow(Core::AppCore* app, QWidget* parent)
     ui->setupUi(this);
     setDockNestingEnabled(true);
     this->setCentralWidget(nullptr);
-    // Подключаем ГЛАВНЫЙ сигнал обновления от AppCore
-    connect(m_app, &Core::AppCore::sceneUpdateRequested, this, &MainWindow::on_render_update);
+
+    // Вызываем инициализацию ядра
     m_app->initialize();
 
     // инициализируем меню слоев LayerExplorerWidget
@@ -72,13 +76,11 @@ MainWindow::MainWindow(Core::AppCore* app, QWidget* parent)
     ui->action_view_iso->setData(static_cast<int>(Visualize::CameraViewType::Iso));
 
     // 2. Превращаем экшен "action_view_top" в выпадающее меню камеры
-    if (auto* btn =
-            qobject_cast<QToolButton*>(ui->mainToolBar->widgetForAction(ui->action_view_top))) {
+    if (auto* btn = qobject_cast<QToolButton*>(ui->mainToolBar->widgetForAction(ui->action_view_top))) {
         btn->setMenu(ui->menu_camera); // Берем уже готовое меню из UI
         btn->setPopupMode(QToolButton::InstantPopup);
     }
-    if (auto* btn =
-            qobject_cast<QToolButton*>(ui->mainToolBar->widgetForAction(ui->action_bg_settings))) {
+    if (auto* btn = qobject_cast<QToolButton*>(ui->mainToolBar->widgetForAction(ui->action_bg_settings))) {
         btn->setMenu(ui->menu_bg); // Берем уже готовое меню из UI
         btn->setPopupMode(QToolButton::InstantPopup);
     }
@@ -112,14 +114,14 @@ MainWindow::MainWindow(Core::AppCore* app, QWidget* parent)
     //         &Core::AppCore::setGlobalExposureAllViews);
     // подключаем слоты
     setupSlots();
-    m_app->createView(Visualize::ViewType::VTK_3D);
+    m_app->viewController()->createView(Visualize::ViewType::VTK_3D);
 }
-void MainWindow::on_viewCreated(const QUuid& viewId, Visualize::ViewType type) {
+void MainWindow::handleViewCreated(const QUuid& viewId, Visualize::ViewType type) {
     if (viewId.isNull()) {
         qCCritical(LogUI) << "Failed to create view!";
         return;
     }
-    auto view       = m_app->getView(viewId);
+    auto view       = m_app->viewController()->getView(viewId);
     auto viewWidget = view->getWidget();
     if (!view || !viewWidget) {
         qCCritical(LogUI) << "View created but not found in AppCore!";
@@ -166,7 +168,7 @@ void MainWindow::on_viewCreated(const QUuid& viewId, Visualize::ViewType type) {
     dock->show();
     dock->raise();
 }
-void MainWindow::on_viewRemoved(const QUuid& viewId) {
+void MainWindow::handleViewRemoved(const QUuid& viewId) {
     if (!m_viewDockWidgets.contains(viewId))
         return;
 
@@ -188,89 +190,83 @@ void MainWindow::on_viewRemoved(const QUuid& viewId) {
     }
 }
 void MainWindow::setupSlots() {
-    //----- ПОДКЛЮЧЕНИЕ СЛОТОТОВ LayerExplorerWidget -----
-    connect(m_app,
-            &QSpace::Core::AppCore::nodeAdded,
-            m_layerExplorerWidget.get(),
-            &LayerExplorerWidget::onNodeAdded);
-    connect(m_app,
-            &QSpace::Core::AppCore::objectRemoved,
-            m_layerExplorerWidget.get(),
-            &LayerExplorerWidget::onObjectRemoved);
+    connect(m_app->viewController(),
+            &QSpace::Core::Controllers::ViewController::sceneUpdateRequested,
+            this,
+            &MainWindow::handleRenderUpdate);
+    connect(m_app->dataController(),
+            &QSpace::Core::Controllers::DataController::sceneUpdateRequested,
+            this,
+            &UI::MainWindow::handleRenderUpdate);
 
-    connect(m_layerExplorerWidget.get(),
-            &LayerExplorerWidget::removalRequested,
-            m_app,
-            &QSpace::Core::AppCore::removeObject);
+    //----- ПОДКЛЮЧЕНИЕ СЛОТОТОВ LayerExplorerWidget -----
     connect(m_layerExplorerWidget.get(),
             &LayerExplorerWidget::updateNodeSettingsRequested,
-            m_app,
-            &QSpace::Core::AppCore::updateNodeSettings);
-
-    connect(m_app,
-            &QSpace::Core::AppCore::sceneUpdateRequested,
-            this,
-            &UI::MainWindow::on_render_update);
+            m_app->dataController(),
+            &QSpace::Core::Controllers::DataController::updateNodeSettings);
 
     // ---- Подключение кнопок QToolBar ----
     // работа со сценой
-    connect(ui->action_reset_camera,
-            &QAction::triggered,
-            this,
-            &MainWindow::on_action_resetCameraClicked);
-    connect(ui->action_toggle_axes,
-            &QAction::toggled,
-            this,
-            &MainWindow::on_action_toggleAxesChanged);
-    connect(ui->action_toggle_grid,
-            &QAction::toggled,
-            this,
-            &MainWindow::on_action_toggleGridChanged);
+    connect(ui->action_reset_camera, &QAction::triggered, this, &MainWindow::resetCamera);
+    connect(ui->action_toggle_axes, &QAction::toggled, this, &MainWindow::axesVisibleToggled);
+    connect(ui->action_toggle_grid, &QAction::toggled, this, &MainWindow::gridVisibleToggled);
 
     // запуск рендеринга видео
     QAction* actionExport =
         ui->mainToolBar->addAction(QIcon::fromTheme("video-x-generic"), tr("Export Video"));
-    connect(actionExport, &QAction::triggered, this, &MainWindow::on_action_exportVideoClicked);
+    connect(actionExport, &QAction::triggered, this, &MainWindow::handleVideoExport);
 
     // загрузка и сохранение проекта
-    connect(ui->action_save_session,
-            &QAction::triggered,
-            this,
-            &MainWindow::on_action_saveProjectClicked);
-    connect(ui->action_open_session,
-            &QAction::triggered,
-            this,
-            &MainWindow::on_action_openProjectClicked);
+    connect(ui->action_save_session, &QAction::triggered, this, &MainWindow::handleProjectSave);
+    connect(ui->action_open_session, &QAction::triggered, this, &MainWindow::handleProjectOpen);
 
     // --- СОЗДАНИЕ АНИМАЦИИ ---
     connect(m_exportProgressDialog.get(),
             &QProgressDialog::canceled,
-            m_app,
-            &Core::AppCore::cancelVideoExport);
-    connect(m_app, &Core::AppCore::exportProgressUpdated, this, [this](int current, int total) {
-        m_exportProgressDialog->setMaximum(total);
-        m_exportProgressDialog->setValue(current);
-    });
-    connect(m_app, &Core::AppCore::exportFinished, this, &MainWindow::on_exportFinished);
+            m_app->videoController(),
+            &Core::Controllers::VideoController::cancelVideoExport);
+    connect(m_app->videoController(),
+            &Core::Controllers::VideoController::exportProgressUpdated,
+            this,
+            [this](int current, int total) {
+                m_exportProgressDialog->setMaximum(total);
+                m_exportProgressDialog->setValue(current);
+            });
+    connect(m_app->videoController(),
+            &Core::Controllers::VideoController::exportFinished,
+            this,
+            &MainWindow::handleExportFinished);
 
     connect(m_layerExplorerWidget.get(),
             &LayerExplorerWidget::selectionChanged,
             this,
-            &MainWindow::on_LayerSelectionChanged);
+            &MainWindow::handleLayerSelectionChange);
 
-    connect(ui->menu_camera, &QMenu::triggered, this, &MainWindow::on_action_ChangedViewClicked);
-    connect(ui->menu_bg, &QMenu::triggered, this, &MainWindow::on_action_ChangedBackgroundClicked);
+    connect(ui->menu_camera, &QMenu::triggered, this, &MainWindow::handleCameraViewChange);
+    connect(ui->menu_bg, &QMenu::triggered, this, &MainWindow::handleBackgroundChange);
 
-    connect(m_app,
-            &Core::AppCore::requestSavePathFromUI,
+    connect(m_app->projectController(),
+            &QSpace::Core::Controllers::ProjectController::requestSavePathFromUI,
             this,
-            &MainWindow::on_savePathFromUIRequested);
+            &MainWindow::handleSavePathSelection);
+
     // 2. Обновление заголовка окна при изменении состояния сессии
-    connect(m_app, &Core::AppCore::sessionStateChanged, this, &MainWindow::on_sessionStateChange);
-    connect(m_app, &Core::AppCore::viewCreated, this, &MainWindow::on_viewCreated);
-    connect(m_app, &Core::AppCore::viewRemoved, this, &MainWindow::on_viewRemoved);
+    connect(m_app->projectController(),
+            &QSpace::Core::Controllers::ProjectController::sessionStateChanged,
+            this,
+            &MainWindow::handleSessionStateChange);
+
+    // ---- РАБОТА С ОКНАМИ ----
+    connect(m_app->viewController(),
+            &QSpace::Core::Controllers::ViewController::viewCreated,
+            this,
+            &MainWindow::handleViewCreated);
+    connect(m_app->viewController(),
+            &QSpace::Core::Controllers::ViewController::viewRemoved,
+            this,
+            &MainWindow::handleViewRemoved);
 }
-void MainWindow::on_LayerSelectionChanged(const QList<QUuid>& ids) {
+void MainWindow::handleLayerSelectionChange(const QList<QUuid>& ids) {
     if (ids.isEmpty()) {
         m_propertyInspector->setCurrentNode(QUuid());
     } else {
@@ -278,48 +274,41 @@ void MainWindow::on_LayerSelectionChanged(const QList<QUuid>& ids) {
         m_propertyInspector->setCurrentNode(ids.first());
     }
 }
-void MainWindow::on_exportFinished(bool success) {
+void MainWindow::handleExportFinished(bool success) {
     m_exportProgressDialog->reset(); // Прячем окно
     if (success) {
         QMessageBox::information(this, tr("Ready"), tr("Video saved successfully!"));
     } else {
-        QMessageBox::warning(this,
-                             tr("Cancel"),
-                             tr("Video export was canceled or finished with an error."));
+        QMessageBox::warning(this, tr("Cancel"), tr("Video export was canceled or finished with an error."));
     }
 }
-void MainWindow::on_sessionStateChange(const QSpace::Session::CurrentSession& session) {
-    QString title =
-        QString("QSpace - %1%2")
-            .arg(session.projectName.isEmpty() ? tr("New Project") : session.projectName)
-            .arg(session.isDirty ? "*" : ""); // Звездочка, если есть несохраненные изменения
+void MainWindow::handleSessionStateChange(const QSpace::Session::CurrentSession& session) {
+    QString title = QString("QSpace - %1%2")
+                        .arg(session.projectName.isEmpty() ? tr("New Project") : session.projectName)
+                        .arg(session.isDirty ? "*" : ""); // Звездочка, если есть несохраненные изменения
     setWindowTitle(title);
 
     qCDebug(LogSystem) << "Session state updated. Project:" << session.projectName;
 }
-void MainWindow::on_savePathFromUIRequested() {
-    QString path = QFileDialog::getSaveFileName(this,
-                                                tr("Save project as..."),
-                                                "",
-                                                tr("QSpace Project (*.qsp)"));
+void MainWindow::handleSavePathSelection() {
+    QString path =
+        QFileDialog::getSaveFileName(this, tr("Save project as..."), "", tr("QSpace Project (*.qsp)"));
     if (!path.isEmpty()) {
         // Устанавливаем путь в стейт и пробуем сохранить еще раз
-        m_app->saveCurrentProjectAs(path);
+        m_app->projectController()->saveCurrentProjectAs(path);
     }
 }
-void MainWindow::on_action_exportVideoClicked() {
+void MainWindow::handleVideoExport() {
     // 1. Проверяем, выбран ли слой, который будем анимировать
     auto selectedItems = m_layerExplorerWidget->getSelectedIds();
     if (selectedItems.isEmpty()) {
-        QMessageBox::warning(
-            this,
-            tr("No layer selected"),
-            tr("Please select a layer in the tree to export an animation based on it."));
+        QMessageBox::warning(this,
+                             tr("No layer selected"),
+                             tr("Please select a layer in the tree to export an animation based on it."));
         return;
     }
     QUuid baseNodeId =
-        selectedItems
-            .first(); // Для простоты берем первый выбранный слой. Можно расширить логику позже.
+        selectedItems.first(); // Для простоты берем первый выбранный слой. Можно расширить логику позже.
 
     // 2. Выбираем файлы для анимации
     QStringList files = QFileDialog::getOpenFileNames(this,
@@ -343,15 +332,15 @@ void MainWindow::on_action_exportVideoClicked() {
     m_exportProgressDialog->setValue(0);
     m_exportProgressDialog->show();
 
-    m_app->startVideoExport(baseNodeId, files, savePath, stride, fps);
+    m_app->videoController()->startVideoExport(baseNodeId, files, savePath, stride, fps);
 }
 MainWindow::~MainWindow() {
     delete ui;
 }
-void MainWindow::on_action_resetCameraClicked() {
-    m_app->resetCameraInAllViews();
+void MainWindow::resetCamera() {
+    m_app->viewController()->resetCameraInAllViews();
 }
-void MainWindow::on_action_ChangedViewClicked(QAction* action) {
+void MainWindow::handleCameraViewChange(QAction* action) {
     if (!action)
         return;
 
@@ -362,68 +351,51 @@ void MainWindow::on_action_ChangedViewClicked(QAction* action) {
     ui->action_view_top->setText(action->text());
     ui->action_view_top->setIcon(action->icon());
 }
-void MainWindow::on_action_ChangedBackgroundClicked(QAction* action) {
+void MainWindow::handleBackgroundChange(QAction* action) {
     if (!action)
         return;
 
     // Смена цвета в рендерере
     if (action == ui->action_bg_black) {
-        m_app->setBackgroundColorInAllViews(0.0, 0.0, 0.0);
+        m_app->viewController()->setBackgroundColorInAllViews(0.0, 0.0, 0.0);
     } else if (action == ui->action_bg_white) {
-        m_app->setBackgroundColorInAllViews(1.0, 1.0, 1.0);
+        m_app->viewController()->setBackgroundColorInAllViews(1.0, 1.0, 1.0);
     }
 
     // Меняем текст на кнопке тулбара
     ui->action_bg_settings->setText(action->text());
     ui->action_bg_settings->setIcon(action->icon());
 }
-void MainWindow::on_action_toggleAxesChanged(bool checked) {
-    m_app->setAxesVisibleInAllViews(checked);
+void MainWindow::axesVisibleToggled(bool visible) {
+    m_app->viewController()->setAxesVisibleInAllViews(visible);
 }
-void MainWindow::on_action_toggleGridChanged(bool checked) {
-    m_app->setGridVisibleInAllViews(checked);
+void MainWindow::gridVisibleToggled(bool visible) {
+    m_app->viewController()->setGridVisibleInAllViews(visible);
 }
 // ------------------------- слоты обработка действий пользователя ------------------------------
-void MainWindow::on_render_update() {
-    // for (auto widget : m_renderWidgets) {
-    //     if (widget && widget->isVisible()) {
-    //         if (auto renderer = widget->renderWindow()) {
-    //             renderer->Render();
-    //         }
-    //     }
-    // }
+void MainWindow::handleRenderUpdate() {
+    // TODO: решить нужен ли этот метод
+    //  for (auto widget : m_renderWidgets) {
+    //      if (widget && widget->isVisible()) {
+    //          if (auto renderer = widget->renderWindow()) {
+    //              renderer->Render();
+    //          }
+    //      }
+    //  }
 }
-void MainWindow::on_btn_add_data() {
-    QStringList paths =
-        QFileDialog::getOpenFileNames(this, tr("Select data files"), "", tr("Bin Files (*.bin)"));
-    m_app->importFiles(paths);
-}
-void MainWindow::on_btn_remove_data() {
-    auto SelectedIds = m_layerExplorerWidget->getSelectedIds();
-    if (SelectedIds.isEmpty())
-        return;
 
-    auto res = QMessageBox::question(this,
-                                     tr("Confirm deletion"),
-                                     tr("Are you sure you want to remove the selected layers?"),
-                                     QMessageBox::Yes | QMessageBox::No);
-    if (res != QMessageBox::Yes)
-        return;
-    for (const auto& id : SelectedIds) {
-        m_app->removeLayer(id.toString());
-    }
+void MainWindow::handleProjectSave() {
+    m_app->projectController()->saveCurrentProject();
 }
-void MainWindow::on_action_saveProjectClicked() {
-    m_app->saveCurrentProject();
-}
-void MainWindow::on_action_openProjectClicked() {
+
+void MainWindow::handleProjectOpen() {
     QString path = QFileDialog::getOpenFileName(this,
                                                 tr("Open project..."),
                                                 "",
                                                 tr("QSpace Project (*.qsp);;All Files (*)"));
 
     if (!path.isEmpty()) {
-        m_app->openProject(path);
+        m_app->projectController()->openProject(path);
     }
 }
 } // namespace QSpace::UI

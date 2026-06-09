@@ -25,7 +25,7 @@ target_link_libraries(QSpace PRIVATE
             QSpace::Core
             QSpace::IO
             QSpace::Visualize
-            QSpace::Presentation
+            QSpace::Models
             # Charting
             # Filtering
             # Physics

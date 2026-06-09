@@ -25,7 +25,7 @@ struct LayerState {
     Core::VisualSettings settings; // Настройки ИМЕННО ЭТОГО слоя
 };
 
-class DataContainerState { // TODO:: может оказаться излишним
+class SnapshotState { // TODO:: может оказаться излишним
 };
 
 struct ProjectState {

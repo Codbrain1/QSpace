@@ -41,7 +41,7 @@ enum class CameraViewType
   XZ_Front, // Спереди
   YZ_Right, // Справа
   Iso       // Изометрия
-  // TODO:: добавить стандратные позиции
+  // MINOR:: добавить стандратные позиции
 };
 enum class ScalarBarRangeInterpolation
 {

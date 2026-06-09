@@ -117,61 +117,20 @@ struct DataNode {
              double                      timestamp = 0.0,
              Visualize::EntityType       t         = Visualize::EntityType::Unknown)
         : id(QUuid::createUuid()), label(name), type(t), data(dataSet) {
-        masterSettings = std::make_shared<VisualSettings>();
-        if (data) {
-            data->GetBounds(stats.bounds);
-            stats.pointCount = data->GetNumberOfPoints();
-            stats.cellCount  = data->GetNumberOfCells();
-
-            stats.center[0]  = (stats.bounds[0] + stats.bounds[1]) / 2.0;
-            stats.center[1]  = (stats.bounds[2] + stats.bounds[3]) / 2.0;
-            stats.center[2]  = (stats.bounds[4] + stats.bounds[5]) / 2.0;
-            stats.timestamp  = timestamp;
-            vtkPointData* pd = data->GetPointData();
-            if (pd) {
-                for (int i = 0; i < pd->GetNumberOfArrays(); ++i) {
-                    auto array = pd->GetArray(i);
-                    if (array) {
-                        double range[2];
-                        array->GetRange(range);
-                        stats.scalarRanges.insert(array->GetName(), {range[0], range[1]});
-                    }
-                }
-            }
-        }
+        masterSettings  = std::make_shared<VisualSettings>();
+        stats.timestamp = timestamp;
     }
-
-    // TODO: добавить в модуле physics методы для расчёта динамики системы, плотности, градиентов и
-    // т.д.
-    //  namespace QSpace::Physics {
-
-    // struct SystemDynamics {
-    //     double totalMass;
-    //     double centerOfMass[3];
-    //     double totalMomentum[3];
-    //     double kineticEnergy;
-    //     double potentialEnergy; // Если есть алгоритм расчёта
-    //     double angularMomentum[3];
-    // };
-
-    // class PhysicsAnalyzer {
-    //   public:
-    //     static SystemDynamics computeDynamics(vtkSmartPointer<vtkDataSet> data);
-    //     // В будущем здесь будут методы для расчёта плотности, градиентов и т.д.
-    // };
-
-    // } // namespace QSpace::Physics
 };
 
-class DataContainer {
+class Snapshot {
   public:
     QUuid                            id;
     QString                          name;
     double                           timestamp;
     QList<std::shared_ptr<DataNode>> components;
 
-    DataContainer(const QString& containerName, double ts = 0.0)
-        : id(QUuid::createUuid()), name(containerName), timestamp(ts) {
+    Snapshot(const QString& snapshotName, double ts = 0.0)
+        : id(QUuid::createUuid()), name(snapshotName), timestamp(ts) {
     }
 
     void addComponent(std::shared_ptr<DataNode> node) {
@@ -195,14 +154,14 @@ class DataContainer {
 };
 
 struct Experiment {
-    QUuid                                 id;
-    QString                               name;
-    QList<std::shared_ptr<DataContainer>> snapshots; // Список временных шагов
+    QUuid                            id;
+    QString                          name;
+    QList<std::shared_ptr<Snapshot>> snapshots; // Список временных шагов
 
     Experiment(const QString& expName) : id(QUuid::createUuid()), name(expName) {
     }
 
-    void addSnapshot(std::shared_ptr<DataContainer> snapshot) {
+    void addSnapshot(std::shared_ptr<Snapshot> snapshot) {
         if (snapshot)
             snapshots.append(snapshot);
     }

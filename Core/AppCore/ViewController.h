@@ -10,7 +10,7 @@ class LayerManager;
 class ObjectRegistry;
 } // namespace QSpace::Core
 
-namespace QSpace::Controllers {
+namespace QSpace::Core::Controllers {
 
 // ---------------------------------------------------------
 // @SECTION: обработка окон в приложении
@@ -54,4 +54,4 @@ class ViewController : public QObject {
     Core::ObjectRegistry* m_objectRegistry;
 };
 
-} // namespace QSpace::Controllers
+} // namespace QSpace::Core::Controllers

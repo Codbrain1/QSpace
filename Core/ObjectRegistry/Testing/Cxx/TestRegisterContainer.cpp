@@ -19,22 +19,25 @@ class TestRegisterContainer : public QObject {
     Q_OBJECT
 
   private slots:
+
     // Вызывается перед каждым тестом: создаем чистый реестр
     void init() {
         m_registry = std::make_unique<ObjectRegistry>();
     }
+
     void testContainerRegister_Succes() {
-        QSignalSpy spy(m_registry.get(), &ObjectRegistry::containerAdded);
-        auto       container = std::make_shared<QSpace::Core::DataContainer>("TestContainer");
-        m_registry->registerContainer(container);
-        QCOMPARE(m_registry->getAllContainers().size(), 1);
+        QSignalSpy spy(m_registry.get(), &ObjectRegistry::snapshotAdded);
+        auto       container = std::make_shared<QSpace::Core::Snapshot>("TestContainer");
+        m_registry->registerSnapshot(container);
+        QCOMPARE(m_registry->getAllSnapshots().size(), 1);
         QCOMPARE(spy.count(), 1);
-        auto signalContainer = spy.at(0).at(0).value<std::shared_ptr<QSpace::Core::DataContainer>>();
+        auto signalContainer = spy.at(0).at(0).value<std::shared_ptr<QSpace::Core::Snapshot>>();
         QCOMPARE(signalContainer->id, container->id);
     }
+
     void testContainerRegister_NullPointer() {
-        m_registry->registerContainer(nullptr);
-        QCOMPARE(m_registry->getAllContainers().size(), 0);
+        m_registry->registerSnapshot(nullptr);
+        QCOMPARE(m_registry->getAllSnapshots().size(), 0);
     }
 
   private:

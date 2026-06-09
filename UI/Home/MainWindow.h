@@ -28,23 +28,21 @@ class MainWindow : public QMainWindow {
     ~MainWindow();
 
   private slots:
-    void on_btn_add_data();
-    void on_btn_remove_data();
-    void on_render_update();
-    void on_action_resetCameraClicked();
-    void on_action_ChangedViewClicked(QAction* action);
-    void on_action_ChangedBackgroundClicked(QAction* action);
-    void on_action_toggleAxesChanged(bool checked);
-    void on_action_toggleGridChanged(bool checked);
-    void on_action_exportVideoClicked();
-    void on_action_saveProjectClicked();
-    void on_action_openProjectClicked();
-    void on_savePathFromUIRequested();
-    void on_sessionStateChange(const QSpace::Session::CurrentSession& session);
-    void on_exportFinished(bool success);
-    void on_LayerSelectionChanged(const QList<QUuid>& ids);
-    void on_viewCreated(const QUuid& viewId, Visualize::ViewType type);
-    void on_viewRemoved(const QUuid& viewId); // TODO: реализовать удаление доков для удаленных окон
+    void handleRenderUpdate(); // запрос на обновление сцены
+    void resetCamera();
+    void handleCameraViewChange(QAction* action); // TODO
+    void handleBackgroundChange(QAction* action);
+    void axesVisibleToggled(bool visible);
+    void gridVisibleToggled(bool visible);
+    void handleVideoExport();
+    void handleProjectSave();
+    void handleProjectOpen();
+    void handleSavePathSelection();
+    void handleSessionStateChange(const QSpace::Session::CurrentSession& session);
+    void handleExportFinished(bool success);
+    void handleLayerSelectionChange(const QList<QUuid>& ids);
+    void handleViewCreated(const QUuid& viewId, Visualize::ViewType type);
+    void handleViewRemoved(const QUuid& viewId); // TODO: реализовать удаление доков для удаленных окон
 
   private:
     QSpace::Core::AppCore*               m_app;

@@ -70,6 +70,9 @@ target_compile_options(project_config INTERFACE $<$<CONFIG:Release>:-O2>)
 target_compile_options(project_config INTERFACE $<$<CONFIG:Debug>: -O0 -g3 -fno-omit-frame-pointer>)
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
 
+target_precompile_headers(project_config INTERFACE 
+    "${CMAKE_CURRENT_SOURCE_DIR}/pch.h"
+)
 # 5. исполняемые файлы помещают в bin, библиотеки в lib
 #------------------------------------------
 set(OUTPUT_SUBDIR $<CONFIG>)
@@ -88,8 +91,8 @@ add_subdirectory(Common)
 add_subdirectory(Core)
 # add_subdirectory(Filtering)
 add_subdirectory(IO)
-add_subdirectory(Presentation)
-# add_subdirectory(Physics)
+add_subdirectory(Models)
+add_subdirectory(Physics)
 # add_subdirectory(Remote)
 add_subdirectory(Visualize)
 add_subdirectory(Session)

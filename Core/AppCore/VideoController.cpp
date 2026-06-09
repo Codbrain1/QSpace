@@ -10,7 +10,7 @@
 #include <QFileInfo>
 #include <QTimer>
 
-namespace QSpace::Controllers {
+namespace QSpace::Core::Controllers {
 
 VideoController::VideoController(Core::DataManager*  dataManager,
                                  Core::ViewManager*  viewManager,
@@ -98,4 +98,4 @@ void VideoController::cancelVideoExport() {
     }
 }
 
-} // namespace QSpace::Controllers
+} // namespace QSpace::Core::Controllers

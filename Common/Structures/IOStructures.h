@@ -55,6 +55,7 @@ struct ReadResult { // результат чтения одного файла
     QString                     path;
     QString                     errMessage;
     double                      timestamp;
+    double                      pointCount;
     IO::FileFormat              format;
     IO::ReadScheme              scheme;
     ReadStatus                  status = ReadStatus::UnknownError;
@@ -110,7 +111,7 @@ class SchemeFactory {
             scheme.isInterleaved = true;
             return scheme;
         }
-        // TODO::добавить обработку других форматов hdf5 и тд
+        // MINOR::добавить обработку других форматов hdf5 и тд
         return DefaultScheme{};
     }
 
@@ -139,11 +140,11 @@ class SchemeFactory {
                 // scheme.columnsPolicy.append({"t_MCYS", VTK_DOUBLE, vtkDataSetAttributes::SCALARS,
                 // 1, false});
             }
-            // TODO:: //добавить обработку MIXED
+            // MINOR:: //добавить обработку MIXED
             scheme.isInterleaved = true;
             return scheme;
         }
-        // TODO::добавить обработку других форматов hdf5 и тд
+        // MINOR::добавить обработку других форматов hdf5 и тд
         return DefaultScheme{};
     }
 };

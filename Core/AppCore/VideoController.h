@@ -11,7 +11,7 @@ class LayerManager;
 class VideoExportManager;
 } // namespace QSpace::Core
 
-namespace QSpace::Controllers {
+namespace QSpace::Core::Controllers {
 // ---------------------------------------------------------
 // @SECTION: Экспорт видео
 // ---------------------------------------------------------
@@ -62,4 +62,4 @@ class VideoController : public QObject {
     std::shared_ptr<Core::VideoExportManager> m_videoExportManager;
 };
 
-} // namespace QSpace::Controllers
+} // namespace QSpace::Core::Controllers

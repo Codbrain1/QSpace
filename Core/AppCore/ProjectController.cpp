@@ -6,7 +6,7 @@
 #include <QFileInfo>
 #include "DataController.h"
 
-namespace QSpace::Controllers {
+namespace QSpace::Core::Controllers {
 
 ProjectController::ProjectController(Core::SessionManager* sessionManager,
                                      Core::ObjectRegistry* objectRegistry,
@@ -106,4 +106,4 @@ void ProjectController::savePalette(const Visualize::ColorMap& map, const QStrin
     }
 }
 
-} // namespace QSpace::Controllers
+} // namespace QSpace::Core::Controllers

@@ -15,8 +15,9 @@
 #include <QDebug>
 #include <QFileInfo>
 #include <QRegularExpression>
+#include <qfileinfo.h>
 
-namespace QSpace::Controllers {
+namespace QSpace::Core::Controllers {
 
 DataController::DataController(Core::DataManager*    dataManager,
                                Core::ObjectRegistry* objectRegistry,
@@ -34,11 +35,12 @@ void DataController::initialize() {
     // 1. Подписываемся на события менеджера низкоуровневого ввода-вывода
     connect(m_dataManager, &Core::DataManager::fileReady, this, &DataController::onFileReady);
 
-    connect(
-        m_dataManager,
-        &Core::DataManager::ioStarted,
-        this,
-        [this](const QUuid& taskId, const QString&, int total) { m_activeTasks[taskId] = total; });
+    connect(m_dataManager,
+            &Core::DataManager::ioStarted,
+            this,
+            [this](const QUuid& taskId, const QString&, int total) {
+                m_activeTasks[taskId].totalFiles = total;
+            });
 
     connect(m_dataManager,
             &Core::DataManager::ioFinished,
@@ -50,19 +52,30 @@ void DataController::initialize() {
                 }
                 m_activeTasks.remove(taskId);
             });
-
-    // 2. Транслируем сигналы реестра объектов наружу для UI и Моделей
-    connect(m_objectRegistry, &Core::ObjectRegistry::nodeAdded, this, &DataController::nodeAdded);
     connect(m_objectRegistry,
-            &Core::ObjectRegistry::objectRemoved,
+            &Core::ObjectRegistry::dataLoadRequested,
             this,
-            &DataController::dataObjectRemoved);
+            &DataController::onRequestDataLoad);
 }
 
-void DataController::importFiles(const QStringList& paths, Core::ModelingProgrammVersion version) {
+void DataController::importFiles(const QStringList&            paths,
+                                 Core::ModelingProgrammVersion version,
+                                 const QUuid&                  targetExperimentId) {
     if (paths.isEmpty())
         return;
-
+    QUuid experimentId;
+    if (!targetExperimentId.isNull() && m_objectRegistry) {
+        // Проверяем, существует ли такой эксперимент.
+        // Если пользователь кликнул на обычную ноду, getExperiment вернет nullptr.
+        if (m_objectRegistry->getExperiment(targetExperimentId) != nullptr) {
+            experimentId = targetExperimentId;
+        } else {
+            // Опционально: Если у вас есть логика поиска родительского эксперимента
+            // по ID вложенной ноды, ее можно добавить сюда.
+            qCInfo(LogCore) << "Выделенный элемент не является экспериментом. Данные будут "
+                               "импортированы независимо.";
+        }
+    }
     if (paths.size() == 1) {
         // Одиночный импорт файла
         IO::FileFormat        format     = IO::Utils::getFormat(paths[0]);
@@ -73,7 +86,11 @@ void DataController::importFiles(const QStringList& paths, Core::ModelingProgram
         } else {
             scheme = IO::SchemeFactory::createSheme_v2(entityType, format);
         }
-        m_dataManager->importDataAsync(paths[0], scheme);
+        QUuid taskId                     = m_dataManager->importDataAsync(paths[0], scheme);
+        m_activeTasks[taskId].totalFiles = 1;
+        if (!experimentId.isNull()) {
+            m_taskToExperiment.insert(taskId, experimentId);
+        }
     } else {
         // Пакетный асинхронный импорт файлов
         QList<IO::BatchTask> tasks;
@@ -92,7 +109,11 @@ void DataController::importFiles(const QStringList& paths, Core::ModelingProgram
             task.scheme = scheme;
             tasks.append(task);
         }
-        m_dataManager->importBatchDataAsync(tasks);
+        QUuid batchTaskId                     = m_dataManager->importBatchDataAsync(tasks);
+        m_activeTasks[batchTaskId].totalFiles = paths.size();
+        if (!experimentId.isNull()) {
+            m_taskToExperiment.insert(batchTaskId, experimentId);
+        }
     }
 }
 
@@ -148,9 +169,20 @@ void DataController::importExperiment(const QString&                experimentPa
     }
 }
 
-void DataController::prepareNodesForRestoration(
-    const QMap<QString, Session::DataNodeState>& restoringNodes) {
-    m_restoringNodes = restoringNodes;
+void DataController::importExperiment(const QStringList&            filePaths,
+                                      const QString&                experimentName,
+                                      Core::ModelingProgrammVersion version) {
+    if (filePaths.isEmpty() || experimentName.isEmpty() || !m_dataManager || !m_objectRegistry) {
+        return;
+    }
+    auto experiment = std::make_shared<Core::Experiment>(experimentName);
+    experiment->id  = QUuid::createUuid();
+    m_objectRegistry->registerExperiment(experiment);
+    importFiles(filePaths, version, experiment->id);
+}
+
+QList<std::shared_ptr<QSpace::Core::Experiment>> DataController::getExperiments() const {
+    return m_objectRegistry->getAllExperiments();
 }
 
 void DataController::removeNodeObject(const QUuid& id) {
@@ -158,130 +190,6 @@ void DataController::removeNodeObject(const QUuid& id) {
     // ViewController поймает этот сигнал реактивно и зачистит VTK слои в окнах.
     m_objectRegistry->removeObject(id);
     emit markSessionDirty();
-}
-
-void DataController::updateNodeSettings(const QUuid&                               id,
-                                        std::function<void(Core::VisualSettings&)> modifier) {
-    auto node = m_objectRegistry->getNode(id);
-    if (!node)
-        return;
-
-    // 1. Модифицируем мастер-настройки внутри структуры данных ноды
-    modifier(*(node->masterSettings));
-
-    // 2. Просим LayerManager раскатить изменения на все активные VTK-пайплайны
-    m_layerManager->updateNodeMasterSettings(id);
-
-    emit sceneUpdateRequested();
-}
-
-std::shared_ptr<Core::DataNode> DataController::getNodeById(const QUuid& nodeId) {
-    return m_objectRegistry->getNode(nodeId);
-}
-
-QUuid DataController::getNodePaletteId(const QUuid& nodeId) {
-    auto node = m_objectRegistry->getNode(nodeId);
-    return node ? node->masterSettings->colorMapId : QUuid();
-}
-
-void DataController::onFileReady(const QUuid&           taskId,
-                                 QSpace::IO::ReadResult result,
-                                 QSpace::IO::ImportRole role) {
-    if (role != IO::ImportRole::ProjectData)
-        return;
-
-    if (!result.isSuccess()) {
-        qCWarning(LogCore) << "Error loading file:" << result.errMessage;
-        m_restoringNodes.remove(result.path);
-        return;
-    }
-
-    int                   totalInThisTask = m_activeTasks.value(taskId, 1);
-    QString               fileName        = QFileInfo(result.path).fileName();
-    Visualize::EntityType type            = IO::Utils::getEntityType(result.path);
-
-    // 1. Создаем базовый узел данных (DataNode)
-    auto node = std::make_shared<Core::DataNode>(result.data, fileName, result.timestamp, type);
-
-    // 2. Восстановление состояния (при загрузке сохраненного проекта)
-    if (m_restoringNodes.contains(result.path)) {
-        auto restoredState = m_restoringNodes.take(result.path);
-
-        node->id             = restoredState.id;
-        node->label          = restoredState.label;
-        node->masterSettings = restoredState.settings.clone();
-        node->path           = restoredState.path;
-        node->format         = restoredState.format;
-        node->scheme         = restoredState.scheme;
-        node->type           = restoredState.type;
-    } else {
-        // Обычная логика инициализации для новых файлов импорта
-        node->masterSettings->isVisible = (totalInThisTask == 1);
-        node->path                      = result.path;
-        node->format                    = result.format;
-        node->scheme                    = result.scheme;
-
-        emit markSessionDirty();
-    }
-
-    qCInfo(LogCore) << "DataController::onFileReady - Успешно загружен:" << fileName
-                    << "| Количество точек:" << node->stats.pointCount;
-
-    // 3. Автоматическая группировка (Контейнеры / Снапшоты)
-    bool isAddedToContainer = false;
-    if (m_autoGrouping) {
-        QString groupName = extractGroupName(fileName);
-        if (!groupName.isEmpty()) {
-            auto container = findOrCreateContainer(groupName);
-            container->addComponent(node);
-            isAddedToContainer = true;
-            qInfo() << "Файл" << fileName << "сгруппирован в контейнер:" << groupName;
-        }
-    }
-
-    // 4. Регистрация в ObjectRegistry
-    // Проверяем, принадлежит ли текущая задача чтения какому-либо Эксперименту
-    if (m_taskToExperiment.contains(taskId)) {
-        QUuid experimentId = m_taskToExperiment.value(taskId);
-        m_objectRegistry->registerNodeWithGrouping(node, experimentId);
-    } else {
-        // Если это одиночный импорт вне эксперимента
-        m_objectRegistry->registerNode(node);
-    }
-
-    // 5. Визуализация (Создание слоев)
-    // Если файл попал в контейнер, мы НЕ создаем для него слой сразу
-    // (слои для контейнеров обычно создаются при раскрытии дерева или специальной командой).
-    // Если же файл одиночный — сразу генерируем представления во всех окнах.
-    if (!isAddedToContainer) {
-        if (m_viewManager && m_layerManager) {
-            m_viewManager->forEachView([&](std::shared_ptr<Visualize::IView> view) {
-                m_layerManager->createLayer(node, view);
-            });
-        }
-    }
-
-    // 6. Оповещаем систему
-    emit nodeAdded(node);
-}
-
-QString DataController::extractGroupName(const QString& filename) {
-    // Регулярное выражение для группировки шагов симуляций (например: snap_001, step-500)
-    static QRegularExpression regex(R"((snap(shot)?|step)[_\-]?\d+)",
-                                    QRegularExpression::CaseInsensitiveOption);
-    auto                      match = regex.match(filename);
-    return match.hasMatch() ? match.captured(0) : QString();
-}
-
-std::shared_ptr<Core::DataContainer>
-DataController::findOrCreateContainer(const QString& groupName) {
-    auto existing = m_objectRegistry->findContainerByName(groupName);
-    if (existing)
-        return existing;
-
-    auto newContainer = std::make_shared<Core::DataContainer>(groupName);
-    m_objectRegistry->registerContainer(newContainer);
-    return newContainer;
 }
 
 void DataController::createLayerForNode(const QUuid& nodeId) {
@@ -303,4 +211,235 @@ void DataController::createLayerForNode(const QUuid& nodeId) {
     emit sceneUpdateRequested();
     emit markSessionDirty();
 }
-} // namespace QSpace::Controllers
+
+std::optional<QUuid> DataController::getExperimentIdByNodePath(const QString& nodePath) const {
+    // 1. Получаем все эксперименты из реестра
+    auto experiments = m_objectRegistry->getAllExperiments();
+
+    // 2. Проходим по каждому эксперименту и его нодам, сравнивая пути
+    for (const auto& experiment : experiments) {
+        for (const auto& snapshot : experiment->snapshots) {
+            for (const auto& node : snapshot->components) {
+                if (node && node->path == nodePath) {
+                    return experiment->id; // Возвращаем ID эксперимента, если найдено совпадение
+                }
+            }
+        }
+    }
+
+    return std::nullopt; // Если совпадений не найдено, возвращаем nullopt
+}
+
+std::shared_ptr<Core::DataNode> DataController::getNodeById(const QUuid& nodeId) {
+    return m_objectRegistry->getNode(nodeId);
+}
+
+QUuid DataController::getNodePaletteId(const QUuid& nodeId) {
+    auto node = m_objectRegistry->getNode(nodeId);
+    return node ? node->masterSettings->colorMapId : QUuid();
+}
+
+void DataController::updateNodeSettings(const QUuid&                               id,
+                                        std::function<void(Core::VisualSettings&)> modifier) {
+    auto node = m_objectRegistry->getNode(id);
+    if (!node)
+        return;
+
+    // 1. Модифицируем мастер-настройки внутри структуры данных ноды
+    modifier(*(node->masterSettings));
+
+    // 2. Просим LayerManager раскатить изменения на все активные VTK-пайплайны
+    m_layerManager->updateNodeMasterSettings(id);
+
+    emit sceneUpdateRequested();
+}
+
+void DataController::prepareNodesForRestoration(
+    const QMap<QString, Session::DataNodeState>& restoringNodes) {
+    m_restoringNodes = restoringNodes;
+}
+
+// ---------------------------------------------------------
+// @SECTION: Реакция на UI (Слайдер и Дерево)
+// ---------------------------------------------------------
+void DataController::onTimelineStepChanged(const QUuid& snapshotId) {
+    auto snapshot = m_objectRegistry->getSnapshot(snapshotId);
+    if (!snapshot)
+        return;
+
+    for (const auto& node : snapshot->components) {
+        if (!node)
+            continue;
+
+        // Если данные уже в памяти (requestNodeData вернет true), просто включаем их
+        // Если данных нет, метод вернет false и САМ испустит сигнал dataLoadRequested
+        if (m_objectRegistry->getOrLoadNodeData(node->id)) {
+            node->masterSettings->isVisible = true;
+            m_layerManager->updateNodeMasterSettings(node->id);
+        }
+    }
+    emit sceneUpdateRequested();
+}
+
+void DataController::onNodeSelectionActivated(const QUuid& nodeId) {
+    auto node = m_objectRegistry->getNode(nodeId);
+    if (!node)
+        return;
+
+    // Логика идентична таймлайну
+    if (m_objectRegistry->getOrLoadNodeData(nodeId)) {
+        node->masterSettings->isVisible = true;
+        m_layerManager->updateNodeMasterSettings(nodeId);
+        emit sceneUpdateRequested();
+    }
+}
+
+void DataController::onFileReady(const QUuid& taskId, QSpace::IO::ReadResult result) {
+    // 1. Первичная обработка ошибок ввода-вывода
+    if (!result.isSuccess()) {
+        qCWarning(LogCore) << "Error loading file:" << result.errMessage;
+        m_restoringNodes.remove(result.path);
+
+        // Если упала ленивая загрузка, обязательно снимаем блокировку от гонки данных
+        QUuid failedNodeId = m_activeTasks.value(taskId).targetNodeId;
+        if (!failedNodeId.isNull()) {
+            m_loadingNodes.remove(failedNodeId);
+        }
+        return;
+    }
+
+    // Извлекаем ID целевой ноды из карточки задачи (если задача была создана методом
+    // requestDataLoad)
+    QUuid targetNodeId = m_activeTasks.value(taskId).targetNodeId;
+
+    // =================================================================
+    // СЦЕНАРИЙ А: ЛЕНИВАЯ ЗАГРУЗКА (Запись уже есть в ObjectRegistry)
+    // =================================================================
+    if (!targetNodeId.isNull()) {
+        m_loadingNodes.remove(targetNodeId); // Снимаем блокировку, данные в ОЗУ
+
+        // Передаем тяжелый vtkDataSet в ObjectRegistry (он займется LRU и пересчетом stats)
+        m_objectRegistry->updateNodeData(targetNodeId, result.data, result.timestamp);
+
+        // Активируем слой и запрашиваем рендер сцены
+        auto node = m_objectRegistry->getNode(targetNodeId);
+        if (node) {
+            node->masterSettings->isVisible = true;
+            if (m_layerManager) {
+                m_layerManager->updateNodeMasterSettings(targetNodeId);
+            }
+            qCInfo(LogCore) << "Lazy load completed and geometry attached for:" << node->label;
+        }
+
+        emit sceneUpdateRequested();
+        return; // Выходим, так как структуру сущностей создавать не нужно
+    }
+
+    // =================================================================
+    // СЦЕНАРИЙ Б: ПЕРВИЧНЫЙ ИМПОРТ (Создание новой записи по метаданным)
+    // =================================================================
+    QString               fileName = QFileInfo(result.path).fileName();
+    Visualize::EntityType type     = IO::Utils::getEntityType(fileName);
+
+    // Создаем «каркас» узла (result.data здесь пустой, т.к. прочитан только заголовок)
+    auto node = std::make_shared<Core::DataNode>(result.data, fileName, result.timestamp, type);
+
+    // Проверяем: мы восстанавливаем сохраненный проект или импортируем новые файлы?
+    if (m_restoringNodes.contains(result.path)) {
+        auto restoredState = m_restoringNodes.take(result.path);
+
+        node->id             = restoredState.id;
+        node->label          = restoredState.label;
+        node->masterSettings = restoredState.settings.clone();
+        node->path           = restoredState.path;
+        node->format         = restoredState.format;
+        node->scheme         = restoredState.scheme;
+        node->type           = restoredState.type;
+    } else {
+        // Обычный новый импорт с диска
+        node->path             = result.path;
+        node->format           = result.format;
+        node->label            = fileName;
+        node->type             = type;
+        node->scheme           = result.scheme;
+        node->stats.timestamp  = result.timestamp;
+        node->stats.pointCount = result.pointCount; // Записываем размер из прочитанного заголовка
+
+        // Если файлы идут пачкой (часть эксперимента), скрываем их, чтобы не перегрузить сцену.
+        // Одиночные файлы показываем сразу.
+        int totalInThisTask             = m_activeTasks.value(taskId).totalFiles;
+        node->masterSettings->isVisible = (totalInThisTask == 1);
+
+        emit markSessionDirty();
+    }
+
+    qCInfo(LogCore) << "DataController::onFileReady - Скелет ноды создан для:" << fileName
+                    << "| Заявлено точек:" << node->stats.pointCount;
+
+    // Флаг: принадлежит ли файл какому-либо упорядоченному эксперименту?
+    bool isInsideExperiment = m_taskToExperiment.contains(taskId);
+
+    // 4. Регистрация в ObjectRegistry (Вся логика группировки инкапсулирована там!)
+    if (isInsideExperiment) {
+        QUuid experimentId = m_taskToExperiment.value(taskId);
+        // Реестр сам найдет/создаст нужный Snapshot внутри Эксперимента по timestamp ноды
+        m_objectRegistry->registerNode(node, experimentId);
+        qCDebug(LogCore) << "Нода" << fileName
+                         << "делегирована реестру для интеграции в эксперимент:" << experimentId;
+    } else {
+        // Одиночный независимый импорт
+        m_objectRegistry->registerNode(node);
+        qCDebug(LogCore) << "Нода" << fileName << "зарегистрирована на верхнем уровне реестра";
+    }
+
+    // 5. Создание визуальных слоев в VTK-окнах (Только для одиночных независимых файлов!)
+    // Для файлов внутри экспериментов слои создаются реактивно (при движении слайдера таймлайна)
+    if (!isInsideExperiment) {
+        if (m_viewManager && m_layerManager) {
+            m_viewManager->forEachView([&](std::shared_ptr<Visualize::IView> view) {
+                m_layerManager->createLayer(node, view);
+            });
+        }
+    }
+}
+
+void DataController::onRequestDataLoad(const QUuid& nodeId) {
+    if (m_loadingNodes.contains(nodeId))
+        return;
+
+    auto node = m_objectRegistry->getNode(nodeId);
+    if (!node || node->path.isEmpty())
+        return;
+
+    m_loadingNodes.insert(nodeId);
+
+    QUuid taskId =
+        m_dataManager->importDataAsync(node->path, node->scheme, IO::ImportRole::FullData);
+
+    // Сразу регистрируем задачу и привязываем к ней ноду
+    m_activeTasks[taskId] = TaskInfo{nodeId, 1};
+
+    qCInfo(LogCore) << "Lazy loading started for:" << node->label;
+}
+
+QString DataController::extractGroupName(const QString& filename) {
+    // Регулярное выражение для группировки шагов симуляций (например: snap_001, step-500)
+    static QRegularExpression regex(R"((snap(shot)?|step)[_\-]?\d+)",
+                                    QRegularExpression::CaseInsensitiveOption);
+    auto                      match = regex.match(filename);
+    return match.hasMatch() ? match.captured(0) : QString();
+}
+
+std::shared_ptr<Core::Snapshot> DataController::findOrCreateSnapshot(const QString& groupName) {
+    auto existing = m_objectRegistry->findSnapshotByName(groupName);
+    if (existing)
+        return existing;
+
+    auto newContainer = std::make_shared<Core::Snapshot>(groupName);
+    m_objectRegistry->registerSnapshot(newContainer);
+    return newContainer;
+}
+
+
+
+} // namespace QSpace::Core::Controllers

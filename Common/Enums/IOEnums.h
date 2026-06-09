@@ -25,10 +25,11 @@ enum class FileFormat
   HDF5, // формат для больших данных, включает архивирование
   Unknown
 };
+// способ чтения данных (быстрое чтение только заголовка или чтение всего файла)
 enum class ImportRole
 {
-  ProjectData, // Обычные данные пользователя
-  Internal     // Временные данные (например, кадры видео)
+  ProjectData, // загрузка только заголовка для отображения записи в UI
+  FullData,    // загрузка всего файла
 };
 inline QString fileformatToString(FileFormat format)
 {

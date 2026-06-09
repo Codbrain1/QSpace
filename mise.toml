@@ -1,0 +1,8 @@
+[env]
+
+[env._]
+path = ['C:/Qt/Tools/llvm-mingw1706_64/bin', 
+    'C:/Qt/Tools/QtCreator/bin/clang/bin',
+    'C:/Qt/Tools/Ninja',
+    'C:/Qt/Tools/CMake_64/bin'
+    ]

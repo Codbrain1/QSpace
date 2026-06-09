@@ -3,7 +3,7 @@
 #include "Core/ObjectRegistry/ObjectRegistry.h"
 #include "Core/ViewManager/ViewManager.h"
 
-namespace QSpace::Controllers {
+namespace QSpace::Core::Controllers {
 
 ViewController::ViewController(Core::ViewManager*    viewManager,
                                Core::LayerManager*   layerManager,
@@ -46,6 +46,11 @@ QUuid ViewController::createView(Visualize::ViewType type) {
 void ViewController::removeView(const QUuid& viewId) {
     m_viewManager->removeView(viewId);
     emit viewRemoved(viewId);
+}
+
+Visualize::IView* ViewController::getView(const QUuid& viewId) {
+    // Реализация (например, поиск в менеджере окон)
+    return m_viewManager->getView(viewId).get();
 }
 
 void ViewController::resetCameraInAllViews() {
@@ -115,4 +120,4 @@ void ViewController::setGridVisibleInView(const QUuid& viewId, bool visible) {
         renderer->setGridVisible(visible);
     }
 }
-} // namespace QSpace::Controllers
+} // namespace QSpace::Core::Controllers

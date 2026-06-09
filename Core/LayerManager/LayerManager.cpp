@@ -130,7 +130,7 @@ void LayerManager::updateNodeMasterSettings(const QUuid& nodeId) {
 }
 
 // 1. Создание слоев — оставляем как есть, это надежно
-void LayerManager::createLayersForContainer(std::shared_ptr<DataContainer>    container,
+void LayerManager::createLayersForContainer(std::shared_ptr<Snapshot>         container,
                                             std::shared_ptr<Visualize::IView> view) {
     if (!container || !view)
         return;
@@ -141,7 +141,7 @@ void LayerManager::createLayersForContainer(std::shared_ptr<DataContainer>    co
 }
 
 // 2. Управление видимостью — добавляем флаг блокировки рендера
-void LayerManager::setContainerVisibility(std::shared_ptr<DataContainer> container, bool visible) {
+void LayerManager::setContainerVisibility(std::shared_ptr<Snapshot> container, bool visible) {
     if (!container)
         return;
 

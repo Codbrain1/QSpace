@@ -32,33 +32,33 @@ class PropertyInspector : public QWidget {
     void setCurrentNode(const QUuid& id);
   private slots:
     // Слот для комбобокса палитр
-    void onPaletteChanged(int index);
-    void onCurrentVisColumnChanged(int index);
-    void onRenderModeChanged(int index);
+    void handlePaletteChange(int index);
+    void handleCurrentVisualizeColumnChange(int index);
+    void handleRenderModeChange(int index);
 
     // Слот для прозрачности (например, если есть слайдер)
-    void onOpacityChanged(double val);
-    void onParticleSizeChanged(double val);
-    void onUseLogscaleChanged(bool checked);
-    void onUseEmisiveChanged(bool checked);
-    void onRangeMaxValueChanged(double val);
-    void onRangeMinValueChanged(double val);
-    void onCheckBoxAutoRangeChanged(bool checked);
-    void onShowScalarBar(bool checked);
-    void onNewCustomPaleteButtonClicked();
-    void onEditPaleteButtonClicked();
-    void onColorMapAdded(const Visualize::ColorMap& map);
-    void onCheckBox_hideOutOfRangeChanged(bool checked);
-    void onDoubleSpinBox_colorCorrectionChanged(double val);
-    void onDoubleSpinBox_gauianSharpnesChanged(double val);
-    void onDoubleSpinBox_sigmoidGammaOpacityChanged(double val);
-    void onDoubleSpinBox_sigmoidGammaColorChanged(double val);
-    void onDoubleSpinBox__sigmoidShiftOpacityChanged(double val);
-    void onDoubleSpinBox__sigmoidShiftColorChanged(double val);
-    void onCombo_functionSplatChanged(int index);
-    void onCombo_interpolationRangeChanged(int index);
-    void onCombo_functionOpacityChanged(int index);
-    void onDoubleSpinBox__alphaChanged(double val);
+    void handleOpacityChange(double val);
+    void handleParticleSizeChange(double val);
+    void handleUseLogscaleToggled(bool use);
+    void handleUseEmisiveToggled(bool use);
+    void handleRangeMaxValueChange(double maxVal);
+    void handleRangeMinValueChange(double minVal);
+    void handleAutoRangeToggled(bool use);
+    void handleShowScalarBarToggled(bool show);
+    void handleCreateCustomPalete();
+    void handleEditPalete();
+    void handleColorMapAdded(const Visualize::ColorMap& map);
+    void handleHideOutOfRangeToggled(bool use);
+    void handleColorCorrectionChange(double val);
+    void habdleGauianSharpnesChange(double val);
+    void handleSigmoidGammaOpacityChange(double val);
+    void handleSigmoidGammaColorChange(double val);
+    void handleSigmoidShiftOpacityChange(double val);
+    void handleSigmoidShiftColorChange(double val);
+    void handleFunctionSplatChange(int index);
+    void handleInterpolationRangeChange(int index);
+    void handleFunctionOpacityChange(int index);
+    void handleAlphaChange(double val);
 
   private:
     Ui::PropertyInspector* ui;

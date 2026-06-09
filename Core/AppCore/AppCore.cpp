@@ -1,15 +1,7 @@
 #include "AppCore.h"
-#include "Common/Enums/IOEnums.h"
-#include "Common/Interfaces/IView.h"
-#include "Common/Logger/Logger.h"
 #include "Core/DataManager/DataManager.h"
 #include "Core/ObjectRegistry/ObjectRegistry.h"
-// #include "Core/PipelineManager/PipelineManager.h"
 #include "Core/TaskManager/TaskManager.h"
-#include "Interfaces/IOFactory.h"
-#include "Interfaces/IView.h"
-#include "Visualize/VtkView.h"
-#include "Enums/RenderEnums.h"
 #include <memory>
 
 #include "Core/DataManager/DataManager.h"
@@ -19,16 +11,16 @@
 #include "Core/TaskManager/TaskManager.h"
 #include "Core/ViewManager/ViewManager.h"
 
-#include "DataController.h"
-#include "ProjectController.h"
-#include "VideoController.h"
-#include "ViewController.h"
-
 #include <QFileInfo>
 #include <QRegularExpression>
 #include <qfileinfo.h>
 #include <qloggingcategory.h>
 #include <quuid.h>
+#include "DataController.h"
+#include "Models/DataTreeModel/DataTreeModel.h"
+#include "ProjectController.h"
+#include "VideoController.h"
+#include "ViewController.h"
 
 namespace QSpace::Core {
 AppCore::AppCore(QObject* parent) : QObject(parent) {
@@ -63,23 +55,16 @@ AppCore::AppCore(QObject* parent) : QObject(parent) {
                                                                        m_viewManager.get(),
                                                                        m_layerManager.get(),
                                                                        this);
+    // 3. Инициализация моделей данных
+    m_dataTreeModel = std::make_unique<QSpace::Models::DataTreeModel>(m_objectRegistry.get(),
+                                                                      m_layerManager.get(),
+                                                                      this);
 }
 
 void AppCore::initialize() {
-    // настройка PipelineManager для реагирования на изменения в ObjectRegistry и ViewManager
-    // УДАЛЕНО, В БУДУЩЕМ МОЖЕТ ПОНАДОБИТСЯ, НО СЕЙЧАС ДУБЛИРУЕТ AppCore
-    // connect(m_objectRegistry.get(),
-    //         &ObjectRegistry::nodeAdded,
-    //         m_pipelineManager.get(),
-    //         &PipelineManager::onNodeAdded);
-    // connect(m_objectRegistry.get(),
-    //         &ObjectRegistry::objectRemoved,
-    //         m_pipelineManager.get(),
-    //         &PipelineManager::onObjectRemoved);
-    // connect(m_viewManager.get(),
-    //         &ViewManager::viewCreated,
-    //         m_pipelineManager.get(),
-    //         &PipelineManager::onViewCreated);
+    m_viewController->initialize();
+    m_dataController->initialize();
+    m_projectController->initialize();
 }
 
 Controllers::ViewController* AppCore::viewController() const {
@@ -96,6 +81,10 @@ Controllers::ProjectController* AppCore::projectController() const {
 
 Controllers::VideoController* AppCore::videoController() const {
     return m_videoController.get();
+}
+
+Models::DataTreeModel* AppCore::dataTreeModel() const {
+    return m_dataTreeModel.get();
 }
 
 } // namespace QSpace::Core

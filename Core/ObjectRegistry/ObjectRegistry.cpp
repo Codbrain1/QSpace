@@ -5,6 +5,7 @@
 #include <qloggingcategory.h>
 #include <qobject.h>
 #include <quuid.h>
+#include "Physics/Math/MetaDataCalculating.h"
 #include <memory>
 
 namespace QSpace::Core {
@@ -20,27 +21,27 @@ void ObjectRegistry::registerNode(std::shared_ptr<DataNode> node) {
     }
     m_nodes.insert(node->id, node);
     if (node->data != nullptr) {
+        node->stats = QSpace::Physics::Math::calculateMetaData(node->data, node->stats.timestamp);
         touchNodeInMemory(node->id);
     }
     emit nodeAdded(node);
     qCInfo(LogCore) << "Registry: Node registered " << node->label << " " << node->id;
 }
 
-void ObjectRegistry::registerContainer(std::shared_ptr<DataContainer> container) {
-    if (!container)
+void ObjectRegistry::registerSnapshot(std::shared_ptr<Snapshot> snapshot) {
+    if (!snapshot)
         return;
-    if (m_containers.contains(container->id)) {
-        qCWarning(LogCore) << "Registry: Attempt to register duplicate container ID:"
-                           << container->id;
+    if (m_snapshots.contains(snapshot->id)) {
+        qCWarning(LogCore) << "Registry: Attempt to register duplicate snapshot ID:"
+                           << snapshot->id;
         return;
     }
-    m_containers.insert(container->id, container);
-    for (auto& comp : container->components) {
+    m_snapshots.insert(snapshot->id, snapshot);
+    for (auto& comp : snapshot->components) {
         registerNode(comp);
     }
-    emit containerAdded(container);
-    qCDebug(LogCore) << "Registry: Container registered " << container->name << " "
-                     << container->id;
+    emit snapshotAdded(snapshot);
+    qCDebug(LogCore) << "Registry: Snapshot registered " << snapshot->name << " " << snapshot->id;
 }
 
 void ObjectRegistry::registerExperiment(std::shared_ptr<Experiment> experiment) {
@@ -53,7 +54,7 @@ void ObjectRegistry::registerExperiment(std::shared_ptr<Experiment> experiment) 
     }
     m_experiments.insert(experiment->id, experiment);
     for (auto& snap : experiment->snapshots) {
-        registerContainer(snap);
+        registerSnapshot(snap);
     }
     emit experimentAdded(experiment);
     qCDebug(LogCore) << "Registry: Experiment registered " << experiment->name << " "
@@ -61,8 +62,7 @@ void ObjectRegistry::registerExperiment(std::shared_ptr<Experiment> experiment) 
 }
 
 // ObjectRegistry.cpp
-void ObjectRegistry::registerNodeWithGrouping(std::shared_ptr<DataNode> node,
-                                              const QUuid&              experimentId) {
+void ObjectRegistry::registerNode(std::shared_ptr<DataNode> node, const QUuid& experimentId) {
     if (!node)
         return;
     // 1. Регистрируем атомарную ноду
@@ -73,9 +73,9 @@ void ObjectRegistry::registerNodeWithGrouping(std::shared_ptr<DataNode> node,
         return;
     }
     // 4. Ищем или создаем Снапшот внутри найденного эксперимента
-    double                         ts             = node->stats.timestamp;
-    const double                   eps            = 1e-5;
-    std::shared_ptr<DataContainer> targetSnapshot = nullptr;
+    double                    ts             = node->stats.timestamp;
+    const double              eps            = 1e-5;
+    std::shared_ptr<Snapshot> targetSnapshot = nullptr;
     for (const auto& snap : targetExperiment->snapshots) {
         if (std::abs(snap->timestamp - ts) < eps) {
             targetSnapshot = snap;
@@ -85,22 +85,46 @@ void ObjectRegistry::registerNodeWithGrouping(std::shared_ptr<DataNode> node,
 
     if (!targetSnapshot) {
         QString snapName = QString("Snapshot (t = %1)").arg(ts, 0, 'f', 5);
-        targetSnapshot   = std::make_shared<DataContainer>(snapName, ts);
+        targetSnapshot   = std::make_shared<Snapshot>(snapName, ts);
 
         targetExperiment->addSnapshot(targetSnapshot); // Привязываем к эксперименту
-        registerContainer(targetSnapshot); // Регистрируем в m_containers (emit containerAdded)
+        registerSnapshot(targetSnapshot); // Регистрируем в m_snapshots (emit snapshotAdded)
     }
 
     // 5. Добавляем ноду в компоненты снапшота
     targetSnapshot->addComponent(node);
 }
 
+void ObjectRegistry::registerSnapshot(std::shared_ptr<Snapshot> container,
+                                      const QUuid&              experimentId) {
+}
+
 std::shared_ptr<DataNode> ObjectRegistry::getNode(const QUuid& id) const {
     return m_nodes.value(id, nullptr);
 }
 
-std::shared_ptr<DataContainer> ObjectRegistry::getContainer(const QUuid& id) const {
-    return m_containers.value(id, nullptr);
+std::shared_ptr<Snapshot> ObjectRegistry::getSnapshot(const QUuid& id) const {
+    return m_snapshots.value(id, nullptr);
+}
+
+std::shared_ptr<Experiment> ObjectRegistry::getExperiment(const QUuid& id) const {
+    return m_experiments.value(id, nullptr);
+}
+
+std::shared_ptr<DataNode> ObjectRegistry::getOrLoadNodeData(const QUuid& id) {
+    auto node = m_nodes.value(id, nullptr);
+    if (!node)
+        return nullptr;
+
+    if (node->data != nullptr) {
+        touchNodeInMemory(id); // Двигаем в начало кэша, возможно вытесняя старые
+        return node;
+    }
+
+    // Если данных в ОЗУ нет — читаем с диска
+    qCInfo(LogCore) << "LRU Cache: Lazy loading heavy VTK data for" << node->label;
+    emit dataLoadRequested(id, node->path, node->scheme);
+    return node;
 }
 
 void ObjectRegistry::removeObject(const QUuid& id) {
@@ -130,7 +154,7 @@ void ObjectRegistry::removeObject(const QUuid& id) {
             }
 
             // Удаляем сам снапшот из реестра контейнеров
-            m_containers.remove(snap->id);
+            m_snapshots.remove(snap->id);
             emit objectRemoved(snap->id);
         }
 
@@ -141,13 +165,13 @@ void ObjectRegistry::removeObject(const QUuid& id) {
     // =========================================================================
     // СЦЕНАРИЙ 2: УДАЛЕНИЕ ОДИНОЧНОГО КОНТЕЙНЕРА (Снапшота)
     // =========================================================================
-    if (m_containers.contains(id)) {
-        auto container = m_containers.take(id);
-        qCInfo(LogCore) << "Registry: Removing snapshot container:" << container->name;
+    if (m_snapshots.contains(id)) {
+        auto snapshot = m_snapshots.take(id);
+        qCInfo(LogCore) << "Registry: Removing snapshot:" << snapshot->name;
 
         // 1. Сначала убираем ссылку на этот снапшот из его родительского эксперимента
         for (auto& exp : m_experiments) {
-            auto It = std::find(exp->snapshots.begin(), exp->snapshots.end(), container);
+            auto It = std::find(exp->snapshots.begin(), exp->snapshots.end(), snapshot);
             if (It != exp->snapshots.end()) {
                 exp->snapshots.erase(It);
                 break; // Снапшот принадлежит только одному эксперименту
@@ -155,7 +179,7 @@ void ObjectRegistry::removeObject(const QUuid& id) {
         }
 
         // 2. Точечно удаляем только те ноды, которые принадлежали этому снапшоту
-        for (const auto& node : container->components) {
+        for (const auto& node : snapshot->components) {
             if (!node)
                 continue;
 
@@ -177,8 +201,8 @@ void ObjectRegistry::removeObject(const QUuid& id) {
     if (m_nodes.contains(id)) {
         // Тут полный перебор контейнеров оправдан, т.к. мы не знаем, где именно лежит нода.
         // Но это работает быстро, потому что вызывается редко и НЕ рекурсивно!
-        for (auto& container : m_containers) {
-            auto& comps = container->components;
+        for (auto& snapshot : m_snapshots) {
+            auto& comps = snapshot->components;
             auto  it    = std::remove_if(
                 comps.begin(),
                 comps.end(),
@@ -201,13 +225,75 @@ void ObjectRegistry::removeObject(const QUuid& id) {
     }
 }
 
-std::shared_ptr<DataContainer> ObjectRegistry::findContainerByName(const QString& name) const {
-    for (auto container : m_containers) {
-        if (container->name == name) {
-            return container;
+std::shared_ptr<Snapshot> ObjectRegistry::findSnapshotByName(const QString& name) const {
+    for (auto snapshot : m_snapshots) {
+        if (snapshot->name == name) {
+            return snapshot;
         }
     }
     return nullptr;
+}
+
+std::shared_ptr<Experiment> ObjectRegistry::findExperimentByName(const QString& name) const {
+    for (auto experiment : m_experiments) {
+        if (experiment->name == name) {
+            return experiment;
+        }
+    }
+    return nullptr;
+}
+
+void ObjectRegistry::updateNodeData(const QUuid&                id,
+                                    vtkSmartPointer<vtkDataSet> dataSet,
+                                    double                      timestamp) {
+    auto node = m_nodes.value(id);
+    if (!node)
+        return;
+
+    // Защита от лишних сигналов: если указатели совпадают, ничего не делаем
+    if (node->data == dataSet)
+        return;
+
+    // Сохраняем предыдущее состояние для логики оповещений
+    bool wasInMemory     = (node->data != nullptr);
+    bool turningIntoNull = (dataSet == nullptr);
+
+    // Применяем новые данные
+    node->data = dataSet;
+
+    if (!turningIntoNull) {
+        // Данные появились/обновились в ОЗУ -> регистрируем в LRU
+        node->stats = QSpace::Physics::Math::calculateMetaData(node->data, timestamp);
+        touchNodeInMemory(id);
+
+        // На случай, если лимит кэша жестко изменился в настройках,
+        // гарантируем, что размер LRU не превышает емкость (заменяем if на while внутри touch или
+        // здесь)
+        while (m_lruList.size() > m_cacheCapacity) {
+            QUuid oldestId   = m_lruList.back();
+            auto  oldestNode = m_nodes.value(oldestId);
+            if (oldestNode && oldestId != id) { // Не выталкиваем только что добавленную ноду
+                oldestNode->data = nullptr;
+                m_lruMap.remove(oldestId);
+                m_lruList.pop_back();
+                emit nodeDataUpdated(oldestId); // Оповещаем, что старая нода выгружена
+                qCInfo(LogCore) << "LRU Cache: Evicted" << oldestNode->label << "due to overflow.";
+            } else {
+                break;
+            }
+        }
+    } else {
+        // Данные принудительно выгрузили (dataSet == nullptr)
+        if (m_lruMap.contains(id)) {
+            m_lruList.erase(m_lruMap[id]);
+            m_lruMap.remove(id);
+        }
+    }
+
+    // Генерируем сигнал только если статус "В ОЗУ / На Диске" реально изменился
+    if (wasInMemory != (!turningIntoNull)) {
+        emit nodeDataUpdated(id);
+    }
 }
 
 void ObjectRegistry::touchNodeInMemory(const QUuid& id) {
@@ -234,52 +320,12 @@ void ObjectRegistry::touchNodeInMemory(const QUuid& id) {
     }
 }
 
-// Реализация ленивой загрузки (Вызывать из Layer::update или PlaybackController)
-std::shared_ptr<DataNode> ObjectRegistry::getOrLoadNodeData(const QUuid& id) {
-    auto node = m_nodes.value(id, nullptr);
-    if (!node)
-        return nullptr;
-
-    bool wasLoadedJustNow = false;
-
-    // Если данных в ОЗУ нет — читаем с диска
-    if (node->data == nullptr) {
-        qCInfo(LogCore) << "LRU Cache: Lazy loading heavy VTK data for" << node->label;
-        // Здесь должна быть реальная логика загрузки данных из файла
-
-        wasLoadedJustNow = true;
-    }
-
-    if (node->data != nullptr) {
-        touchNodeInMemory(id); // Двигаем в начало кэша, возможно вытесняя старые
-
-        if (wasLoadedJustNow) {
-            emit nodeDataUpdated(id); // Оповещаем UI, что данные теперь "In RAM"
-        }
-    }
-
-    return node;
-}
-
-// НОВЫЙ
-void ObjectRegistry::updateNodeData(const QUuid& id, vtkSmartPointer<vtkDataSet> dataSet) {
-    auto node = m_nodes.value(id);
-    if (!node)
-        return;
-
-    node->data = dataSet;
-
-    if (dataSet != nullptr) {
-        // Данные вернулись в ОЗУ -> активируем/освежаем ноду в LRU
-        touchNodeInMemory(id);
-    } else {
-        // Если данные принудительно занулили извне — убираем из LRU track'ера
-        if (m_lruMap.contains(id)) {
-            m_lruList.erase(m_lruMap[id]);
-            m_lruMap.remove(id);
-        }
-    }
-
-    // emit nodeUpdated(node); // Если UI нужно перерисовать ноду (например, иконка "загружено")
+void ObjectRegistry::clear() {
+    m_nodes.clear();
+    m_snapshots.clear();
+    m_experiments.clear();
+    m_lruList.clear();
+    m_lruMap.clear();
+    emit cleared();
 }
 } // namespace QSpace::Core

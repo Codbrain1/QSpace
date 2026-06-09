@@ -50,7 +50,7 @@ void VideoExportManager::fillBuffer() {
         QString path = m_files[m_nextFrameToRead];
 
         // Отправляем в TaskManager и запоминаем какой ID какому кадру принадлежит
-        QUuid taskId = m_dataManager->importDataAsync(path, m_scheme, IO::ImportRole::Internal);
+        QUuid taskId = m_dataManager->importDataAsync(path, m_scheme, IO::ImportRole::FullData);
         m_pendingTasks.insert(taskId, m_nextFrameToRead);
 
         m_nextFrameToRead += m_stride;
@@ -98,8 +98,10 @@ void VideoExportManager::processReadyFrames() {
         auto           fileName   = QFileInfo(result.path).fileName();
         auto           entityType = IO::Utils::getEntityType(fileName);
         // 1. Создаем временную ноду для визуализатора
-        auto tempNode =
-            std::make_shared<DataNode>(result.data, QFileInfo(result.path).fileName(), entityType);
+        auto tempNode = std::make_shared<DataNode>(result.data,
+                                                   QFileInfo(result.path).fileName(),
+                                                   result.timestamp,
+                                                   entityType);
 
         // 2. Подменяем данные. Так как targetLayer это интерфейс, безопасно кастуем его
         m_targetLayer->setData(tempNode);

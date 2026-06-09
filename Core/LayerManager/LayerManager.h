@@ -69,9 +69,9 @@ class LayerManager : public QObject {
 
     void updateNodeMasterSettings(const QUuid& nodeId);
 
-    void createLayersForContainer(std::shared_ptr<DataContainer>    container,
+    void createLayersForContainer(std::shared_ptr<Snapshot>         container,
                                   std::shared_ptr<Visualize::IView> view);
-    void setContainerVisibility(std::shared_ptr<DataContainer> container, bool visible);
+    void setContainerVisibility(std::shared_ptr<Snapshot> container, bool visible);
 
     QList<std::shared_ptr<Layer>> getAllLayers() const {
         return m_layers.values();

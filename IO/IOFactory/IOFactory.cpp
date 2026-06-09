@@ -1,10 +1,11 @@
 #include "Common/Interfaces/IOFactory.h"
 #include "Common/Enums/IOEnums.h"
-#include "IO/BIN/BINReader.h"
 #include "Interfaces/IReader.h"
-#include <memory>
 #include <qcontainerfwd.h>
 #include <qnamespace.h>
+#include "IO/BIN/BINReader.h"
+#include <memory>
+
 namespace QSpace::IO {
 std::unique_ptr<IReader> IOFactory::createReader(IO::FileFormat format) {
     if (format == FileFormat::BIN) {
@@ -12,6 +13,7 @@ std::unique_ptr<IReader> IOFactory::createReader(IO::FileFormat format) {
     } else // TODO:: добавить другие форматы
         return nullptr;
 }
+
 FileFormat Utils::getFormat(const QString& path) {
     if (path.endsWith(".bin", Qt::CaseInsensitive)) {
         return FileFormat::BIN;
@@ -24,8 +26,9 @@ FileFormat Utils::getFormat(const QString& path) {
     }
     return FileFormat::Unknown;
 }
+
 Visualize::EntityType Utils::getEntityType(const QString& name) {
-    QString n = name.toUpper();
+    QString n = name.toUpper().trimmed();
     if (n.contains("GAS") || n.contains("G"))
         return Visualize::EntityType::Gas;
     if (n.contains("STAR") || n.contains("S"))
