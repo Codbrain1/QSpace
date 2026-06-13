@@ -39,9 +39,10 @@ class ObjectRegistry : public QObject {
 
     // Регистрация объектов
     void registerNode(std::shared_ptr<DataNode> node);
-    void registerNode(std::shared_ptr<DataNode> node, const QUuid& experimentId);
+    void registerNodeToExperiment(std::shared_ptr<DataNode> node, const QUuid& experimentId);
+    void registerNodeToSnapshot(std::shared_ptr<DataNode> node, const QUuid& parentSnapshotId);
     void registerSnapshot(std::shared_ptr<Snapshot> snapshot);
-    void registerSnapshot(std::shared_ptr<Snapshot> snapshot, const QUuid& experimentId); // TODO
+    void registerSnapshot(std::shared_ptr<Snapshot> snapshot, const QUuid& experimentId);
     void registerExperiment(std::shared_ptr<Experiment> experiment);
 
     std::shared_ptr<DataNode>   getNode(const QUuid& id) const;
@@ -69,8 +70,9 @@ class ObjectRegistry : public QObject {
 
     Q_INVOKABLE void clear();
   signals:
-    void nodeAdded(std::shared_ptr<QSpace::Core::DataNode> node);
-    void snapshotAdded(std::shared_ptr<QSpace::Core::Snapshot> container);
+    void nodeAdded(std::shared_ptr<QSpace::Core::DataNode> node, const QUuid& parentSnapshotId);
+    void snapshotAdded(std::shared_ptr<QSpace::Core::Snapshot> container,
+                       const QUuid&                            parentExperimentId);
     void experimentAdded(std::shared_ptr<QSpace::Core::Experiment> experiment);
     void objectRemoved(const QUuid& id);
     void cleared();

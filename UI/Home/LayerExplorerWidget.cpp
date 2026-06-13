@@ -199,7 +199,6 @@ void LayerExplorerWidget::setupSlots() {
             QFileDialog::getExistingDirectory(this, tr("Пожалуйста выберите директорию"), m_root_path);
         handleRootPathChange(dirPath);
     });
-    //
 
     // --------- Менеджер слоев ---------
     // сообщает ядру об активации ноды
@@ -243,7 +242,7 @@ void LayerExplorerWidget::setupSlots() {
 
     // удаление выбранных элементов
     connect(ui->toolButton_RemoveElement,
-            &QToolButton::toggled,
+            &QToolButton::clicked,
             this,
             &LayerExplorerWidget::handleRemoveElement);
 

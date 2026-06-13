@@ -394,7 +394,7 @@ void DataController::handleFileReady(const QUuid& taskId, QSpace::IO::ReadResult
     if (isInsideExperiment) {
         QUuid experimentId = m_taskToExperiment.value(taskId);
         // Реестр сам найдет/создаст нужный Snapshot внутри Эксперимента по timestamp ноды
-        m_objectRegistry->registerNode(node, experimentId);
+        m_objectRegistry->registerNodeToExperiment(node, experimentId);
         qCDebug(LogCore) << "Нода" << fileName
                          << "делегирована реестру для интеграции в эксперимент:" << experimentId;
     } else {

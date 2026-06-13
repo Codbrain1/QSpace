@@ -3359,9 +3359,9 @@
 											},
 											"font": "Arial;18;0",
 											"parentStyle": true,
-											"left": 72.021484375,
+											"left": 70,
 											"top": 37,
-											"width": 39.0146484375,
+											"width": 34.9892578125,
 											"height": 18,
 											"text": "Core"
 										},
@@ -3375,7 +3375,7 @@
 											"parentStyle": true,
 											"left": 37,
 											"top": 37,
-											"width": 29.021484375,
+											"width": 27,
 											"height": 18,
 											"text": "pkg"
 										}
@@ -18117,8 +18117,8 @@
 													"visible": false,
 													"font": "Arial;13;0",
 													"parentStyle": false,
-													"left": 208,
-													"top": 89,
+													"left": 93,
+													"top": 39,
 													"height": 13,
 													"alpha": 1.5707963267948966,
 													"distance": 15,
@@ -18139,8 +18139,8 @@
 													"visible": null,
 													"font": "Arial;13;0",
 													"parentStyle": false,
-													"left": 223,
-													"top": 89,
+													"left": 88,
+													"top": 53,
 													"height": 13,
 													"alpha": 1.5707963267948966,
 													"distance": 30,
@@ -18161,8 +18161,8 @@
 													"visible": false,
 													"font": "Arial;13;0",
 													"parentStyle": false,
-													"left": 179,
-													"top": 88,
+													"left": 102,
+													"top": 10,
 													"height": 13,
 													"alpha": -1.5707963267948966,
 													"distance": 15,
@@ -22441,9 +22441,9 @@
 													},
 													"font": "Arial;13;0",
 													"parentStyle": true,
-													"left": 32.72998046875,
+													"left": 30.55908203125,
 													"top": 13,
-													"width": 138.53125,
+													"width": 123.703125,
 													"height": 13,
 													"text": "загрузка одного файла"
 												},
@@ -22457,7 +22457,7 @@
 													"parentStyle": true,
 													"left": 13,
 													"top": 13,
-													"width": 13.72998046875,
+													"width": 11.55908203125,
 													"height": 13,
 													"text": "sd"
 												}
@@ -24455,9 +24455,9 @@
 													},
 													"font": "Arial;13;0",
 													"parentStyle": true,
-													"left": 56.72998046875,
+													"left": 54.55908203125,
 													"top": 5,
-													"width": 46.97265625,
+													"width": 40.42822265625,
 													"height": 13,
 													"text": "QSpace"
 												},
@@ -24471,7 +24471,7 @@
 													"parentStyle": true,
 													"left": 37,
 													"top": 5,
-													"width": 13.72998046875,
+													"width": 11.55908203125,
 													"height": 13,
 													"text": "sd"
 												}
@@ -27794,9 +27794,9 @@
 													},
 													"font": "Arial;13;0",
 													"parentStyle": true,
-													"left": 229.07177734375,
+													"left": 227.61181640625,
 													"top": 1285,
-													"width": 95.71630859375,
+													"width": 84.46826171875,
 													"height": 13,
 													"text": "создание видео"
 												},
@@ -27810,7 +27810,7 @@
 													"parentStyle": true,
 													"left": 205,
 													"top": 1285,
-													"width": 18.07177734375,
+													"width": 16.61181640625,
 													"height": 13,
 													"text": "opt"
 												},
@@ -29668,9 +29668,9 @@
 													},
 													"font": "Arial;13;0",
 													"parentStyle": true,
-													"left": 705.6708984375,
+													"left": 704.92822265625,
 													"top": 757,
-													"width": 1193.3291015625,
+													"width": 1194.07177734375,
 													"height": 13,
 													"text": "создание окна"
 												},
@@ -29684,7 +29684,7 @@
 													"parentStyle": true,
 													"left": 669,
 													"top": 757,
-													"width": 15.1708984375,
+													"width": 14.42822265625,
 													"height": 13,
 													"text": "ref"
 												}
@@ -29720,9 +29720,9 @@
 													},
 													"font": "Arial;13;0",
 													"parentStyle": true,
-													"left": 261.07177734375,
+													"left": 259.61181640625,
 													"top": 885,
-													"width": 94.29443359375,
+													"width": 82.748046875,
 													"height": 13,
 													"text": "загрузка файла"
 												},
@@ -29736,7 +29736,7 @@
 													"parentStyle": true,
 													"left": 237,
 													"top": 885,
-													"width": 18.07177734375,
+													"width": 16.61181640625,
 													"height": 13,
 													"text": "opt"
 												},
@@ -29827,9 +29827,9 @@
 													},
 													"font": "Arial;13;0",
 													"parentStyle": true,
-													"left": 705.6708984375,
+													"left": 704.92822265625,
 													"top": 997,
-													"width": 993.3291015625,
+													"width": 994.07177734375,
 													"height": 13,
 													"text": "импорт данных"
 												},
@@ -29843,7 +29843,7 @@
 													"parentStyle": true,
 													"left": 669,
 													"top": 997,
-													"width": 15.1708984375,
+													"width": 14.42822265625,
 													"height": 13,
 													"text": "ref"
 												}
@@ -30566,9 +30566,9 @@
 													},
 													"font": "Arial;13;0",
 													"parentStyle": true,
-													"left": 32.72998046875,
+													"left": 30.55908203125,
 													"top": 13,
-													"width": 86.82958984375,
+													"width": 78.03173828125,
 													"height": 13,
 													"text": "создание окна"
 												},
@@ -30582,7 +30582,7 @@
 													"parentStyle": true,
 													"left": 13,
 													"top": 13,
-													"width": 13.72998046875,
+													"width": 11.55908203125,
 													"height": 13,
 													"text": "sd"
 												}
@@ -32336,9 +32336,9 @@
 													},
 													"font": "Arial;13;0",
 													"parentStyle": true,
-													"left": 32.72998046875,
+													"left": 30.55908203125,
 													"top": 13,
-													"width": 94.29443359375,
+													"width": 82.748046875,
 													"height": 13,
 													"text": "загрузка файла"
 												},
@@ -32352,7 +32352,7 @@
 													"parentStyle": true,
 													"left": 13,
 													"top": 13,
-													"width": 13.72998046875,
+													"width": 11.55908203125,
 													"height": 13,
 													"text": "sd"
 												}
@@ -33936,7 +33936,7 @@
 													"visible": false,
 													"font": "Arial;13;0",
 													"parentStyle": true,
-													"left": 80.72998046875,
+													"left": 79.99365234375,
 													"top": 397,
 													"height": 13
 												},
@@ -33950,7 +33950,7 @@
 													"parentStyle": true,
 													"left": 61,
 													"top": 397,
-													"width": 13.72998046875,
+													"width": 12.99365234375,
 													"height": 13,
 													"text": "alt"
 												},
@@ -33984,7 +33984,7 @@
 																	"parentStyle": true,
 																	"left": 76,
 																	"top": 430,
-																	"width": 148.10986328125,
+																	"width": 134.86865234375,
 																	"height": 13,
 																	"text": "[result.IsSuccses()==true]"
 																}
@@ -34019,7 +34019,7 @@
 																	"parentStyle": true,
 																	"left": 76,
 																	"top": 759,
-																	"width": 153.1689453125,
+																	"width": 139.19775390625,
 																	"height": 13,
 																	"text": "[result.IsSuccses()==false]"
 																}
@@ -34902,9 +34902,9 @@
 													},
 													"font": "Arial;13;0",
 													"parentStyle": true,
-													"left": 113.6708984375,
+													"left": 112.92822265625,
 													"top": 581,
-													"width": 377.3291015625,
+													"width": 378.07177734375,
 													"height": 13,
 													"text": "загрузка состояния проекта"
 												},
@@ -34918,7 +34918,7 @@
 													"parentStyle": true,
 													"left": 77,
 													"top": 581,
-													"width": 15.1708984375,
+													"width": 14.42822265625,
 													"height": 13,
 													"text": "ref"
 												}
@@ -34954,9 +34954,9 @@
 													},
 													"font": "Arial;13;0",
 													"parentStyle": true,
-													"left": 113.6708984375,
+													"left": 112.92822265625,
 													"top": 621,
-													"width": 377.3291015625,
+													"width": 378.07177734375,
 													"height": 13,
 													"text": "добавление слоя"
 												},
@@ -34970,7 +34970,7 @@
 													"parentStyle": true,
 													"left": 77,
 													"top": 621,
-													"width": 15.1708984375,
+													"width": 14.42822265625,
 													"height": 13,
 													"text": "ref"
 												}
@@ -35629,9 +35629,9 @@
 													},
 													"font": "Arial;13;0",
 													"parentStyle": true,
-													"left": 32.72998046875,
+													"left": 30.55908203125,
 													"top": 13,
-													"width": 91.99658203125,
+													"width": 85.43310546875,
 													"height": 13,
 													"text": "импорт данных"
 												},
@@ -35645,7 +35645,7 @@
 													"parentStyle": true,
 													"left": 13,
 													"top": 13,
-													"width": 13.72998046875,
+													"width": 11.55908203125,
 													"height": 13,
 													"text": "sd"
 												}
@@ -35927,9 +35927,9 @@
 													},
 													"font": "Arial;13;0",
 													"parentStyle": true,
-													"left": 64.72998046875,
+													"left": 63.99365234375,
 													"top": 117,
-													"width": 157.4599609375,
+													"width": 141.82568359375,
 													"height": 13,
 													"text": "загрузка по числу файлов"
 												},
@@ -35943,7 +35943,7 @@
 													"parentStyle": true,
 													"left": 45,
 													"top": 117,
-													"width": 13.72998046875,
+													"width": 12.99365234375,
 													"height": 13,
 													"text": "alt"
 												},
@@ -35977,7 +35977,7 @@
 																	"parentStyle": true,
 																	"left": 60,
 																	"top": 150,
-																	"width": 96.8271484375,
+																	"width": 89.38134765625,
 																	"height": 13,
 																	"text": "[paths.size()==1]"
 																}
@@ -36069,9 +36069,9 @@
 													},
 													"font": "Arial;13;0",
 													"parentStyle": true,
-													"left": 105.6708984375,
+													"left": 104.92822265625,
 													"top": 181,
-													"width": 249.3291015625,
+													"width": 250.07177734375,
 													"height": 13,
 													"text": "загрузка файла"
 												},
@@ -36085,7 +36085,7 @@
 													"parentStyle": true,
 													"left": 69,
 													"top": 181,
-													"width": 15.1708984375,
+													"width": 14.42822265625,
 													"height": 13,
 													"text": "ref"
 												}
@@ -36121,9 +36121,9 @@
 													},
 													"font": "Arial;13;0",
 													"parentStyle": true,
-													"left": 105.6708984375,
+													"left": 104.92822265625,
 													"top": 285,
-													"width": 249.3291015625,
+													"width": 250.07177734375,
 													"height": 13,
 													"text": "загрузка файлов"
 												},
@@ -36137,7 +36137,7 @@
 													"parentStyle": true,
 													"left": 69,
 													"top": 285,
-													"width": 15.1708984375,
+													"width": 14.42822265625,
 													"height": 13,
 													"text": "ref"
 												}
@@ -36245,9 +36245,9 @@
 													},
 													"font": "Arial;13;0",
 													"parentStyle": true,
-													"left": 32.72998046875,
+													"left": 30.55908203125,
 													"top": 13,
-													"width": 101.3466796875,
+													"width": 89.6162109375,
 													"height": 13,
 													"text": "загрузка файлов"
 												},
@@ -36261,7 +36261,7 @@
 													"parentStyle": true,
 													"left": 13,
 													"top": 13,
-													"width": 13.72998046875,
+													"width": 11.55908203125,
 													"height": 13,
 													"text": "sd"
 												}
@@ -36317,9 +36317,9 @@
 													},
 													"font": "Arial;13;0",
 													"parentStyle": true,
-													"left": 32.72998046875,
+													"left": 30.55908203125,
 													"top": 13,
-													"width": 167.4384765625,
+													"width": 152.2294921875,
 													"height": 13,
 													"text": "загрузка состояния проекта"
 												},
@@ -36333,7 +36333,7 @@
 													"parentStyle": true,
 													"left": 13,
 													"top": 13,
-													"width": 13.72998046875,
+													"width": 11.55908203125,
 													"height": 13,
 													"text": "sd"
 												}
@@ -36389,9 +36389,9 @@
 													},
 													"font": "Arial;13;0",
 													"parentStyle": true,
-													"left": 48.72998046875,
+													"left": 46.55908203125,
 													"top": 13,
-													"width": 104.39990234375,
+													"width": 91.14599609375,
 													"height": 13,
 													"text": "добавление слоя"
 												},
@@ -36405,7 +36405,7 @@
 													"parentStyle": true,
 													"left": 29,
 													"top": 13,
-													"width": 13.72998046875,
+													"width": 11.55908203125,
 													"height": 13,
 													"text": "sd"
 												}
@@ -37637,9 +37637,9 @@
 													},
 													"font": "Arial;13;0",
 													"parentStyle": true,
-													"left": 59.578125,
+													"left": 58.11181640625,
 													"top": 277,
-													"width": 87.18505859375,
+													"width": 79.7138671875,
 													"height": 13,
 													"text": "по всем окнам"
 												},
@@ -37653,7 +37653,7 @@
 													"parentStyle": true,
 													"left": 29,
 													"top": 277,
-													"width": 24.578125,
+													"width": 23.11181640625,
 													"height": 13,
 													"text": "loop"
 												},
@@ -39632,7 +39632,7 @@
 													"visible": false,
 													"font": "Arial;13;0",
 													"parentStyle": true,
-													"left": 253.07177734375,
+													"left": 251.61181640625,
 													"top": 749,
 													"height": 13
 												},
@@ -39646,7 +39646,7 @@
 													"parentStyle": true,
 													"left": 229,
 													"top": 749,
-													"width": 18.07177734375,
+													"width": 16.61181640625,
 													"height": 13,
 													"text": "opt"
 												},
@@ -39680,7 +39680,7 @@
 																	"parentStyle": true,
 																	"left": 244,
 																	"top": 782,
-																	"width": 270.72119140625,
+																	"width": 259.873046875,
 																	"height": 13,
 																	"text": "[view is VtkView && engine is VtkRenderLayer]"
 																}
@@ -42806,7 +42806,7 @@
 									"parentStyle": true,
 									"left": 268,
 									"top": 149.5,
-									"width": 134.68017578125,
+									"width": 134,
 									"height": 27,
 									"stereotypeLabel": {
 										"$ref": "AAAAAAGeE1NgidpI49w="
@@ -43016,7 +43016,7 @@
 									"parentStyle": true,
 									"left": 455.5,
 									"top": 37.5,
-									"width": 189.3408203125,
+									"width": 188,
 									"height": 27,
 									"stereotypeLabel": {
 										"$ref": "AAAAAAGeE1Rjf9p6KcE="
@@ -44782,7 +44782,7 @@
 									"parentStyle": true,
 									"left": 561,
 									"top": 213.5,
-									"width": 235.1611328125,
+									"width": 234,
 									"height": 27,
 									"stereotypeLabel": {
 										"$ref": "AAAAAAGeE1YVneb8JrM="
@@ -44992,7 +44992,7 @@
 									"parentStyle": true,
 									"left": 567.5,
 									"top": 325.5,
-									"width": 189.47265625,
+									"width": 188,
 									"height": 27,
 									"stereotypeLabel": {
 										"$ref": "AAAAAAGeE1Z7WOf8xSc="
@@ -45865,7 +45865,7 @@
 									"parentStyle": true,
 									"left": 509.5,
 									"top": 101.5,
-									"width": 141.59423828125,
+									"width": 141,
 									"height": 27,
 									"stereotypeLabel": {
 										"$ref": "AAAAAAGeE1tsKjJuxus="
@@ -46075,7 +46075,7 @@
 									"parentStyle": true,
 									"left": 553.5,
 									"top": 165.5,
-									"width": 238.28857421875,
+									"width": 237,
 									"height": 27,
 									"stereotypeLabel": {
 										"$ref": "AAAAAAGeE1u0fDOYNS0="
@@ -46285,7 +46285,7 @@
 									"parentStyle": true,
 									"left": 693,
 									"top": 77.5,
-									"width": 139.14794921875,
+									"width": 138,
 									"height": 27,
 									"stereotypeLabel": {
 										"$ref": "AAAAAAGeE1xRFTmf4vE="
@@ -46792,7 +46792,7 @@
 									"parentStyle": true,
 									"left": 435.5,
 									"top": 477.5,
-									"width": 208.27392578125,
+									"width": 207,
 									"height": 27,
 									"stereotypeLabel": {
 										"$ref": "AAAAAAGeE14BemWN77U="
@@ -47002,7 +47002,7 @@
 									"parentStyle": true,
 									"left": 370,
 									"top": 541.5,
-									"width": 201.87255859375,
+									"width": 201,
 									"height": 27,
 									"stereotypeLabel": {
 										"$ref": "AAAAAAGeE16wgnVg4M0="
@@ -47212,7 +47212,7 @@
 									"parentStyle": true,
 									"left": 52,
 									"top": 581.5,
-									"width": 172.919921875,
+									"width": 172,
 									"height": 27,
 									"stereotypeLabel": {
 										"$ref": "AAAAAAGeE17lw3eHioQ="
@@ -47422,7 +47422,7 @@
 									"parentStyle": true,
 									"left": 278.5,
 									"top": 613.5,
-									"width": 222.96630859375,
+									"width": 222,
 									"height": 27,
 									"stereotypeLabel": {
 										"$ref": "AAAAAAGeE18YmXixunE="
@@ -48339,7 +48339,7 @@
 									"parentStyle": true,
 									"left": 215.5,
 									"top": 85.5,
-									"width": 150.478515625,
+									"width": 149,
 									"height": 27,
 									"stereotypeLabel": {
 										"$ref": "AAAAAAGeE22NESGOXWo="
@@ -48831,7 +48831,7 @@
 									"parentStyle": true,
 									"left": 567.5,
 									"top": 373.5,
-									"width": 229.51416015625,
+									"width": 229,
 									"height": 27,
 									"stereotypeLabel": {
 										"$ref": "AAAAAAGeFhA+p19Idsw="
@@ -49041,7 +49041,7 @@
 									"parentStyle": true,
 									"left": 471.5,
 									"top": 421.5,
-									"width": 227.2216796875,
+									"width": 226,
 									"height": 27,
 									"stereotypeLabel": {
 										"$ref": "AAAAAAGeFhCgv2GuzO0="
@@ -49815,7 +49815,7 @@
 									"parentStyle": true,
 									"left": 688,
 									"top": 517.5,
-									"width": 152.80029296875,
+									"width": 152,
 									"height": 27,
 									"stereotypeLabel": {
 										"$ref": "AAAAAAGeFhL8is43Iz0="
@@ -50025,7 +50025,7 @@
 									"parentStyle": true,
 									"left": 582.5,
 									"top": 605.5,
-									"width": 147.17529296875,
+									"width": 147,
 									"height": 27,
 									"stereotypeLabel": {
 										"$ref": "AAAAAAGeFhM7btGr6PI="

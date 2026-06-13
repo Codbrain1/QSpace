@@ -14,6 +14,7 @@ class ObjectRegistry;
 class LayerManager;
 class DataNode;
 class Snapshot;
+class Layer;
 } // namespace QSpace::Core
 
 namespace QSpace::Models {
@@ -35,6 +36,7 @@ class DataTreeItem {
     DataTreeItem* parent() const;
 
     void          appendChild(std::unique_ptr<DataTreeItem>&& child);
+    void          removeChild(int row);
     DataTreeItem* child(int row) const;
     int           childCount() const;
 
@@ -105,7 +107,12 @@ class DataTreeModel : public QAbstractItemModel {
      * @brief Полностью перестраивает внутренние индексы дерева на основе ObjectRegistry
      */
     void rebuildTree();
-
+    void handleExperimentAdded(std::shared_ptr<Core::Experiment> exp);
+    void handleSnapshotAdded(std::shared_ptr<Core::Snapshot> snapshot, const QUuid& parentExpId);
+    void handleNodeAdded(std::shared_ptr<Core::DataNode> node, const QUuid& parentSnapshotId);
+    void handleObjectRemoved(const QUuid& id);
+    void handleLayerAdded(const QUuid& layerId);
+    void handleLayerRemoved(const QUuid& layerId);
     /**
      * @brief Оповещает UI о том, что изменились данные ноды (например, LRU выгрузил её из памяти)
      */
@@ -128,11 +135,11 @@ class DataTreeModel : public QAbstractItemModel {
     void buildSnapshotBranch(std::shared_ptr<Core::Snapshot> snapshot, DataTreeItem* parentItem);
     void buildComponentBranch(const Visualize::EntityType& entityType, const QList<std::shared_ptr<Core::DataNode>>& nodes, DataTreeItem* parentItem);
     void buildNodeBranch(std::shared_ptr<Core::DataNode> node, DataTreeItem* parentItem);
-
-    Qt::CheckState calculateExperimentCheckState(std::shared_ptr<QSpace::Core::Experiment> exp) const; // TODO
-    Qt::CheckState calculateSnapshotheckState(std::shared_ptr<Core::Snapshot> container) const;        // TODO
-    Qt::CheckState calculateComponentGroupCheckState(DataTreeItem* groupItem) const;                   // TODO
-    QString        entityTypeToString(Visualize::EntityType type) const;                               // TODO
+    void cleanItemMapRecursively(DataTreeItem* item);
+    Qt::CheckState calculateExperimentCheckState(std::shared_ptr<QSpace::Core::Experiment> exp) const;
+    Qt::CheckState calculateSnapshotheckState(std::shared_ptr<Core::Snapshot> container) const;
+    Qt::CheckState calculateComponentGroupCheckState(DataTreeItem* groupItem) const;
+    QString        entityTypeToString(Visualize::EntityType type) const;
 };
 
 } // namespace QSpace::Models

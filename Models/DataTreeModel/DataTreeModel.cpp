@@ -41,6 +41,20 @@ void DataTreeItem::appendChild(std::unique_ptr<DataTreeItem>&& child) {
     m_children.emplace_back(std::move(child));
 }
 
+void DataTreeItem::removeChild(int row) {
+    if (row < 0 || row >= static_cast<int>(m_children.size())) {
+        return;
+    }
+
+    // Итератор на удаляемый элемент
+    auto it = m_children.begin() + row;
+
+    // erase удаляет std::unique_ptr из вектора.
+    // Деструктор unique_ptr автоматически вызовется и освободит память (delete),
+    // выделенную под этот DataTreeItem, что рекурсивно уничтожит и его детей, если они были.
+    m_children.erase(it);
+}
+
 DataTreeItem* DataTreeItem::child(int row) const {
     return row >= 0 && row < childCount() ? m_children.at(row).get() : nullptr;
 }
@@ -69,20 +83,249 @@ DataTreeModel::DataTreeModel(Core::ObjectRegistry* registry, Core::LayerManager*
     : QAbstractItemModel(parent), m_registry(registry), m_layerManager(layerManager) {
     m_rootItem = std::make_unique<DataTreeItem>(DataTreeItem::Root, QUuid());
 
-    connect(m_registry, &Core::ObjectRegistry::experimentAdded, this, &DataTreeModel::rebuildTree);
-    connect(m_registry, &Core::ObjectRegistry::snapshotAdded, this, &DataTreeModel::rebuildTree);
-    connect(m_registry, &Core::ObjectRegistry::nodeAdded, this, &DataTreeModel::rebuildTree);
-    connect(m_registry, &Core::ObjectRegistry::objectRemoved, this, &DataTreeModel::rebuildTree);
+    connect(m_registry, &Core::ObjectRegistry::experimentAdded, this, &DataTreeModel::handleExperimentAdded);
+    connect(m_registry, &Core::ObjectRegistry::snapshotAdded, this, &DataTreeModel::handleSnapshotAdded);
+    connect(m_registry, &Core::ObjectRegistry::nodeAdded, this, &DataTreeModel::handleNodeAdded);
+
+    connect(m_registry, &Core::ObjectRegistry::objectRemoved, this, &DataTreeModel::handleObjectRemoved);
     connect(m_registry, &Core::ObjectRegistry::cleared, this, &DataTreeModel::rebuildTree);
 
     // Подключаем перерисовку статуса ОЗУ
     connect(m_registry, &Core::ObjectRegistry::nodeDataUpdated, this, &DataTreeModel::refreshNode);
-    connect(m_layerManager, &Core::LayerManager::layerCreated, this, &DataTreeModel::rebuildTree);
-    connect(m_layerManager, &Core::LayerManager::layerRemoved, this, &DataTreeModel::rebuildTree);
+    connect(m_layerManager, &Core::LayerManager::layerCreated, this, &DataTreeModel::handleLayerAdded);
+    connect(m_layerManager, &Core::LayerManager::layerRemoved, this, &DataTreeModel::handleLayerRemoved);
 
     // rebuildTree();
 }
+void DataTreeModel::handleExperimentAdded(std::shared_ptr<Core::Experiment> exp) {
+    if (!exp)
+        return;
 
+    // 1. Узнаем, сколько сейчас элементов в корне (это будет индекс новой строки)
+    int newRow = m_rootItem->childCount();
+
+    // 2. Говорим QTreeView: "Я сейчас добавлю 1 строку в корень (QModelIndex())"
+    beginInsertRows(QModelIndex(), newRow, newRow);
+
+    // 3. Добавляем данные во внутреннюю структуру
+    auto expItem = std::make_unique<DataTreeItem>(DataTreeItem::Experiment, exp->id, m_rootItem.get());
+    m_itemMap.insert(exp->id, expItem.get());
+    m_rootItem->appendChild(std::move(expItem));
+
+    // 4. Говорим QTreeView: "Я закончил, отрисуй новую строчку"
+    endInsertRows();
+}
+void DataTreeModel::handleSnapshotAdded(std::shared_ptr<Core::Snapshot> snapshot, const QUuid& parentExpId) {
+    if (!snapshot)
+        return;
+
+    // ВАЖНО: Если включен плоский вид, снапшоты как узлы дерева не существуют. Игнорируем.
+    if (m_treeMode == TreeMode::ComponentView) {
+        return;
+    }
+
+    if (!m_itemMap.contains(parentExpId))
+        return;
+
+    DataTreeItem* parentItem = m_itemMap.value(parentExpId);
+    int           newRow     = parentItem->childCount();
+
+    QModelIndex parentIndex = createIndex(parentItem->row(), 0, parentItem);
+
+    beginInsertRows(parentIndex, newRow, newRow);
+
+    auto snapshotItem = std::make_unique<DataTreeItem>(DataTreeItem::Snapshot, snapshot->id, parentItem);
+    m_itemMap.insert(snapshot->id, snapshotItem.get());
+    parentItem->appendChild(std::move(snapshotItem));
+
+    endInsertRows();
+}
+
+void DataTreeModel::handleNodeAdded(std::shared_ptr<Core::DataNode> node, const QUuid& parentSnapshotId) {
+    if (!node)
+        return;
+
+    DataTreeItem* parentItem = nullptr;
+
+    // ==========================================================
+    // ЛОГИКА ДЛЯ РЕЖИМА "ВРЕМЕННОЙ ВИД" (По Снапшотам)
+    // ==========================================================
+    if (m_treeMode == TreeMode::SnapShotView) {
+        // Ищем родительский снапшот
+        parentItem = m_itemMap.value(parentSnapshotId, nullptr);
+    }
+    // ==========================================================
+    // ЛОГИКА ДЛЯ РЕЖИМА "КОМПОНЕНТНЫЙ ВИД" (По типам материи)
+    // ==========================================================
+    else if (m_treeMode == TreeMode::ComponentView) {
+        // 1. Узнаем ID эксперимента. Так как нода знает только свой снапшот,
+        // спросим у реестра (или найдем перебором, что тоже очень быстро)
+        QUuid targetExpId;
+        for (const auto& exp : m_registry->getAllExperiments()) {
+            for (const auto& snap : exp->snapshots) {
+                if (snap && snap->id == parentSnapshotId) {
+                    targetExpId = exp->id;
+                    break;
+                }
+            }
+            if (!targetExpId.isNull())
+                break;
+        }
+
+        if (targetExpId.isNull() || !m_itemMap.contains(targetExpId))
+            return;
+
+        // 2. Генерируем детерминированный UUID для группы (Точно так же, как в buildComponentBranch)
+        QUuid componentGroupId = QUuid::createUuidV5(targetExpId, QString::number(static_cast<int>(node->type)));
+
+        // 3. Если такой группы (например, "Газ") еще нет в дереве эксперимента — создаем её!
+        if (!m_itemMap.contains(componentGroupId)) {
+            DataTreeItem* expItem  = m_itemMap.value(targetExpId);
+            int           groupRow = expItem->childCount();
+
+            beginInsertRows(createIndex(expItem->row(), 0, expItem), groupRow, groupRow);
+
+            auto groupItem = std::make_unique<DataTreeItem>(DataTreeItem::ComponentGroup, componentGroupId, expItem, node->type);
+            m_itemMap.insert(componentGroupId, groupItem.get());
+            expItem->appendChild(std::move(groupItem));
+
+            endInsertRows();
+        }
+
+        // 4. Родитель найден — это виртуальная группа
+        parentItem = m_itemMap.value(componentGroupId);
+    }
+
+    // Если родитель так и не найден, выходим
+    if (!parentItem)
+        return;
+
+    // ==========================================================
+    // ОБЩИЙ КОД ВСТАВКИ УЗЛА
+    // ==========================================================
+    int         newRow      = parentItem->childCount();
+    QModelIndex parentIndex = createIndex(parentItem->row(), 0, parentItem);
+
+    beginInsertRows(parentIndex, newRow, newRow);
+
+    // ВАЖНО: передаем node->type в качестве subType
+    auto nodeItem = std::make_unique<DataTreeItem>(DataTreeItem::DataNode, node->id, parentItem, node->type);
+    m_itemMap.insert(node->id, nodeItem.get());
+    parentItem->appendChild(std::move(nodeItem));
+
+    endInsertRows();
+}
+void DataTreeModel::handleLayerAdded(const QUuid& layerId) {
+    auto layer = m_layerManager->getLayer(layerId);
+    // Проверяем существование слоя и наличие его родительской ноды в визуальном дереве
+    if (!layer || !m_itemMap.contains(layer->dataNodeId)) {
+        return;
+    }
+
+    // 2. Находим родительский узел данных
+    DataTreeItem* parentItem = m_itemMap.value(layer->dataNodeId);
+
+    // Защита: слой всегда должен добавляться только внутрь узла типа DataNode
+    if (parentItem->type() != DataTreeItem::DataNode) {
+        return;
+    }
+
+    // 3. Вычисляем позицию для новой строки (в конец списка детей)
+    int newRow = parentItem->childCount();
+
+    // 4. Генерируем QModelIndex для родительского узла
+    QModelIndex parentIndex = createIndex(parentItem->row(), 0, parentItem);
+
+    // 5. Оповещаем QTreeView о начале точечной вставки
+    beginInsertRows(parentIndex, newRow, newRow);
+
+    // 6. Создаем элемент дерева для слоя и привязываем его
+    auto layerItem = std::make_unique<DataTreeItem>(DataTreeItem::LayerItem, layer->layerId, parentItem);
+
+    // Сохраняем в кэш для быстрого доступа
+    m_itemMap.insert(layer->layerId, layerItem.get());
+
+    // Передаем владение во внутреннюю иерархию (m_children родителя)
+    parentItem->appendChild(std::move(layerItem));
+
+    // 7. Завершаем вставку, UI автоматически перерисует только эту ветку
+    endInsertRows();
+}
+void DataTreeModel::handleObjectRemoved(const QUuid& id) {
+    // 1. Проверяем, есть ли этот элемент в нашем визуальном дереве.
+    // Если его нет (например, это снапшот, а мы в "Плоском виде"), просто игнорируем.
+    if (!m_itemMap.contains(id)) {
+        return;
+    }
+
+    // 2. Получаем удаляемый элемент и его родителя
+    DataTreeItem* itemToRemove = m_itemMap.value(id);
+    DataTreeItem* parentItem   = itemToRemove->parent();
+
+    if (!parentItem) {
+        return; // Защита: m_rootItem удалять нельзя
+    }
+
+    // 3. Вычисляем строку (row) удаляемого элемента и QModelIndex его родителя
+    int row = itemToRemove->row();
+
+    // Если родитель - это корень дерева, его индекс должен быть пустым QModelIndex()
+    QModelIndex parentIndex = (parentItem == m_rootItem.get()) ? QModelIndex() : createIndex(parentItem->row(), 0, parentItem);
+
+    // 4. Оповещаем QTreeView: "Внимание, сейчас исчезнет строка row"
+    beginRemoveRows(parentIndex, row, row);
+
+    // 5. ВАЖНО: Рекурсивно вычищаем удаляемый элемент и ВСЕХ его детей из m_itemMap
+    // Это нужно сделать ДО физического удаления из памяти
+    cleanItemMapRecursively(itemToRemove);
+
+    // 6. Физически уничтожаем объект и убираем его из дерева
+    // (метод removeChild мы писали ранее, он вызывает .erase() у std::vector)
+    parentItem->removeChild(row);
+
+    // 7. Оповещаем UI, что удаление завершено, можно перерисовывать
+    endRemoveRows();
+}
+
+// Вспомогательный метод для защиты от "висячих" указателей (dangling pointers)
+void DataTreeModel::cleanItemMapRecursively(DataTreeItem* item) {
+    if (!item)
+        return;
+
+    // Сначала спускаемся на самое дно ветки (чистим детей)
+    for (int i = 0; i < item->childCount(); ++i) {
+        cleanItemMapRecursively(item->child(i));
+    }
+
+    // Затем удаляем текущий элемент из хэш-таблицы
+    m_itemMap.remove(item->id());
+}
+
+void DataTreeModel::handleLayerRemoved(const QUuid& layerId) {
+    if (!m_itemMap.contains(layerId)) {
+        return;
+    }
+
+    DataTreeItem* layerItem  = m_itemMap.value(layerId);
+    DataTreeItem* parentItem = layerItem->parent();
+
+    if (!parentItem) {
+        return;
+    }
+
+    int         row         = layerItem->row();
+    QModelIndex parentIndex = createIndex(parentItem->row(), 0, parentItem);
+
+    // Оповещаем UI об удалении конкретной строки
+    beginRemoveRows(parentIndex, row, row);
+
+    // Удаляем из QMap
+    m_itemMap.remove(layerId);
+
+    parentItem->removeChild(row);
+
+    endRemoveRows();
+}
 void DataTreeModel::setTreeMode(TreeMode mode) {
     if (m_treeMode == mode) {
         return;

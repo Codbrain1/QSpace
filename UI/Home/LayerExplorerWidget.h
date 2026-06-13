@@ -35,7 +35,7 @@ class LayerExplorerWidget : public QWidget {
   signals:
     void selectionChanged(const QList<QUuid>& selectedIds);
     void nodeSelectionActivated(const QUuid& id);
-    void removalRequested(const QUuid& id); // TODO: добавить коннекты в других классах
+    void removalRequested(const QUuid& id);
     void updateNodeSettingsRequested(const QUuid& id, std::function<void(Core::VisualSettings&)> modifer);
 
     // ------ отвечает за отображение меню с настройками ------

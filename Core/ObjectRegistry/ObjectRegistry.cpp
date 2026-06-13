@@ -24,44 +24,28 @@ void ObjectRegistry::registerNode(std::shared_ptr<DataNode> node) {
         node->stats = QSpace::Physics::Math::calculateMetaData(node->data, node->stats.timestamp);
         touchNodeInMemory(node->id);
     }
-    emit nodeAdded(node);
+    emit nodeAdded(node, QUuid());
     qCInfo(LogCore) << "Registry: Node registered " << node->label << " " << node->id;
 }
 
-void ObjectRegistry::registerSnapshot(std::shared_ptr<Snapshot> snapshot) {
-    if (!snapshot)
+void ObjectRegistry::registerNodeToSnapshot(std::shared_ptr<DataNode> node,
+                                            const QUuid&              parentSnapshotId) {
+    if (!node || m_nodes.contains(node->id))
         return;
-    if (m_snapshots.contains(snapshot->id)) {
-        qCWarning(LogCore) << "Registry: Attempt to register duplicate snapshot ID:"
-                           << snapshot->id;
-        return;
+
+    m_nodes.insert(node->id, node);
+    if (node->data != nullptr) {
+        node->stats = QSpace::Physics::Math::calculateMetaData(node->data, node->stats.timestamp);
+        touchNodeInMemory(node->id);
     }
-    m_snapshots.insert(snapshot->id, snapshot);
-    for (auto& comp : snapshot->components) {
-        registerNode(comp);
-    }
-    emit snapshotAdded(snapshot);
-    qCDebug(LogCore) << "Registry: Snapshot registered " << snapshot->name << " " << snapshot->id;
+
+    // Сигнал с родителем
+    emit nodeAdded(node, parentSnapshotId);
+    qCInfo(LogCore) << "Registry: Node registered " << node->label;
 }
 
-void ObjectRegistry::registerExperiment(std::shared_ptr<Experiment> experiment) {
-    if (!experiment)
-        return;
-    if (m_experiments.contains(experiment->id)) {
-        qCWarning(LogCore) << "Registry: Attempt to register duplicate experiment ID:"
-                           << experiment->id;
-        return;
-    }
-    m_experiments.insert(experiment->id, experiment);
-    for (auto& snap : experiment->snapshots) {
-        registerSnapshot(snap);
-    }
-    emit experimentAdded(experiment);
-    qCDebug(LogCore) << "Registry: Experiment registered " << experiment->name << " "
-                     << experiment->id;
-}
-
-void ObjectRegistry::registerNode(std::shared_ptr<DataNode> node, const QUuid& experimentId) {
+void ObjectRegistry::registerNodeToExperiment(std::shared_ptr<DataNode> node,
+                                              const QUuid&              experimentId) {
     if (!node)
         return;
 
@@ -101,17 +85,62 @@ void ObjectRegistry::registerNode(std::shared_ptr<DataNode> node, const QUuid& e
         // Регистрируем в m_snapshots (вызовет emit snapshotAdded)
         // Модель создаст ветку снапшота и сразу увидит внутри нее node, так как addComponent уже
         // вызван
-        registerSnapshot(targetSnapshot);
+        registerSnapshot(targetSnapshot, experimentId);
     }
 
     // 5. Регистрируем атомарную ноду (вызовет emit nodeAdded)
     // Модель поймает сигнал, проверит к какому снапшоту относится нода,
     // найдет ее внутри targetSnapshot->components и корректно создаст DataTreeItem
-    registerNode(node);
+    registerNodeToSnapshot(node, targetSnapshot->id);
+}
+
+void ObjectRegistry::registerSnapshot(std::shared_ptr<Snapshot> snapshot) {
+    if (!snapshot)
+        return;
+    if (m_snapshots.contains(snapshot->id)) {
+        qCWarning(LogCore) << "Registry: Attempt to register duplicate snapshot ID:"
+                           << snapshot->id;
+        return;
+    }
+    m_snapshots.insert(snapshot->id, snapshot);
+    for (auto& comp : snapshot->components) {
+        registerNode(comp);
+    }
+    emit snapshotAdded(snapshot, QUuid());
+    qCDebug(LogCore) << "Registry: Snapshot registered " << snapshot->name << " " << snapshot->id;
 }
 
 void ObjectRegistry::registerSnapshot(std::shared_ptr<Snapshot> snapshot,
                                       const QUuid&              experimentId) {
+    if (!snapshot || m_snapshots.contains(snapshot->id))
+        return;
+
+    m_snapshots.insert(snapshot->id, snapshot);
+
+    // Отправляем сигнал, который DataTreeModel легко перехватит
+    emit snapshotAdded(snapshot, experimentId);
+    qCDebug(LogCore) << "Registry: Snapshot registered " << snapshot->name;
+
+    for (auto& comp : snapshot->components) {
+        registerNodeToSnapshot(comp, snapshot->id); // Передаем ID снапшота как родителя!
+    }
+}
+
+void ObjectRegistry::registerExperiment(std::shared_ptr<Experiment> experiment) {
+    if (!experiment)
+        return;
+    if (m_experiments.contains(experiment->id)) {
+        qCWarning(LogCore) << "Registry: Attempt to register duplicate experiment ID:"
+                           << experiment->id;
+        return;
+    }
+    m_experiments.insert(experiment->id, experiment);
+    emit experimentAdded(experiment);
+    for (auto& snap : experiment->snapshots) {
+        registerSnapshot(snap, experiment->id);
+    }
+    qCDebug(LogCore) << "Registry: Experiment registered " << experiment->name << " "
+                     << experiment->id;
 }
 
 std::shared_ptr<DataNode> ObjectRegistry::getNode(const QUuid& id) const {
