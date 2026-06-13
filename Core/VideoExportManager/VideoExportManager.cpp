@@ -15,7 +15,7 @@ VideoExportManager::VideoExportManager(DataManager*                             
       m_targetLayer(targetLayer),
       m_exporter(exporter) {
     // Подписываемся на ответы от DataManager
-    connect(m_dataManager, &DataManager::fileReady, this, &VideoExportManager::onFileReady);
+    connect(m_dataManager, &DataManager::fileReady, this, &VideoExportManager::handleFileReady);
 }
 
 void VideoExportManager::start(const QStringList&    files,
@@ -57,7 +57,7 @@ void VideoExportManager::fillBuffer() {
     }
 }
 
-void VideoExportManager::onFileReady(const QUuid& taskId, IO::ReadResult result) {
+void VideoExportManager::handleFileReady(const QUuid& taskId, IO::ReadResult result) {
     // Проверяем, относится ли этот файл к нашему процессу экспорта
     if (!m_pendingTasks.contains(taskId))
         return;

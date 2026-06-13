@@ -7,6 +7,7 @@
 #include <QSet>
 #include <QUuid>
 #include <memory>
+#include <qnamespace.h>
 
 namespace QSpace::Core {
 class ObjectRegistry;
@@ -16,7 +17,6 @@ class Snapshot;
 } // namespace QSpace::Core
 
 namespace QSpace::Models {
-enum class TreeMode { SnapShotView, ComponentView };
 
 /**
  * @brief Внутренний узел дерева для маппинга QModelIndex в структуры ядра
@@ -53,7 +53,11 @@ class DataTreeItem {
  */
 class DataTreeModel : public QAbstractItemModel {
     Q_OBJECT
+    Q_PROPERTY(QSpace::Models::DataTreeModel::TreeMode treeMode READ treeMode WRITE setTreeMode NOTIFY treeModeChanged)
+    Q_PROPERTY(int registeredItemsCount READ registeredItemsCount NOTIFY treeRebuilt)
   public:
+    enum class TreeMode { SnapShotView, ComponentView };
+    Q_ENUM(TreeMode) // Делает enum доступным для отображения строками в GammaRay
     enum Columns {
         NameColumn = 0, // Имя объекта + Чекбокс видимости
         // TypeColumn,     // Тип данных (Gas, Stars, DarkMatter, Container)
@@ -61,10 +65,20 @@ class DataTreeModel : public QAbstractItemModel {
         SizeColumn,   // Количество частиц / дочерних элементов
         ColumnCount
     };
-
+    enum CustomRoles {
+        IdRole = Qt::UserRole + 1, // Для хранения QUuid ноды
+        TimestampRole,             // Для хранения времени (qint64 или QDateTime)
+        DefaultOrderRole           // Для хранения порядкового номера добавления (int)
+    };
     explicit DataTreeModel(Core::ObjectRegistry* registry, Core::LayerManager* layerManager, QObject* parent = nullptr);
     ~DataTreeModel() override = default;
 
+    TreeMode treeMode() const {
+        return m_treeMode;
+    }
+    int registeredItemsCount() const {
+        return m_itemMap.size();
+    }
     void setTreeMode(TreeMode mode);
 
     // --- Реализация pure virtual методов QAbstractItemModel ---
@@ -80,7 +94,7 @@ class DataTreeModel : public QAbstractItemModel {
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
 
     // реакция на действия пользователя (например, клик по чекбоксу)
-    bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override; // TODO
+    bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
     // возвращает заголовки столбцов
     QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
     // управляет интерактивностью
@@ -96,6 +110,11 @@ class DataTreeModel : public QAbstractItemModel {
      * @brief Оповещает UI о том, что изменились данные ноды (например, LRU выгрузил её из памяти)
      */
     void refreshNode(const QUuid& nodeId);
+
+  signals:
+    // --- ВОТ ЭТИХ СИГНАЛОВ НЕ ХВАТАЛО ДЛЯ СБОРКИ ---
+    void treeModeChanged(QSpace::Models::DataTreeModel::TreeMode mode);
+    void treeRebuilt();
 
   private:
     Core::ObjectRegistry* m_registry;

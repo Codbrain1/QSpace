@@ -61,21 +61,22 @@ void ObjectRegistry::registerExperiment(std::shared_ptr<Experiment> experiment) 
                      << experiment->id;
 }
 
-// ObjectRegistry.cpp
 void ObjectRegistry::registerNode(std::shared_ptr<DataNode> node, const QUuid& experimentId) {
     if (!node)
         return;
-    // 1. Регистрируем атомарную ноду
-    registerNode(node);
+
     auto targetExperiment = m_experiments.value(experimentId);
     if (!targetExperiment) {
         qCWarning(LogCore) << "Registry: Experiment ID not found for grouping:" << experimentId;
         return;
     }
-    // 4. Ищем или создаем Снапшот внутри найденного эксперимента
+
+    // 1. Ищем Снапшот внутри найденного эксперимента
     double                    ts             = node->stats.timestamp;
     const double              eps            = 1e-5;
     std::shared_ptr<Snapshot> targetSnapshot = nullptr;
+    bool                      isNewSnapshot  = false;
+
     for (const auto& snap : targetExperiment->snapshots) {
         if (std::abs(snap->timestamp - ts) < eps) {
             targetSnapshot = snap;
@@ -83,19 +84,33 @@ void ObjectRegistry::registerNode(std::shared_ptr<DataNode> node, const QUuid& e
         }
     }
 
+    // 2. Создаем новый снапшот, если не нашли (но пока не регистрируем, чтобы не спамить сигналами)
     if (!targetSnapshot) {
         QString snapName = QString("Snapshot (t = %1)").arg(ts, 0, 'f', 5);
         targetSnapshot   = std::make_shared<Snapshot>(snapName, ts);
 
         targetExperiment->addSnapshot(targetSnapshot); // Привязываем к эксперименту
-        registerSnapshot(targetSnapshot); // Регистрируем в m_snapshots (emit snapshotAdded)
+        isNewSnapshot = true;
     }
 
-    // 5. Добавляем ноду в компоненты снапшота
+    // 3. СВЯЗЫВАЕМ данные: добавляем ноду в компоненты снапшота ДО любых сигналов
     targetSnapshot->addComponent(node);
+
+    // 4. ГЕНЕРИРУЕМ сигналы: теперь иерархия в памяти полностью консистентна
+    if (isNewSnapshot) {
+        // Регистрируем в m_snapshots (вызовет emit snapshotAdded)
+        // Модель создаст ветку снапшота и сразу увидит внутри нее node, так как addComponent уже
+        // вызван
+        registerSnapshot(targetSnapshot);
+    }
+
+    // 5. Регистрируем атомарную ноду (вызовет emit nodeAdded)
+    // Модель поймает сигнал, проверит к какому снапшоту относится нода,
+    // найдет ее внутри targetSnapshot->components и корректно создаст DataTreeItem
+    registerNode(node);
 }
 
-void ObjectRegistry::registerSnapshot(std::shared_ptr<Snapshot> container,
+void ObjectRegistry::registerSnapshot(std::shared_ptr<Snapshot> snapshot,
                                       const QUuid&              experimentId) {
 }
 

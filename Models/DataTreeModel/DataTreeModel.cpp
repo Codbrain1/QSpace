@@ -80,7 +80,7 @@ DataTreeModel::DataTreeModel(Core::ObjectRegistry* registry, Core::LayerManager*
     connect(m_layerManager, &Core::LayerManager::layerCreated, this, &DataTreeModel::rebuildTree);
     connect(m_layerManager, &Core::LayerManager::layerRemoved, this, &DataTreeModel::rebuildTree);
 
-    rebuildTree();
+    // rebuildTree();
 }
 
 void DataTreeModel::setTreeMode(TreeMode mode) {
@@ -90,6 +90,7 @@ void DataTreeModel::setTreeMode(TreeMode mode) {
 
     m_treeMode = mode;
     rebuildTree(); // Полностью пересобирает иерархию DataTreeItem'ов
+    emit treeModeChanged(m_treeMode);
 }
 
 void DataTreeModel::rebuildTree() {
@@ -137,6 +138,7 @@ void DataTreeModel::rebuildTree() {
         }
     }
     endResetModel();
+    emit treeRebuilt();
 }
 
 // ====== Создает временную структуру ======
@@ -257,7 +259,28 @@ QVariant DataTreeModel::data(const QModelIndex& index, int role) const {
 
     auto*                  item   = static_cast<DataTreeItem*>(index.internalPointer());
     DataTreeModel::Columns column = static_cast<DataTreeModel::Columns>(index.column());
+    // =========================================================================
+    // 0. КАСТОМНЫЕ РОЛИ (Доступ к метаданным для виджетов и сортировки)
+    // =========================================================================
+    if (role == CustomRoles::IdRole) {
+        return item->id(); // Возвращаем UUID элемента напрямую из DataTreeItem
+    }
 
+    if (role == CustomRoles::DefaultOrderRole) {
+        return item->row(); // Исходный порядок равен индексу строки в родителе
+    }
+
+    if (role == CustomRoles::TimestampRole) {
+        // Логика получения времени зависит от типа элемента
+        if (item->type() == DataTreeItem::Snapshot) {
+            auto snapshot = m_registry->getSnapshot(item->id());
+            if (snapshot) {
+                // ВНИМАНИЕ: Замените 'timestamp' на реальное имя поля времени в вашей структуре Snapshot
+                return snapshot->timestamp;
+            }
+        }
+        return 0; // Для не-снапшотов (или если времени нет) возвращаем 0
+    }
     // =========================================================================
     // 1. РОЛЬ: Состояние чекбокса видимости (Только для первой колонки NameColumn)
     // =========================================================================

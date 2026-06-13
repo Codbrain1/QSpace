@@ -333,7 +333,7 @@ void PropertyInspector::handleParticleSizeChange(double val) {
         [size](QSpace::Core::VisualSettings& settings) { settings.PointSize = size; });
 }
 void PropertyInspector::setCurrentNode(const QUuid& id) {
-    m_currentNodeId = id;
+    m_currentNodeId = id; // CRITICAL вызывается обновление настроек даже при скрытом виджете
 
     if (id.isNull()) {
         this->setEnabled(false);
@@ -373,16 +373,17 @@ void PropertyInspector::updateWidgets() {
     QSignalBlocker spinBlocker15(ui->combo_interpolationRange);
     QSignalBlocker spinBlocker16(ui->combo_functionOpacity);
     QSignalBlocker spinBlocker17(ui->doubleSpinBox__alpha);
-
-    ui->combo_current_column->clear();
-    auto pointData = node->data->GetPointData();
-    int  numArrays = pointData->GetNumberOfArrays();
-    for (int i = 0; i < numArrays; ++i) {
-        vtkDataArray* array = pointData->GetArray(i);
-        if (array) {
-            QString arrayName = array->GetName();
-            if (!arrayName.isEmpty()) {
-                ui->combo_current_column->addItem(arrayName);
+    if (node->data) {
+        ui->combo_current_column->clear();
+        auto pointData = node->data->GetPointData();
+        int  numArrays = pointData->GetNumberOfArrays();
+        for (int i = 0; i < numArrays; ++i) {
+            vtkDataArray* array = pointData->GetArray(i);
+            if (array) {
+                QString arrayName = array->GetName();
+                if (!arrayName.isEmpty()) {
+                    ui->combo_current_column->addItem(arrayName);
+                }
             }
         }
     }

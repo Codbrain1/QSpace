@@ -23,6 +23,7 @@
 #include <qcontainerfwd.h>
 #include <qfiledialog.h>
 #include <qfileinfo.h>
+#include <qlineedit.h>
 #include <qloggingcategory.h>
 #include <qmessagebox.h>
 #include <qnamespace.h>
@@ -63,16 +64,23 @@ LayerExplorerWidget::LayerExplorerWidget(Core::AppCore* app, QWidget* parent)
 
     // 1. Подключаем готовую модель из AppCore к нашему QTreeView (ui->treeView_Layers)
     if (m_app && m_app->dataTreeModel()) {
+        auto* actualDataModel = m_app->dataTreeModel(); // Получаем прямой указатель
+
         auto* proxyModel = new QSortFilterProxyModel(this);
-        proxyModel->setSourceModel(m_app->dataTreeModel());
+        proxyModel->setSourceModel(actualDataModel);
         proxyModel->setFilterKeyColumn(0); // Фильтруем по первой колонке (название слоя)
         proxyModel->setFilterCaseSensitivity(Qt::CaseInsensitive);
 
         // В QTreeView устанавливаем ИМЕННО прокси-модель
         ui->treeView_Layers->setModel(proxyModel);
-        // ui->treeView_Layers->setModel(m_app->dataTreeModel());
-    }
 
+        // Сохраняем указатель в поле класса (если m_treeModel объявлен в хедере),
+        m_treeModel = actualDataModel;
+
+        // даем команду на первичное построение дерева. Сигналы гарантированно дойдут до UI.
+        m_treeModel->rebuildTree();
+        handleExpandAll();
+    }
     // Настройки отображения
     ui->treeView_Layers->setContextMenuPolicy(Qt::CustomContextMenu);
     ui->treeView_Layers->setSelectionMode(QAbstractItemView::ExtendedSelection);
@@ -106,9 +114,9 @@ void LayerExplorerWidget::setupToolButtons() {
 
     QMenu* sortingMenu = new QMenu(this);
 
-    QAction* sortByAlphabetically = new QAction(tr("По алфавиту"));
-    QAction* sortByTimestemp      = new QAction(tr("По времени"));
-    QAction* sortOrderInverted    = sortingMenu->addAction(tr("В обратном порядке"));
+    QAction* sortByAlphabetically = new QAction(tr("Сортирвать по алфавиту"));
+    QAction* sortByTimestemp      = new QAction(tr("Сортирвать по времени"));
+    QAction* sortOrderInverted    = new QAction(tr("Сортирвать в обратном порядке"));
     QAction* sortByNone           = new QAction(tr("Без сортировки"));
 
     sortByAlphabetically->setCheckable(true);
@@ -126,6 +134,7 @@ void LayerExplorerWidget::setupToolButtons() {
     QActionGroup* criteriaGroup = new QActionGroup(this);
     criteriaGroup->addAction(sortByAlphabetically);
     criteriaGroup->addAction(sortByTimestemp);
+    criteriaGroup->addAction(sortByNone);
     criteriaGroup->setExclusive(true);
 
     sortingMenu->addAction(sortByAlphabetically);
@@ -178,28 +187,66 @@ void LayerExplorerWidget::setupToolButtons() {
 }
 
 void LayerExplorerWidget::setupSlots() {
-    // ------ отвечает за отображение меню с настройками ------
-    connect(ui->toolButton_VisiblePropertyInspector,
-            &QToolButton::toggled,
-            this,
-            &LayerExplorerWidget::propertyInspectorVisibleRequested);
-
+    // --------- Менеджер Файлов ---------
+    // изменение корневой директории для проводника файлов
     connect(ui->lineEdit_root_path,
             &QLineEdit::textChanged,
             this,
             &LayerExplorerWidget::handleRootPathChange);
+    // выбор корневой директории для проводника файлов
+    connect(ui->pushButton_change_root, &QPushButton::clicked, this, [this]() {
+        const QString dirPath =
+            QFileDialog::getExistingDirectory(this, tr("Пожалуйста выберите директорию"), m_root_path);
+        handleRootPathChange(dirPath);
+    });
+    //
+
+    // --------- Менеджер слоев ---------
+    // сообщает ядру об активации ноды
+    connect(this,
+            &LayerExplorerWidget::nodeSelectionActivated,
+            m_app->dataController(),
+            &QSpace::Core::Controllers::DataController::onNodeSelectionActivated,
+            Qt::QueuedConnection);
+    // отвечает за отображение меню с настройками
+    connect(ui->toolButton_VisiblePropertyInspector,
+            &QToolButton::toggled,
+            this,
+            &LayerExplorerWidget::propertyInspectorVisibleRequested);
+    // изменение структуры отображения для проводника данных (слоев)
     connect(ui->comboBox_structureView,
             &QComboBox::currentIndexChanged,
             this,
             &LayerExplorerWidget::handleStructureViewChange);
-    // connect(ui->treeView_Layers,
-    //         &QTreeView::customContextMenuRequested,
-    //         this,
-    //         &LayerExplorerWidget::showContextMenu);
+    // изменение схемы чтения данных
+    connect(ui->comboBox_fileStructure,
+            &QComboBox::currentIndexChanged,
+            this,
+            &LayerExplorerWidget::handleReadSchenmeChange);
+    // поиск в проводнике слоев
+    connect(ui->lineEdit_findLayer,
+            &QLineEdit::textChanged,
+            this,
+            &LayerExplorerWidget::handleFindLayerChange);
+    // вызов отрисовки меню по нажатию ПКМ
+    connect(ui->treeView_Layers,
+            &QTreeView::customContextMenuRequested,
+            this,
+            &LayerExplorerWidget::handleShowCustomContexMenuForTreeViewElement);
+
+    // отправляет сигнал в MainWindow о том какая сейчас выбрана запись, что позволяет на лету менять вид для
+    // меню настроек
     connect(ui->treeView_Layers->selectionModel(),
             &QItemSelectionModel::selectionChanged,
             this,
             &LayerExplorerWidget::handleNodeSelected);
+
+    // удаление выбранных элементов
+    connect(ui->toolButton_RemoveElement,
+            &QToolButton::toggled,
+            this,
+            &LayerExplorerWidget::handleRemoveElement);
+
     if (m_app && m_app->dataTreeModel()) {
         connect(m_app->dataTreeModel(),
                 &QAbstractItemModel::dataChanged,
@@ -207,7 +254,7 @@ void LayerExplorerWidget::setupSlots() {
                 [this](const QModelIndex& topLeft, const QModelIndex& bottomRight, const QList<int>& roles) {
                     // Проверяем, что изменилось именно состояние чекбокса
                     if (roles.contains(Qt::CheckStateRole)) {
-                        QUuid id      = topLeft.data(TreeDataRole::IdRole).toUuid();
+                        QUuid id      = topLeft.data(Models::DataTreeModel::CustomRoles::IdRole).toUuid();
                         bool  checked = (topLeft.data(Qt::CheckStateRole).toInt() == Qt::Checked);
 
                         // Вызываем ваш сигнал обновления настроек в ObjectRegistry
@@ -244,19 +291,103 @@ void LayerExplorerWidget::sortTreeHierarchyInternal(
     tree->setUpdatesEnabled(true);
 }
 
-void LayerExplorerWidget::handleFileStructureChange(int index) {
+void LayerExplorerWidget::handleReadSchenmeChange(int index) {
     if (index < 0)
         return;
     m_currentVersion =
         static_cast<Core::ModelingProgrammVersion>(ui->comboBox_fileStructure->itemData(index).toInt());
 }
+void LayerExplorerWidget::handleShowCustomContexMenuForTreeViewElement(const QPoint& pos) {
+    if (!ui || !ui->treeView_Layers) {
+        return;
+    }
+    // 1. Получаем индекс элемента (прокси-индекс) под курсором мыши
+    QModelIndex proxyIndex = ui->treeView_Layers->indexAt(pos);
+
+    // Если кликнули в пустую область (не по элементу), можно либо выйти,
+    // либо показать какое-то базовое меню (например, "Добавить эксперимент")
+    if (!proxyIndex.isValid()) {
+        qCWarning(LogUI) << "proxy index is invalid for position: " << pos;
+        return;
+    }
+    auto*       proxy       = qobject_cast<QSortFilterProxyModel*>(ui->treeView_Layers->model());
+    QModelIndex sourceIndex = proxy ? proxy->mapToSource(proxyIndex) : proxyIndex;
+    auto*       item        = static_cast<Models::DataTreeItem*>(sourceIndex.internalPointer());
+    if (!item) {
+        return;
+    }
+    // 4. Создаем контекстное меню
+    QMenu contextMenu(this);
+    // 5. Вызываем соответствующий метод-помощник в зависимости от типа узла
+    // Передаем в методы само меню (чтобы наполнить его action'ами) и sourceIndex (чтобы знать, для кого меню)
+    switch (item->type()) {
+        case Models::DataTreeItem::Experiment:
+            showCustomContextMenuForExperimentInternal(&contextMenu, sourceIndex);
+            break;
+        case Models::DataTreeItem::Snapshot:
+            showCustomContextMenuForSnapshotInternal(&contextMenu, sourceIndex);
+            break;
+        case Models::DataTreeItem::ComponentGroup:
+            showCustomContextMenuForComponentGroupInternal(&contextMenu, sourceIndex);
+            break;
+        case Models::DataTreeItem::DataNode:
+            showCustomContextMenuForDataNodeInternal(&contextMenu, sourceIndex);
+            break;
+        case Models::DataTreeItem::LayerItem:
+            showCustomContextMenuForLayerInternal(&contextMenu, sourceIndex);
+            break;
+        default:
+            break; // Для Root или неизвестных типов меню не показываем
+    }
+    if (!contextMenu.isEmpty()) {
+        // Обязательно конвертируем локальные координаты QTreeView в глобальные координаты экрана
+        contextMenu.exec(ui->treeView_Layers->viewport()->mapToGlobal(pos));
+    }
+}
+
+void LayerExplorerWidget::showCustomContextMenuForExperimentInternal(QMenu* menu, const QModelIndex& index) {
+}
+void LayerExplorerWidget::showCustomContextMenuForSnapshotInternal(QMenu* menu, const QModelIndex& index) {
+}
+void LayerExplorerWidget::showCustomContextMenuForDataNodeInternal(QMenu* menu, const QModelIndex& index) {
+    QUuid    dataNodeId     = index.data(Models::DataTreeModel::CustomRoles::IdRole).toUuid();
+    QAction* addLayerAction = menu->addAction(tr("Добавить слой"));
+    QAction* loadDataAction = menu->addAction(tr("Загрузить данные"));
+    connect(loadDataAction, &QAction::triggered, this, [this, dataNodeId]() {
+        emit nodeSelectionActivated(dataNodeId);
+    });
+    connect(addLayerAction, &QAction::triggered, this, [this, dataNodeId]() {
+        const auto dataController = m_app->dataController();
+        if (dataController) {
+            dataController->createLayerForNode(dataNodeId);
+        }
+    });
+}
+void LayerExplorerWidget::showCustomContextMenuForComponentGroupInternal(QMenu*             menu,
+                                                                         const QModelIndex& index) {
+}
+void LayerExplorerWidget::showCustomContextMenuForLayerInternal(QMenu* menu, const QModelIndex& index) {
+    // Получаем UUID конкретного слоя
+    QUuid layerId = index.data(Models::DataTreeModel::CustomRoles::IdRole).toUuid();
+
+    // Создаем Action
+    QAction* deleteAction = menu->addAction(tr("Удалить слой"));
+    // deleteAction->setIcon(QIcon(":/icons/delete.png")); // Если есть иконка
+
+    // Подключаем логику удаления
+    connect(deleteAction, &QAction::triggered, this, [this, layerId]() {
+        // Здесь обращаемся к вашему LayerManager для удаления
+        emit removalRequested(layerId);
+    });
+}
+
 void LayerExplorerWidget::handleStructureViewChange(int index) {
     if (!m_app || !m_app->dataTreeModel() || !ui->treeView_Layers) {
         return;
     }
 
     auto* treeModel = m_app->dataTreeModel();
-    auto  mode      = static_cast<Models::TreeMode>(index);
+    auto  mode      = static_cast<Models::DataTreeModel::TreeMode>(index);
 
     // 1. Переключаем режим внутри модели.
     // Модель сама вызовет beginResetModel/endResetModel, View обновится автоматически.
@@ -367,8 +498,8 @@ void LayerExplorerWidget::handleSortByAlphabetically(const bool direct) {
 void LayerExplorerWidget::handleSortByTimestemp(const bool direct) {
     sortTreeHierarchyInternal(ui->treeView_Layers, [direct](const QModelIndex& a, const QModelIndex& b) {
         // Вытаскиваем Timestamp напрямую из индексов исходной модели
-        qint64 timeA = a.data(TreeDataRole::TimestampRole).toLongLong();
-        qint64 timeB = b.data(TreeDataRole::TimestampRole).toLongLong();
+        qint64 timeA = a.data(Models::DataTreeModel::CustomRoles::TimestampRole).toLongLong();
+        qint64 timeB = b.data(Models::DataTreeModel::CustomRoles::TimestampRole).toLongLong();
 
         return direct ? (timeA < timeB) : (timeA > timeB);
     });
@@ -378,8 +509,8 @@ void LayerExplorerWidget::handleResetSortToDefault() {
     // Вызываем нашу новую функцию сортировки, передавая treeView_Layers и компаратор
     sortTreeHierarchyInternal(ui->treeView_Layers, [](const QModelIndex& a, const QModelIndex& b) {
         // Извлекаем порядковый индекс, сохраненный при добавлении ноды в модель
-        int indexA = a.data(TreeDataRole::DefaultOrderRole).toInt();
-        int indexB = b.data(TreeDataRole::DefaultOrderRole).toInt();
+        int indexA = a.data(Models::DataTreeModel::CustomRoles::DefaultOrderRole).toInt();
+        int indexB = b.data(Models::DataTreeModel::CustomRoles::DefaultOrderRole).toInt();
 
         // Возвращаем true, если первый элемент был добавлен раньше второго.
         // Это восстановит исходный "прямой" порядок отображения.
@@ -408,7 +539,7 @@ void LayerExplorerWidget::handleAddLayer() {
     QModelIndex sourceIndex = proxy ? proxy->mapToSource(proxyIndex) : proxyIndex;
 
     // 4. Извлекаем UUID ноды данных, используя вашу кастомную роль
-    QUuid nodeId = sourceIndex.data(TreeDataRole::IdRole).toUuid();
+    QUuid nodeId = sourceIndex.data(Models::DataTreeModel::CustomRoles::IdRole).toUuid();
     if (nodeId.isNull()) {
         // Кликнули по элементу, у которого нет UUID (например, по пустой группе или корню)
         return;
@@ -446,16 +577,23 @@ void LayerExplorerWidget::handleImportFileRequestFromFileExplorer() {
     QString filePath = currentIndex.data(QFileSystemModel::FilePathRole).toString();
     if (filePath.isEmpty()) {
         qCWarning(LogUI) << "Selected File path is empty.";
+        return;
     }
 
-    auto experimentId_opt = m_app->dataController()->getExperimentIdByNodePath(filePath);
-    if (!experimentId_opt.has_value()) {
-        auto result = selectExperimentDialogInternal();
-        if (result.has_value()) {
-            selectAndImportFilesInternal(result.value(), {filePath});
-        }
-    } else {
-        m_app->dataController()->importFiles({filePath}, m_currentVersion, experimentId_opt.value());
+    auto* dataController = m_app->dataController();
+    if (!dataController) {
+        qCCritical(LogUI) << "DataController pointer is segmentation fault!";
+        return;
+    }
+    auto existingNodeId_opt = dataController->getNodeIdByFilePath(filePath);
+    if (existingNodeId_opt.has_value()) {
+        emit nodeSelectionActivated(existingNodeId_opt.value());
+        qCInfo(LogIO) << "Data file added at existing node" << existingNodeId_opt.value();
+        return;
+    }
+    auto result = selectExperimentDialogInternal();
+    if (result.has_value()) {
+        selectAndImportFilesInternal(result.value(), {filePath});
     }
 }
 
@@ -552,7 +690,7 @@ QList<QUuid> LayerExplorerWidget::getSelectedIds() const {
     auto indexes = ui->treeView_Layers->selectionModel()->selectedRows(0);
 
     for (const QModelIndex& index : indexes) {
-        QUuid id = index.data(TreeDataRole::IdRole).toUuid();
+        QUuid id = index.data(Models::DataTreeModel::CustomRoles::IdRole).toUuid();
         if (!id.isNull()) {
             ids.append(id);
         }

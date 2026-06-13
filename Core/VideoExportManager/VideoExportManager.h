@@ -6,8 +6,9 @@
 #include <QMap>
 #include <QObject>
 #include <QStringList>
-#include <memory>
 #include <quuid.h>
+#include <memory>
+
 
 namespace QSpace::Core {
 
@@ -34,7 +35,7 @@ class VideoExportManager : public QObject {
   private slots:
     void fillBuffer();
     void processReadyFrames();
-    void onFileReady(const QUuid& taskId, QSpace::IO::ReadResult result);
+    void handleFileReady(const QUuid& taskId, QSpace::IO::ReadResult result);
 
   private:
     bool                                              m_isCancelled = false; // Флаг отмены

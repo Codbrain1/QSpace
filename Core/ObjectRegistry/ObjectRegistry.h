@@ -9,14 +9,39 @@
 namespace QSpace::Core {
 class ObjectRegistry : public QObject {
     Q_OBJECT
+    Q_PROPERTY(int nodeCount READ nodeCount NOTIFY nodeAdded)
+    Q_PROPERTY(int snapshotCount READ snapshotCount NOTIFY snapshotAdded)
+    Q_PROPERTY(int experimentCount READ experimentCount NOTIFY experimentAdded)
+    Q_PROPERTY(int cacheCapacity READ cacheCapacity WRITE setCacheCapacity)
+
   public:
     explicit ObjectRegistry(QObject* parent = nullptr);
+
+    int nodeCount() const {
+        return m_nodes.size();
+    }
+
+    int snapshotCount() const {
+        return m_snapshots.size();
+    }
+
+    int experimentCount() const {
+        return m_experiments.size();
+    }
+
+    int cacheCapacity() const {
+        return static_cast<int>(m_cacheCapacity);
+    }
+
+    void setCacheCapacity(int capacity) {
+        m_cacheCapacity = capacity;
+    }
 
     // Регистрация объектов
     void registerNode(std::shared_ptr<DataNode> node);
     void registerNode(std::shared_ptr<DataNode> node, const QUuid& experimentId);
-    void registerSnapshot(std::shared_ptr<Snapshot> container);
-    void registerSnapshot(std::shared_ptr<Snapshot> container, const QUuid& experimentId);
+    void registerSnapshot(std::shared_ptr<Snapshot> snapshot);
+    void registerSnapshot(std::shared_ptr<Snapshot> snapshot, const QUuid& experimentId); // TODO
     void registerExperiment(std::shared_ptr<Experiment> experiment);
 
     std::shared_ptr<DataNode>   getNode(const QUuid& id) const;
@@ -30,19 +55,19 @@ class ObjectRegistry : public QObject {
 
     void updateNodeData(const QUuid& id, vtkSmartPointer<vtkDataSet> dataSet, double timestamp);
 
-    QList<std::shared_ptr<DataNode>> getAllNodes() {
+    Q_INVOKABLE QList<std::shared_ptr<DataNode>> getAllNodes() {
         return m_nodes.values();
     }
 
-    QList<std::shared_ptr<Snapshot>> getAllSnapshots() {
+    Q_INVOKABLE QList<std::shared_ptr<Snapshot>> getAllSnapshots() {
         return m_snapshots.values();
     }
 
-    QList<std::shared_ptr<Experiment>> getAllExperiments() {
+    Q_INVOKABLE QList<std::shared_ptr<Experiment>> getAllExperiments() {
         return m_experiments.values();
     }
 
-    void clear();
+    Q_INVOKABLE void clear();
   signals:
     void nodeAdded(std::shared_ptr<QSpace::Core::DataNode> node);
     void snapshotAdded(std::shared_ptr<QSpace::Core::Snapshot> container);

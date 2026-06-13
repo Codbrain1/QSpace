@@ -57,7 +57,7 @@ MainWindow::MainWindow(Core::AppCore* app, QWidget* parent)
     //--------------------------------------------------
     m_propertyInspector = std::make_unique<PropertyInspector>(app);
     ui->dock_properties->setWidget(m_propertyInspector.get());
-
+    ui->dock_properties->setVisible(false);
     // --- ПОДГОТОВКА ДИАЛОГА ПРОГРЕССА ---
     //--------------------------------------------------
 
@@ -265,6 +265,10 @@ void MainWindow::setupSlots() {
             &QSpace::Core::Controllers::ViewController::viewRemoved,
             this,
             &MainWindow::handleViewRemoved);
+    connect(m_layerExplorerWidget.get(),
+            &LayerExplorerWidget::propertyInspectorVisibleRequested,
+            this,
+            [this](const bool isVisible) { ui->dock_properties->setVisible(isVisible); });
 }
 void MainWindow::handleLayerSelectionChange(const QList<QUuid>& ids) {
     if (ids.isEmpty()) {

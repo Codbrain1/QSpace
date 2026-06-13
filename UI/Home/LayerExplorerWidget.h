@@ -25,12 +25,6 @@ QT_END_NAMESPACE
 
 namespace QSpace::UI {
 
-enum TreeDataRole {
-    IdRole = Qt::UserRole, // Для хранения QUuid ноды
-    TimestampRole,         // Для хранения времени (qint64 или QDateTime)
-    DefaultOrderRole       // Для хранения порядкового номера добавления (int)
-};
-
 class LayerExplorerWidget : public QWidget {
     Q_OBJECT
   public:
@@ -40,7 +34,8 @@ class LayerExplorerWidget : public QWidget {
 
   signals:
     void selectionChanged(const QList<QUuid>& selectedIds);
-    void removalRequested(const QUuid& id);
+    void nodeSelectionActivated(const QUuid& id);
+    void removalRequested(const QUuid& id); // TODO: добавить коннекты в других классах
     void updateNodeSettingsRequested(const QUuid& id, std::function<void(Core::VisualSettings&)> modifer);
 
     // ------ отвечает за отображение меню с настройками ------
@@ -49,20 +44,21 @@ class LayerExplorerWidget : public QWidget {
   private slots:
 
     // общие кнопки
-    void handleFileStructureChange(int index);
+    void handleReadSchenmeChange(int index);
     void handleStructureViewChange(int index);
     // ---------------------------------------------------------
     // @SECTION: Редактор слоев
     // ---------------------------------------------------------
 
     // поиск по слоям
-    void handleFindLayerChange(const QString& line);
+    void
+    handleFindLayerChange(const QString& line); // TODO: исправить поиск, добавить всплывающее меню при поиске
 
     // ------ сортировка слоев ------
     // true -- прямой порядок A - Я, A - Z; false -- обратный порядок Я - A , Z - A
-    void handleSortByAlphabetically(const bool direct);
-    void handleSortByTimestemp(const bool direct);
-    void handleResetSortToDefault();
+    void handleSortByAlphabetically(const bool direct); // TODO: неработает сортировка
+    void handleSortByTimestemp(const bool direct);      // TODO:  неработает сортировка
+    void handleResetSortToDefault();                    // TODO:  неработает сортировка
 
     //  ------ добавление слоев в редактор слоев ------
     // порождают ноду/контейнер данных в ObjectRegistry
@@ -70,7 +66,8 @@ class LayerExplorerWidget : public QWidget {
 
     // обработка запросов загрузки файлов из разных вкладок UI
     void handleImportFilesRequestFromLayerEditor();
-    void handleImportFileRequestFromFileExplorer();
+    void handleImportFileRequestFromFileExplorer(); // TODO: исправить при загрузке существующего файла не
+                                                    // добавлять новую запись
 
     // void on_actionAddSnapshot_clicked();   // добавление группы для слоев
     void handleAddExperiment(); // добавление эксперимента
@@ -101,17 +98,16 @@ class LayerExplorerWidget : public QWidget {
     // ------ управление корневой директорией ------
     // TODO: добавить лямбду для обработки нажатия кнопки выбора папки
     void handleRootPathChange(const QString& line); // MINOR: возможно будет работать некорреткно
-
     //  ------ Добавление/удаление данных ------
     void handleCollapseAllFiles();
 
     // поиск по файлам
     void handleFindFile(const QString& line); // TODO
 
-    void handleNodeSelected(); // TODO
-                               // void showContextMenu(const QPoint& pos);            // TODO
-                               // void onItemChanged(QTreeWidgetItem* item, int col); // TODO
-                               // void onActionOpenVisualSettingsTrigered();
+    void handleNodeSelected();                                            // TODO
+    void handleShowCustomContexMenuForTreeViewElement(const QPoint& pos); // TODO
+
+    // void onItemChanged(QTreeWidgetItem* item, int col);
 
     void handleShowCustomContextMenuForFile(const QPoint& pos);
 
@@ -143,5 +139,11 @@ class LayerExplorerWidget : public QWidget {
     void setCheckStateUnselectedRecursiveInternal(const QModelIndex&       parentIndex,
                                                   const QSet<QModelIndex>& selectedIndexes,
                                                   Qt::CheckState           state);
+
+    void showCustomContextMenuForExperimentInternal(QMenu* menu, const QModelIndex& index);     // TODO
+    void showCustomContextMenuForSnapshotInternal(QMenu* menu, const QModelIndex& index);       // TODO
+    void showCustomContextMenuForDataNodeInternal(QMenu* menu, const QModelIndex& index);       // TODO
+    void showCustomContextMenuForComponentGroupInternal(QMenu* menu, const QModelIndex& index); // TODO
+    void showCustomContextMenuForLayerInternal(QMenu* menu, const QModelIndex& index);          // TODO
 };
 } // namespace QSpace::UI

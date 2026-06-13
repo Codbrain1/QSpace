@@ -16,6 +16,7 @@
 #include <QFileInfo>
 #include <QRegularExpression>
 #include <qfileinfo.h>
+#include <optional>
 
 namespace QSpace::Core::Controllers {
 
@@ -33,7 +34,7 @@ DataController::DataController(Core::DataManager*    dataManager,
 
 void DataController::initialize() {
     // 1. Подписываемся на события менеджера низкоуровневого ввода-вывода
-    connect(m_dataManager, &Core::DataManager::fileReady, this, &DataController::onFileReady);
+    connect(m_dataManager, &Core::DataManager::fileReady, this, &DataController::handleFileReady);
 
     connect(m_dataManager,
             &Core::DataManager::ioStarted,
@@ -230,6 +231,16 @@ std::optional<QUuid> DataController::getExperimentIdByNodePath(const QString& no
     return std::nullopt; // Если совпадений не найдено, возвращаем nullopt
 }
 
+std::optional<QUuid> DataController::getNodeIdByFilePath(const QString& filePath) const {
+    auto nodes = m_objectRegistry->getAllNodes();
+    for (const auto& node : nodes) {
+        if (node && node->path == filePath) {
+            return node->id;
+        }
+    }
+    return std::nullopt;
+}
+
 std::shared_ptr<Core::DataNode> DataController::getNodeById(const QUuid& nodeId) {
     return m_objectRegistry->getNode(nodeId);
 }
@@ -294,7 +305,7 @@ void DataController::onNodeSelectionActivated(const QUuid& nodeId) {
     }
 }
 
-void DataController::onFileReady(const QUuid& taskId, QSpace::IO::ReadResult result) {
+void DataController::handleFileReady(const QUuid& taskId, QSpace::IO::ReadResult result) {
     // 1. Первичная обработка ошибок ввода-вывода
     if (!result.isSuccess()) {
         qCWarning(LogCore) << "Error loading file:" << result.errMessage;
@@ -373,7 +384,7 @@ void DataController::onFileReady(const QUuid& taskId, QSpace::IO::ReadResult res
         emit markSessionDirty();
     }
 
-    qCInfo(LogCore) << "DataController::onFileReady - Скелет ноды создан для:" << fileName
+    qCInfo(LogCore) << "DataController::handleFileReady - Скелет ноды создан для:" << fileName
                     << "| Заявлено точек:" << node->stats.pointCount;
 
     // Флаг: принадлежит ли файл какому-либо упорядоченному эксперименту?

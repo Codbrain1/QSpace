@@ -53,6 +53,7 @@ class DataController : public QObject {
                      Core::ModelingProgrammVersion version = Core::ModelingProgrammVersion::V2);
 
     std::optional<QUuid> getExperimentIdByNodePath(const QString& nodePath) const;
+    std::optional<QUuid> getNodeIdByFilePath(const QString& filePath) const;
 
     // --- Управление узлами данных (Nodes) ---
     void                                    createLayerForNode(const QUuid& nodeId);
@@ -79,7 +80,7 @@ class DataController : public QObject {
     void onNodeSelectionActivated(const QUuid& nodeId);
 
   private slots:
-    void onFileReady(const QUuid& taskId, IO::ReadResult result);
+    void handleFileReady(const QUuid& taskId, IO::ReadResult result);
     void onRequestDataLoad(const QUuid& nodeId);
 
   signals:
