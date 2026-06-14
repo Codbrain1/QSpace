@@ -17,12 +17,14 @@
 #include <QTreeView>
 
 #include <memory>
+#include <qabstractitemmodel.h>
 #include <qabstractspinbox.h>
 #include <qaction.h>
 #include <qcombobox.h>
 #include <qcontainerfwd.h>
 #include <qfiledialog.h>
 #include <qfileinfo.h>
+#include <qheaderview.h>
 #include <qlineedit.h>
 #include <qloggingcategory.h>
 #include <qmessagebox.h>
@@ -86,10 +88,21 @@ LayerExplorerWidget::LayerExplorerWidget(Core::AppCore* app, QWidget* parent)
     ui->treeView_Layers->setSelectionMode(QAbstractItemView::ExtendedSelection);
     ui->treeView_Layers->setAnimated(true);
 
+    QHeaderView* header = ui->treeView_Layers->header();
+    header->setSectionResizeMode(0, QHeaderView::ResizeToContents);
     // выбор версии программы моделирвоания для загрузки файлов
     ui->comboBox_fileStructure->setItemData(0, static_cast<int>(Core::ModelingProgrammVersion::V2));
     ui->comboBox_fileStructure->setItemData(1, static_cast<int>(Core::ModelingProgrammVersion::V2_2));
     ui->comboBox_fileStructure->setItemData(2, static_cast<int>(Core::ModelingProgrammVersion::V2_3));
+
+    // В конструкторе LayerExplorerWidget, после ui->setupUi(this);
+    m_searchPopup = new QListWidget(this);
+    // Делаем его плавающим окном-подсказкой без рамки
+    m_searchPopup->setWindowFlags(Qt::ToolTip | Qt::FramelessWindowHint);
+    // Запрещаем окну отбирать фокус клавиатуры у строки поиска
+    m_searchPopup->setAttribute(Qt::WA_ShowWithoutActivating);
+    m_searchPopup->setFocusPolicy(Qt::NoFocus);
+    m_searchPopup->hide();
 
     setupToolButtons();
     setupSlots();
@@ -232,9 +245,14 @@ void LayerExplorerWidget::setupSlots() {
             &QTreeView::customContextMenuRequested,
             this,
             &LayerExplorerWidget::handleShowCustomContexMenuForTreeViewElement);
-
-    // отправляет сигнал в MainWindow о том какая сейчас выбрана запись, что позволяет на лету менять вид для
-    // меню настроек
+    connect(ui->treeView_Layers, &QTreeView::expanded, this, [this](const QModelIndex& index) {
+        ui->treeView_Layers->header()->resizeSection(0, ui->treeView_Layers->sizeHintForRow(0));
+    });
+    connect(ui->treeView_Layers, &QTreeView::collapsed, this, [this](const QModelIndex& index) {
+        ui->treeView_Layers->header()->resizeSection(0, ui->treeView_Layers->sizeHintForRow(0));
+    });
+    // отправляет сигнал в MainWindow о том какая сейчас выбрана запись, что позволяет на лету менять вид
+    // для меню настроек
     connect(ui->treeView_Layers->selectionModel(),
             &QItemSelectionModel::selectionChanged,
             this,
@@ -268,6 +286,10 @@ void LayerExplorerWidget::setupSlots() {
                 &Core::Controllers::DataController::removeNodeObject,
                 Qt::QueuedConnection);
     }
+    connect(ui->toolButton_CollapseAll, &QToolButton::clicked, this, &LayerExplorerWidget::handleCollapseAll);
+    connect(ui->toolButton_ExpandAll, &QToolButton::clicked, this, &LayerExplorerWidget::handleExpandAll);
+    // Подключаем клик по элементу списка
+    connect(m_searchPopup, &QListWidget::itemClicked, this, &LayerExplorerWidget::handleSearchResultClicked);
 }
 void LayerExplorerWidget::sortTreeHierarchyInternal(
     QTreeView*                                                  tree,
@@ -422,17 +444,64 @@ void LayerExplorerWidget::handleStructureViewChange(int index) {
             // Ноды (файлы данных) и Слои внутри них остаются свернутыми!
         }
     }
+    ui->treeView_Layers->header()->resizeSection(0, ui->treeView_Layers->sizeHintForRow(0));
 
     ui->treeView_Layers->setUpdatesEnabled(true);
 }
 
 void LayerExplorerWidget::handleFindLayerChange(const QString& line) {
-    // Достаем прокси-модель из вью
     auto* proxy = qobject_cast<QSortFilterProxyModel*>(ui->treeView_Layers->model());
-    if (proxy) {
-        // Передаем регулярное выражение или фиксированную строку для фильтра
-        proxy->setFilterFixedString(line);
+    if (!proxy)
+        return;
+
+    // 1. Принудительно отключаем фильтрацию самого дерева, чтобы оно оставалось полным
+    proxy->setFilterFixedString("");
+
+    // 2. Если строка пустая или слишком короткая — прячем окно
+    if (line.trimmed().isEmpty()) {
+        m_searchPopup->hide();
+        return;
     }
+
+    QAbstractItemModel* sourceModel = proxy->sourceModel();
+    if (!sourceModel)
+        return;
+
+    m_searchPopup->clear();
+    QList<QModelIndex> results;
+
+    // 3. Запускаем рекурсивный поиск по ИСХОДНОЙ модели
+    searchTreeRecursively(QModelIndex(), line, sourceModel, results);
+
+    if (results.isEmpty()) {
+        m_searchPopup->hide();
+        return;
+    }
+
+    // 4. Наполняем QListWidget результатами
+    for (const QModelIndex& idx : results) {
+        // Формируем красивую строку пути, например: "Эксперимент 1 -> Снапшот -> Звезды"
+        QString displayText = buildItemContextString(idx, sourceModel);
+
+        QListWidgetItem* listItem = new QListWidgetItem(displayText);
+
+        // ВАЖНО: Сохраняем QPersistentModelIndex внутри элемента списка.
+        // Это безопасно сохранит ссылку на ноду дерева, даже если оно слегка изменится.
+        listItem->setData(Qt::UserRole, QVariant::fromValue(QPersistentModelIndex(idx)));
+
+        m_searchPopup->addItem(listItem);
+    }
+
+    // 5. Позиционируем окно ровно под QLineEdit и задаем ему такую же ширину
+    QPoint pos = ui->lineEdit_findLayer->mapToGlobal(QPoint(0, ui->lineEdit_findLayer->height()));
+    m_searchPopup->move(pos);
+    m_searchPopup->setFixedWidth(ui->lineEdit_findLayer->width());
+
+    // Ограничиваем высоту, если результатов слишком много (макс 10 видимых строк)
+    int popupHeight = qMin(m_searchPopup->sizeHintForRow(0) * results.size() + 5, 200);
+    m_searchPopup->setFixedHeight(popupHeight);
+
+    m_searchPopup->show();
 }
 
 void LayerExplorerWidget::setupFileExplorer() {
@@ -903,6 +972,83 @@ void LayerExplorerWidget::handleShowCustomContextMenuForFile(const QPoint& pos) 
             &LayerExplorerWidget::handleImportFileRequestFromFileExplorer);
     contextMenu.exec(ui->treeViewFiles->viewport()->mapToGlobal(pos));
 }
+// --- Рекурсивный поиск по всему дереву ---
+void LayerExplorerWidget::searchTreeRecursively(const QModelIndex&  parent,
+                                                const QString&      text,
+                                                QAbstractItemModel* model,
+                                                QList<QModelIndex>& results) {
+    int rows = model->rowCount(parent);
+    for (int i = 0; i < rows; ++i) {
+        // Проверяем только 0-ю колонку (NameColumn), где лежит текст
+        QModelIndex idx  = model->index(i, 0, parent);
+        QString     name = idx.data(Qt::DisplayRole).toString();
 
+        if (name.contains(text, Qt::CaseInsensitive)) {
+            results.append(idx);
+        }
+
+        // Если у узла есть дети — идем вглубь
+        if (model->hasChildren(idx)) {
+            searchTreeRecursively(idx, text, model, results);
+        }
+    }
+}
+
+// --- Построение контекстной строки (пути) для плоского списка ---
+QString LayerExplorerWidget::buildItemContextString(const QModelIndex& index, QAbstractItemModel* model) {
+    Q_UNUSED(model);
+    QStringList path;
+    QModelIndex curr = index;
+
+    // Поднимаемся от найденного элемента вверх до корня
+    while (curr.isValid()) {
+        path.prepend(curr.data(Qt::DisplayRole).toString());
+        curr = curr.parent();
+    }
+
+    // Результат будет выглядеть как "Эксперимент 1 -> Снапшот (t=0) -> Gas"
+    return path.join(" -> ");
+}
+
+// --- Обработка клика по элементу во всплывающем окне ---
+void LayerExplorerWidget::handleSearchResultClicked(QListWidgetItem* item) {
+    if (!item)
+        return;
+
+    // Прячем меню
+    m_searchPopup->hide();
+
+    // Достаем сохраненный индекс исходной модели
+    QVariant data = item->data(Qt::UserRole);
+    if (!data.canConvert<QPersistentModelIndex>())
+        return;
+
+    QPersistentModelIndex persistentIdx = data.value<QPersistentModelIndex>();
+    if (!persistentIdx.isValid())
+        return;
+
+    QModelIndex sourceIdx = persistentIdx; // Приводим к обычному индексу
+
+    auto* proxy = qobject_cast<QSortFilterProxyModel*>(ui->treeView_Layers->model());
+    if (!proxy)
+        return;
+
+    // Конвертируем индекс исходной модели в индекс прокси-модели (с учетом текущей сортировки дерева)
+    QModelIndex proxyIdx = proxy->mapFromSource(sourceIdx);
+
+    if (proxyIdx.isValid()) {
+        // Прокручиваем к элементу (это автоматически раскроет все родительские папки!)
+        ui->treeView_Layers->scrollTo(proxyIdx, QAbstractItemView::PositionAtCenter);
+
+        // Выделяем строку
+        ui->treeView_Layers->selectionModel()->select(proxyIdx,
+                                                      QItemSelectionModel::ClearAndSelect |
+                                                          QItemSelectionModel::Rows);
+
+        // Передаем фокус
+        ui->treeView_Layers->setCurrentIndex(proxyIdx);
+        ui->treeView_Layers->setFocus();
+    }
+}
 } // namespace QSpace::UI
 #include "LayerExplorerWidget.moc"

@@ -4,7 +4,10 @@
 #include "Enums/CoreEnums.h"
 #include "SelectExperimentDialog.h"
 #include "Structures/CoreStructures.h"
+#include <QListWidget>
 #include <QObject>
+#include <QPersistentModelIndex>
+#include <QVariant>
 #include <QWidget>
 #include <functional>
 #include <memory>
@@ -51,9 +54,8 @@ class LayerExplorerWidget : public QWidget {
     // ---------------------------------------------------------
 
     // поиск по слоям
-    void
-    handleFindLayerChange(const QString& line); // TODO: исправить поиск, добавить всплывающее меню при поиске
-
+    void handleFindLayerChange(const QString& line);
+    void handleSearchResultClicked(QListWidgetItem* item);
     // ------ сортировка слоев ------
     // true -- прямой порядок A - Я, A - Z; false -- обратный порядок Я - A , Z - A
     void handleSortByAlphabetically(const bool direct); // TODO: неработает сортировка
@@ -66,8 +68,7 @@ class LayerExplorerWidget : public QWidget {
 
     // обработка запросов загрузки файлов из разных вкладок UI
     void handleImportFilesRequestFromLayerEditor();
-    void handleImportFileRequestFromFileExplorer(); // TODO: исправить при загрузке существующего файла не
-                                                    // добавлять новую запись
+    void handleImportFileRequestFromFileExplorer();
 
     // void on_actionAddSnapshot_clicked();   // добавление группы для слоев
     void handleAddExperiment(); // добавление эксперимента
@@ -126,6 +127,7 @@ class LayerExplorerWidget : public QWidget {
     selectExperimentDialogInternal(); // открывает диалог выбора эксперимента для добавления файлов
 
     Ui::LayerExplorerWidget* ui;
+    QListWidget*             m_searchPopup = nullptr; // отображает записи по поиску
     Core::AppCore*           m_app;
     Models::DataTreeModel*   m_treeModel = nullptr;
 
@@ -145,5 +147,11 @@ class LayerExplorerWidget : public QWidget {
     void showCustomContextMenuForDataNodeInternal(QMenu* menu, const QModelIndex& index);       // TODO
     void showCustomContextMenuForComponentGroupInternal(QMenu* menu, const QModelIndex& index); // TODO
     void showCustomContextMenuForLayerInternal(QMenu* menu, const QModelIndex& index);          // TODO
+
+    void    searchTreeRecursively(const QModelIndex&  parent,
+                                  const QString&      text,
+                                  QAbstractItemModel* model,
+                                  QList<QModelIndex>& results);
+    QString buildItemContextString(const QModelIndex& index, QAbstractItemModel* model);
 };
 } // namespace QSpace::UI
