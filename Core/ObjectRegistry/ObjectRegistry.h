@@ -37,6 +37,18 @@ class ObjectRegistry : public QObject {
         m_cacheCapacity = capacity;
     }
 
+    bool containsExperiment(const QUuid& id) const {
+        return m_experiments.contains(id);
+    }
+
+    bool containsSnpashot(const QUuid& id) const {
+        return m_snapshots.contains(id);
+    }
+
+    bool containsDataNode(const QUuid& id) const {
+        return m_nodes.contains(id);
+    }
+
     // Регистрация объектов
     void registerNode(std::shared_ptr<DataNode> node);
     void registerNodeToExperiment(std::shared_ptr<DataNode> node, const QUuid& experimentId);
@@ -83,7 +95,7 @@ class ObjectRegistry : public QObject {
     dataLoadRequested(const QUuid& id, const QString& path, const QSpace::IO::ReadScheme& scheme);
 
   private:
-    size_t                                  m_cacheCapacity = 10;
+    size_t                                  m_cacheCapacity = 15;
     std::list<QUuid>                        m_lruList;
     QMap<QUuid, std::list<QUuid>::iterator> m_lruMap;
 

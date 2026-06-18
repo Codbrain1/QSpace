@@ -3,7 +3,11 @@ cmake_minimum_required(VERSION 3.16) #минимальная версия cmake
 # 1. основные сведедения о проекте
 #-------------------------------------------------------------------
 project(QSpace VERSION 0.7.1 LANGUAGES CXX) # название проекта его версия и язык на котором написан проект
-
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    add_compile_options(-fdiagnostics-color=always)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    add_compile_options(-fcolor-diagnostics)
+endif()
 set(CMAKE_CXX_STANDARD 20) # стандарт языка 23
 set(CMAKE_CXX_STANDARD_REQUIRED ON)#обязательный стандарт языка
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

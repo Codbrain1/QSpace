@@ -10,9 +10,10 @@ QSpace::Core::DataNode::MetaData calculateMetaData(vtkSmartPointer<vtkDataSet> d
         stats.pointCount = dataSet->GetNumberOfPoints();
         stats.cellCount  = dataSet->GetNumberOfCells();
 
-        stats.center[0]  = (stats.bounds[0] + stats.bounds[1]) / 2.0;
-        stats.center[1]  = (stats.bounds[2] + stats.bounds[3]) / 2.0;
-        stats.center[2]  = (stats.bounds[4] + stats.bounds[5]) / 2.0;
+        stats.center[0] = (stats.bounds[0] + stats.bounds[1]) / 2.0;
+        stats.center[1] = (stats.bounds[2] + stats.bounds[3]) / 2.0;
+        stats.center[2] = (stats.bounds[4] + stats.bounds[5]) / 2.0;
+
         stats.timestamp  = timestamp;
         vtkPointData* pd = dataSet->GetPointData();
         if (pd) {
@@ -27,5 +28,14 @@ QSpace::Core::DataNode::MetaData calculateMetaData(vtkSmartPointer<vtkDataSet> d
         }
     }
     return stats;
+}
+
+double calculateTimestamp(double timestamp) {
+    double Km  = 3.72;
+    double Kr  = 0.9;
+    double l_v = 65.76 * sqrt(Km / Kr); // km/s
+    double l_r = 10 * Kr;               // kpc
+    double l_t = l_r / l_v * 1000.0 * 0.9784;
+    return timestamp * l_t;
 }
 } // namespace QSpace::Physics::Math

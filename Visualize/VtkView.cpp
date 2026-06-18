@@ -338,17 +338,14 @@ void VtkView::resetCamera() {
 }
 
 void VtkView::render() {
-    qCDebug(LogRenderer) << "VtkView::render() called";
-    if (m_renderWindow) {
-        m_renderWindow->Modified();
+    if (m_vtkWidget) {
+        m_vtkWidget->update(); // Делегируем отрисовку Qt
     }
-    emit updateRequested();
 }
 
 void VtkView::renderForce() {
-    // TODO:: может привести к непонятным последствиям при рендеринге или замедлению его работы
-    if (m_renderWindow && !m_renderWindow->GetNeverRendered()) {
-        m_renderWindow->Render();
+    if (m_vtkWidget) {
+        m_vtkWidget->update(); // Делегируем отрисовку Qt
     }
 }
 

@@ -6,6 +6,7 @@
 #include <QStringList>
 #include <quuid.h>
 #include "Enums/CoreEnums.h"
+#include "Physics/Math/MetaDataCalculating.h"
 #include "Structures/SessionStructures.h"
 
 // Forward declarations в пространствах имен проекта
@@ -65,6 +66,18 @@ class DataController : public QObject {
 
     QList<std::shared_ptr<QSpace::Core::Experiment>> getExperiments() const;
 
+    double getSnapshotTimeByIndex(int index) {
+        if (index > 0 && index < m_timeSliderSnapshots.size())
+            return m_timeSliderSnapshots[index].timestamp;
+        else
+            return 0;
+    };
+
+  signals:
+    void sceneUpdateRequested();
+    void markSessionDirty(); // Сигнал для ProjectController
+    void snapshotsListSizeChanged(const int size);
+
   public slots:
     void removeNodeObject(const QUuid& id);
     /**
@@ -75,19 +88,15 @@ class DataController : public QObject {
      */
     void updateNodeSettings(const QUuid& id, std::function<void(Core::VisualSettings&)> modifier);
     // при изменении слайдера
-    void onTimelineStepChanged(const QUuid& snapshotId);
-    // при выбору ноды в плоском режиме
+    void handleTimeSliderValueChanged(int index, bool isPreview = false);
+    // при выборе ноды в плоском режиме
     void onNodeSelectionActivated(const QUuid& nodeId);
+    void handleTargetExperimentVisualizeChanged(const QUuid& experimentId);
+
 
   private slots:
     void handleFileReady(const QUuid& taskId, IO::ReadResult result);
     void onRequestDataLoad(const QUuid& nodeId);
-
-  signals:
-    void sceneUpdateRequested();
-    void markSessionDirty(); // Сигнал для ProjectController
-
-
 
   private:
     struct TaskInfo {
@@ -95,7 +104,17 @@ class DataController : public QObject {
         int   totalFiles = 1; // Количество файлов в задаче
     };
 
-    Core::DataManager*    m_dataManager;
+    struct SnapshotToTimestamp {
+        QUuid  targetSnapshot;
+        double timestamp;
+
+        bool operator<(const SnapshotToTimestamp& other) const {
+            return timestamp < other.timestamp;
+        }
+    };
+
+    Core::DataManager* m_dataManager;
+
     Core::ObjectRegistry* m_objectRegistry;
     Core::LayerManager*   m_layerManager;
     Core::ViewManager*    m_viewManager;
@@ -105,8 +124,12 @@ class DataController : public QObject {
     QSet<QUuid>                           m_loadingNodes;
     QMap<QString, Session::DataNodeState> m_restoringNodes;
     bool                                  m_autoGrouping = true;
+    QUuid                                 m_currentVisualizeExperimentId;
+    QUuid                                 m_currentActiveSnapshotId;
+    std::vector<SnapshotToTimestamp>      m_timeSliderSnapshots;
 
     QString                         extractGroupName(const QString& filename);
     std::shared_ptr<Core::Snapshot> findOrCreateSnapshot(const QString& groupName);
+    void activateSnapshotInternal(const QUuid& snapshotId, bool isPreview);
 };
 } // namespace QSpace::Core::Controllers

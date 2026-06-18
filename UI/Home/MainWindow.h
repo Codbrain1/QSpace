@@ -3,6 +3,7 @@
 #include "Core/AppCore/AppCore.h"
 #include "LayerExplorerWidget.h"
 #include "PropertyInspector.h"
+#include "TimeLineWidget.h"
 #include <QMainWindow>
 #include <QObject>
 #include <QProgressDialog>
@@ -48,8 +49,9 @@ class MainWindow : public QMainWindow {
     QSpace::Core::AppCore*               m_app;
     Ui::MainWindow*                      ui;
     std::unique_ptr<QProgressDialog>     m_exportProgressDialog;
-    std::unique_ptr<LayerExplorerWidget> m_layerExplorerWidget;
-    std::unique_ptr<PropertyInspector>   m_propertyInspector;
+    std::unique_ptr<LayerExplorerWidget> m_layerExplorerWidget; //
+    std::unique_ptr<PropertyInspector>   m_propertyInspector;   // TODO: изменить название widget
+    std::unique_ptr<TimeLineWidget>      m_timeSliderWidget;
     QMap<QUuid, QDockWidget*> m_viewDockWidgets; // для хранения соответствия между viewId и их доками
     void                      setupSlots();
 };

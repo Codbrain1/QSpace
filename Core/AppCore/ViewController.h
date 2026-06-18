@@ -40,8 +40,11 @@ class ViewController : public QObject {
     void setBackgroundColorInView(const QUuid& viewId, float r, float g, float b);
     void setAxesVisibleInView(const QUuid& viewId, bool visible);
     void setGridVisibleInView(const QUuid& viewId, bool visible);
-    // void  setGlobalExposureView(const QUuid& viewId, double exposure);
 
+    // void  setGlobalExposureView(const QUuid& viewId, double exposure);
+    Core::ViewManager* getViewManager() {
+        return m_viewManager;
+    };
 
   signals:
     void viewCreated(const QUuid& viewId, Visualize::ViewType type);

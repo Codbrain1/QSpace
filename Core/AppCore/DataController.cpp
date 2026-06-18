@@ -1,6 +1,7 @@
 #include "DataController.h"
 
 // Подключение внутренних менеджеров ядра
+#include "Common/Interfaces/IRenderLayer.h"
 #include "Common/Structures/CoreStructures.h"
 #include "Core/DataManager/DataManager.h"
 #include "Core/LayerManager/LayerManager.h"
@@ -16,6 +17,8 @@
 #include <QFileInfo>
 #include <QRegularExpression>
 #include <qfileinfo.h>
+#include <qloggingcategory.h>
+#include <qobjectdefs.h>
 #include <optional>
 
 namespace QSpace::Core::Controllers {
@@ -273,23 +276,104 @@ void DataController::prepareNodesForRestoration(
 // ---------------------------------------------------------
 // @SECTION: Реакция на UI (Слайдер и Дерево)
 // ---------------------------------------------------------
-void DataController::onTimelineStepChanged(const QUuid& snapshotId) {
-    auto snapshot = m_objectRegistry->getSnapshot(snapshotId);
-    if (!snapshot)
+void DataController::handleTimeSliderValueChanged(int index, bool isPreview) {
+    if (index < 0 || index >= m_timeSliderSnapshots.size())
         return;
-
-    for (const auto& node : snapshot->components) {
-        if (!node)
-            continue;
-
-        // Если данные уже в памяти (requestNodeData вернет true), просто включаем их
-        // Если данных нет, метод вернет false и САМ испустит сигнал dataLoadRequested
-        if (m_objectRegistry->getOrLoadNodeData(node->id)) {
-            node->masterSettings->isVisible = true;
-            m_layerManager->updateNodeMasterSettings(node->id);
+    // 1. Гасим предыдущий активный кадр (чтобы не наслаивать геометрию)
+    if (!m_currentActiveSnapshotId.isNull()) {
+        auto oldSnapshot = m_objectRegistry->getSnapshot(m_currentActiveSnapshotId);
+        if (oldSnapshot) {
+            m_layerManager->setContainerVisibility(oldSnapshot, false);
         }
     }
-    emit sceneUpdateRequested();
+    // 2. Делаем текущий (выбранный) кадр активным
+    QUuid targetSnapshotId = m_timeSliderSnapshots[index].targetSnapshot;
+    auto  targetSnapshot   = m_objectRegistry->getSnapshot(targetSnapshotId);
+
+    m_currentActiveSnapshotId = targetSnapshotId;
+    if (targetSnapshot) {
+        // Отобразятся только те слои, у которых стоит галочка видимости
+        m_layerManager->setContainerVisibility(targetSnapshot, true);
+    }
+
+    // 3. Формируем "скользящее окно" кэширования: [index - 7 ... index ... index + 7]
+    int windowRadius = 7;
+    int startIdx     = std::max(0, index - windowRadius);
+    int endIdx = std::min(static_cast<int>(m_timeSliderSnapshots.size() - 1), index + windowRadius);
+
+    for (int i = startIdx; i <= endIdx; ++i) {
+        auto snap = m_objectRegistry->getSnapshot(m_timeSliderSnapshots[i].targetSnapshot);
+        if (!snap)
+            continue;
+
+        for (const auto& node : snap->components) {
+            // ФИЛЬТР: Обрабатываем только ту компоненту, которую пользователь хочет видеть
+            if (!node || !node->masterSettings->isVisible)
+                continue;
+
+            if (node->data == nullptr) {
+                // ДАННЫХ НЕТ В ОЗУ
+                // Грузим данные с диска только если это медленное движение/остановка (!isPreview)
+                // ИЛИ если это непосредственно текущий кадр, на который смотрит пользователь.
+                if (!isPreview || i == index) {
+                    QMetaObject::invokeMethod(this, "onRequestDataLoad", Q_ARG(QUuid, node->id));
+                }
+            } else {
+                // ДАННЫЕ УЖЕ В ОЗУ
+                // Проверяем, есть ли для них физический VTK-слой. Если нет — создаем.
+                auto layers = m_layerManager->getLayersForNode(node->id);
+                if (layers.isEmpty()) {
+                    createLayerForNode(node->id);
+                }
+            }
+        }
+    }
+}
+
+// Измените сигнатуру метода (не забудьте добавить bool isPreview в DataController.h!)
+void DataController::activateSnapshotInternal(const QUuid& snapshotId, bool isPreview) {
+    if (m_currentActiveSnapshotId == snapshotId)
+        return;
+
+    // 1. ВЫКЛЮЧАЕМ ПРЕДЫДУЩИЙ КАДР
+    if (!m_currentActiveSnapshotId.isNull()) {
+        auto oldSnapshot = m_objectRegistry->getSnapshot(m_currentActiveSnapshotId);
+        if (oldSnapshot) {
+            // Вместо тяжелого updateNodeMasterSettings используем setContainerVisibility
+            m_layerManager->setContainerVisibility(oldSnapshot, false);
+        }
+    }
+
+    // 2. ВКЛЮЧАЕМ НОВЫЙ КАДР
+    auto newSnapshot = m_objectRegistry->getSnapshot(snapshotId);
+    if (!newSnapshot)
+        return;
+
+    if (!isPreview) {
+        // ЧЕСТНАЯ ЗАГРУЗКА (Слайдер отпустили)
+        for (const auto& node : newSnapshot->components) {
+            if (!node)
+                continue;
+            if (m_objectRegistry->getOrLoadNodeData(node->id)) {
+                node->masterSettings->isVisible = true;
+                m_layerManager->updateNodeMasterSettings(node->id);
+            }
+        }
+    } else {
+        // БЫСТРОЕ ПРЕВЬЮ (Слайдер тянут)
+        // Включаем только то, что УЖЕ есть в оперативной памяти (data != nullptr)
+        for (const auto& node : newSnapshot->components) {
+            if (!node)
+                continue;
+            if (node->data != nullptr) { // Проверяем без вызова getOrLoadNodeData!
+                node->masterSettings->isVisible = true;
+                m_layerManager->updateNodeMasterSettings(node->id);
+            }
+        }
+    }
+
+    m_currentActiveSnapshotId = snapshotId;
+    emit sceneUpdateRequested(); // Теперь этот сигнал сработает в MainWindow!
 }
 
 void DataController::onNodeSelectionActivated(const QUuid& nodeId) {
@@ -303,6 +387,25 @@ void DataController::onNodeSelectionActivated(const QUuid& nodeId) {
         m_layerManager->updateNodeMasterSettings(nodeId);
         emit sceneUpdateRequested();
     }
+}
+
+void DataController::handleTargetExperimentVisualizeChanged(const QUuid& experimentId) {
+    if (!m_objectRegistry->containsExperiment(experimentId)) {
+        qCWarning(LogCore) << "Experiment with QUuid: " << experimentId.toString()
+                           << " don't exist!";
+        return;
+    }
+
+    m_currentVisualizeExperimentId = experimentId;
+    auto experiment_ptr            = m_objectRegistry->getExperiment(experimentId);
+    auto size                      = experiment_ptr->snapshots.size();
+    m_timeSliderSnapshots.clear();
+    m_timeSliderSnapshots.reserve(size);
+    for (const auto& snapshot : experiment_ptr->snapshots) {
+        m_timeSliderSnapshots.emplace_back(snapshot->id, snapshot->timestamp);
+    }
+    std::sort(m_timeSliderSnapshots.begin(), m_timeSliderSnapshots.end());
+    emit snapshotsListSizeChanged(size);
 }
 
 void DataController::handleFileReady(const QUuid& taskId, QSpace::IO::ReadResult result) {
@@ -353,7 +456,11 @@ void DataController::handleFileReady(const QUuid& taskId, QSpace::IO::ReadResult
     Visualize::EntityType type     = IO::Utils::getEntityType(fileName);
 
     // Создаем «каркас» узла (result.data здесь пустой, т.к. прочитан только заголовок)
-    auto node = std::make_shared<Core::DataNode>(result.data, fileName, result.timestamp, type);
+    auto node = std::make_shared<Core::DataNode>(
+        result.data,
+        fileName,
+        QSpace::Physics::Math::calculateTimestamp(result.timestamp),
+        type);
 
     // Проверяем: мы восстанавливаем сохраненный проект или импортируем новые файлы?
     if (m_restoringNodes.contains(result.path)) {
@@ -373,7 +480,6 @@ void DataController::handleFileReady(const QUuid& taskId, QSpace::IO::ReadResult
         node->label            = fileName;
         node->type             = type;
         node->scheme           = result.scheme;
-        node->stats.timestamp  = result.timestamp;
         node->stats.pointCount = result.pointCount; // Записываем размер из прочитанного заголовка
 
         // Если файлы идут пачкой (часть эксперимента), скрываем их, чтобы не перегрузить сцену.

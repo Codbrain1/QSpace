@@ -40,6 +40,9 @@ class LayerExplorerWidget : public QWidget {
     void nodeSelectionActivated(const QUuid& id);
     void removalRequested(const QUuid& id);
     void updateNodeSettingsRequested(const QUuid& id, std::function<void(Core::VisualSettings&)> modifer);
+    void layerStructureChanged(const Models::DataTreeModel::TreeMode mode);
+    // сигнал вызывающийся при выборе нового эксперимента для отображения
+    void targetVisualiseExperimentChanged(const QUuid& experimentId);
 
     // ------ отвечает за отображение меню с настройками ------
     void propertyInspectorVisibleRequested(const bool isVisible);
@@ -58,9 +61,9 @@ class LayerExplorerWidget : public QWidget {
     void handleSearchResultClicked(QListWidgetItem* item);
     // ------ сортировка слоев ------
     // true -- прямой порядок A - Я, A - Z; false -- обратный порядок Я - A , Z - A
-    void handleSortByAlphabetically(const bool direct); // TODO: неработает сортировка
-    void handleSortByTimestemp(const bool direct);      // TODO:  неработает сортировка
-    void handleResetSortToDefault();                    // TODO:  неработает сортировка
+    void handleSortByAlphabetically(const bool direct);
+    void handleSortByTimestemp(const bool direct);
+    void handleResetSortToDefault();
 
     //  ------ добавление слоев в редактор слоев ------
     // порождают ноду/контейнер данных в ObjectRegistry
@@ -105,8 +108,8 @@ class LayerExplorerWidget : public QWidget {
     // поиск по файлам
     void handleFindFile(const QString& line); // TODO
 
-    void handleNodeSelected();                                            // TODO
-    void handleShowCustomContexMenuForTreeViewElement(const QPoint& pos); // TODO
+    void handleNodeSelected();
+    void handleShowCustomContexMenuForTreeViewElement(const QPoint& pos);
 
     // void onItemChanged(QTreeWidgetItem* item, int col);
 
@@ -116,9 +119,9 @@ class LayerExplorerWidget : public QWidget {
     void setupSlots();        // TODO
     void setupToolButtons();  // TODO
     void setupFileExplorer(); // TODO
-    void
-    sortTreeHierarchyInternal(QTreeView*                                                  tree,
-                              std::function<bool(const QModelIndex&, const QModelIndex&)> comparator); // TODO
+    void sortTreeHierarchyInternal(QTreeView*                                                  tree,
+                                   std::function<bool(const QModelIndex&, const QModelIndex&)> comparator,
+                                   Qt::SortOrder order = Qt::AscendingOrder);
 
     // загрузка данных и добавление записи в реестр
     void selectAndImportFilesInternal(const SelectExperimentDialogResult& result,
@@ -134,8 +137,6 @@ class LayerExplorerWidget : public QWidget {
     // по умолчанию равен корню диска
     QString                       m_root_path;
     Core::ModelingProgrammVersion m_currentVersion = Core::ModelingProgrammVersion::V2;
-
-    QTreeWidgetItem* findTreeElementByIdInternal(const QUuid& id); // TODO
 
     void setCheckStateRecursiveInternal(const QModelIndex& parentIndex, Qt::CheckState state);
     void setCheckStateUnselectedRecursiveInternal(const QModelIndex&       parentIndex,

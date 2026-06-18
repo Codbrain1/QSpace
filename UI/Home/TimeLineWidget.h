@@ -14,13 +14,19 @@ class TimeLineWidget : public QWidget {
     explicit TimeLineWidget(Core::AppCore* app, QWidget* parent = nullptr);
     ~TimeLineWidget();
 
+  signals:
+    void currentTimeStampValueChanged(int valueTimestamp);
   private slots:
-    void on_toolButtonPrev_clicked();
-    void on_toolButtonNext_clicked();
-    void on_TimeSlider_valueChanged(int value);
+    void handleToolButtonPrev_clicked();
+    void handleToolButtonNext_clicked();
+    void handleTimeSlider_valueChanged(int value);
+    void handleSnapshotsSizeChange(int size);
 
   private:
     Ui::TimeLineWidget* ui;
     Core::AppCore*      m_app;
+    QTimer              m_updateTimer;
+    int                 m_pendingSliderValue = -1;
+    void                setTimeLabelTextInternal();
 };
 } // namespace QSpace::UI

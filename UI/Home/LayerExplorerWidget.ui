@@ -236,7 +236,7 @@
           <bool>true</bool>
          </property>
          <property name="text">
-          <string>Искать...   в разработке</string>
+          <string>Искать...</string>
          </property>
         </widget>
        </item>

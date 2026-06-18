@@ -9,6 +9,7 @@
 #include "Interfaces/IView.h"
 #include "LayerExplorerWidget.h"
 #include "PropertyInspector.h"
+#include "TimeLineWidget.h"
 #include "ui_newmainwindow.h"
 #include <QDoubleSpinBox>
 #include <QHBoxLayout>
@@ -30,6 +31,7 @@
 #include <qmainwindow.h>
 #include <qmenu.h>
 #include <qmessagebox.h>
+#include <qnamespace.h>
 #include <qobject.h>
 #include <qpushbutton.h>
 #include <qsharedpointer.h>
@@ -58,6 +60,11 @@ MainWindow::MainWindow(Core::AppCore* app, QWidget* parent)
     m_propertyInspector = std::make_unique<PropertyInspector>(app);
     ui->dock_properties->setWidget(m_propertyInspector.get());
     ui->dock_properties->setVisible(false);
+    // инициализация Timeslider
+    //--------------------------------------------------
+    m_timeSliderWidget = std::make_unique<TimeLineWidget>(app);
+    ui->dock_timeSlider->setWidget(m_timeSliderWidget.get());
+    ui->dock_timeSlider->setVisible(true);
     // --- ПОДГОТОВКА ДИАЛОГА ПРОГРЕССА ---
     //--------------------------------------------------
 
@@ -115,6 +122,18 @@ MainWindow::MainWindow(Core::AppCore* app, QWidget* parent)
     // подключаем слоты
     setupSlots();
     m_app->viewController()->createView(Visualize::ViewType::VTK_3D);
+    // Добавьте это в самый конец конструктора
+    // Сначала явно перемещаем док
+    addDockWidget(Qt::BottomDockWidgetArea, ui->dock_timeSlider);
+
+    // Принудительно "разделяем" область, чтобы слайдер был снизу,
+    // а другие доки не могли залезть в его зону
+    // Если LayerExplorer слева, мы принудительно отделяем низ от левой части
+    splitDockWidget(ui->dockWidget_LayerExplorer, ui->dock_timeSlider, Qt::Vertical);
+
+    // Устанавливаем приоритет углов (оставляем, как было)
+    setCorner(Qt::BottomLeftCorner, Qt::BottomDockWidgetArea);
+    setCorner(Qt::BottomRightCorner, Qt::BottomDockWidgetArea);
 }
 void MainWindow::handleViewCreated(const QUuid& viewId, Visualize::ViewType type) {
     if (viewId.isNull()) {
@@ -269,6 +288,18 @@ void MainWindow::setupSlots() {
             &LayerExplorerWidget::propertyInspectorVisibleRequested,
             this,
             [this](const bool isVisible) { ui->dock_properties->setVisible(isVisible); });
+    connect(
+        m_layerExplorerWidget.get(),
+        &LayerExplorerWidget::layerStructureChanged,
+        this,
+        [this](Models::DataTreeModel::TreeMode mode) {
+            if (mode == Models::DataTreeModel::TreeMode::ComponentView) {
+                ui->dock_timeSlider->setVisible(false);
+            } else {
+                ui->dock_timeSlider->setVisible(true);
+            }
+        },
+        Qt::ConnectionType::QueuedConnection);
 }
 void MainWindow::handleLayerSelectionChange(const QList<QUuid>& ids) {
     if (ids.isEmpty()) {
@@ -378,14 +409,17 @@ void MainWindow::gridVisibleToggled(bool visible) {
 }
 // ------------------------- слоты обработка действий пользователя ------------------------------
 void MainWindow::handleRenderUpdate() {
-    // TODO: решить нужен ли этот метод
-    //  for (auto widget : m_renderWidgets) {
-    //      if (widget && widget->isVisible()) {
-    //          if (auto renderer = widget->renderWindow()) {
-    //              renderer->Render();
-    //          }
-    //      }
-    //  }
+    if (!m_app || !m_app->viewController() || !m_app->viewController()->getViewManager())
+        return;
+
+    // Проходим по всем окнам и просим Qt запланировать их перерисовку
+    m_app->viewController()->getViewManager()->forEachView([](std::shared_ptr<Visualize::IView> view) {
+        if (view && view->getWidget()) {
+            // Метод update() ставит виджет в очередь на перерисовку в текущем цикле событий.
+            // Это самый безопасный и быстрый способ рендеринга VTK внутри Qt.
+            view->getWidget()->update();
+        }
+    });
 }
 
 void MainWindow::handleProjectSave() {

@@ -51,7 +51,7 @@ class VtkView : public QSpace::Visualize::IView3D {
     void setCenterOfRotation(double x, double y, double z); // Перенос "центра"
                                                             //  управление камерой
   signals:
-    void updateRequested(); // TODO: убрать в будущем?
+    void updateRequested();
     void backgroundColorChanged(double contrast);
 
   private:
