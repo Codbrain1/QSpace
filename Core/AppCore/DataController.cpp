@@ -283,7 +283,7 @@ void DataController::handleTimeSliderValueChanged(int index, bool isPreview) {
     if (!m_currentActiveSnapshotId.isNull()) {
         auto oldSnapshot = m_objectRegistry->getSnapshot(m_currentActiveSnapshotId);
         if (oldSnapshot) {
-            m_layerManager->setContainerVisibility(oldSnapshot, false);
+            m_layerManager->setSnapshotVisibility(oldSnapshot, false);
         }
     }
     // 2. Делаем текущий (выбранный) кадр активным
@@ -293,7 +293,7 @@ void DataController::handleTimeSliderValueChanged(int index, bool isPreview) {
     m_currentActiveSnapshotId = targetSnapshotId;
     if (targetSnapshot) {
         // Отобразятся только те слои, у которых стоит галочка видимости
-        m_layerManager->setContainerVisibility(targetSnapshot, true);
+        m_layerManager->setSnapshotVisibility(targetSnapshot, true);
     }
 
     // 3. Формируем "скользящее окно" кэширования: [index - 7 ... index ... index + 7]
@@ -339,8 +339,8 @@ void DataController::activateSnapshotInternal(const QUuid& snapshotId, bool isPr
     if (!m_currentActiveSnapshotId.isNull()) {
         auto oldSnapshot = m_objectRegistry->getSnapshot(m_currentActiveSnapshotId);
         if (oldSnapshot) {
-            // Вместо тяжелого updateNodeMasterSettings используем setContainerVisibility
-            m_layerManager->setContainerVisibility(oldSnapshot, false);
+            // Вместо тяжелого updateNodeMasterSettings используем setSnapshotVisibility
+            m_layerManager->setSnapshotVisibility(oldSnapshot, false);
         }
     }
 

@@ -90,4 +90,28 @@ void ViewManager::removeView(const QUuid& id) {
         emit viewRemoved(id, m_views[id]->getViewType());
     }
 }
+
+void ViewManager::updateAllViews() {
+    for (auto& [id, view] : m_views) {
+        view->render();
+    }
+}
+
+void ViewManager::updateView(const QUuid& id) {
+    if (m_views.contains(id)) {
+        m_views[id]->render();
+    }
+}
+
+void ViewManager::renderAllViews() {
+    for (auto& [id, view] : m_views) {
+        view->renderForce();
+    }
+}
+
+void ViewManager::renderView(const QUuid& id) {
+    if (m_views.contains(id)) {
+        m_views[id]->renderForce();
+    }
+}
 } // namespace QSpace::Core

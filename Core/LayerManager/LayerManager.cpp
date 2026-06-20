@@ -141,7 +141,7 @@ void LayerManager::createLayersForContainer(std::shared_ptr<Snapshot>         co
 }
 
 // 2. Управление видимостью — добавляем флаг блокировки рендера
-void LayerManager::setContainerVisibility(std::shared_ptr<Snapshot> container, bool visible) {
+void LayerManager::setSnapshotVisibility(std::shared_ptr<Snapshot> container, bool visible) {
     if (!container)
         return;
 
@@ -161,4 +161,12 @@ void LayerManager::setContainerVisibility(std::shared_ptr<Snapshot> container, b
     }
 }
 
+void LayerManager::setNodeVisibility(const QUuid& nodeId, bool visible) {
+    auto layers = getLayersForNode(nodeId);
+    for (auto& layer : layers) {
+        if (layer->isSyncedWithMaster) {
+            layer->setVisible(visible);
+        }
+    }
+}
 } // namespace QSpace::Core

@@ -19,10 +19,16 @@ void ViewController::initialize() {
     // Пробрасываем сигналы менеджера наружу (чтобы UI слушал контроллер)
     connect(m_viewManager, &Core::ViewManager::viewCreated, this, &ViewController::viewCreated);
     connect(m_viewManager, &Core::ViewManager::viewRemoved, this, &ViewController::viewRemoved);
-    connect(m_viewManager,
-            &Core::ViewManager::viewUpdateRequested,
-            this,
-            &ViewController::sceneUpdateRequested);
+    // connect(m_viewManager,
+    //         &Core::ViewManager::viewUpdateRequested,
+    //         this,
+    //         &ViewController::sceneUpdateRequested); // TODO: есть несоответствие
+    //                                                 // sceneUpdateRequested не принимает id
+    connect(this,
+            &ViewController::sceneUpdateRequested,
+            m_viewManager,
+            &Core::ViewManager::renderAllViews);
+
     connect(m_objectRegistry, &Core::ObjectRegistry::objectRemoved, this, [this](const QUuid& id) {
         m_layerManager->removeLayer(id);
         emit sceneUpdateRequested();
@@ -74,22 +80,25 @@ void ViewController::resetCameraInAllViews() {
 void ViewController::setBackgroundColorInAllViews(float r, float g, float b) {
     m_viewManager->forEachView(
         [r, g, b](std::shared_ptr<Visualize::IView> rw) { rw->setBackgroundColor(r, g, b); });
+    emit sceneUpdateRequested();
 }
 
 void ViewController::setAxesVisibleInAllViews(bool visible) {
     m_viewManager->forEachView(
         [visible](std::shared_ptr<Visualize::IView> rw) { rw->setAxesVisible(visible); });
+    emit sceneUpdateRequested();
 }
 
 void ViewController::setGridVisibleInAllViews(bool visible) {
     m_viewManager->forEachView(
         [visible](std::shared_ptr<Visualize::IView> rw) { rw->setGridVisible(visible); });
+    emit sceneUpdateRequested();
 }
 
 void ViewController::resetCameraInView(const QUuid& viewId) {
-    auto renderer = m_viewManager->getView(viewId);
-    if (renderer) {
-        renderer->resetCamera();
+    auto view = m_viewManager->getView(viewId);
+    if (view) {
+        view->resetCamera();
     }
 }
 

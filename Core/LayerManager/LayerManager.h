@@ -6,6 +6,7 @@
 #include <QMap>
 #include <QObject>
 #include <QUuid>
+#include <quuid.h>
 #include <memory>
 
 namespace QSpace::Core {
@@ -37,6 +38,11 @@ struct Layer {
             renderEngine->setSettings(settings);
             renderEngine->setData(dataNode);
         }
+    }
+
+    void setVisible(bool visible) {
+        settings->isVisible = visible;
+        renderEngine->setVisible(visible);
     }
 
     void update() {
@@ -71,7 +77,9 @@ class LayerManager : public QObject {
 
     void createLayersForContainer(std::shared_ptr<Snapshot>         container,
                                   std::shared_ptr<Visualize::IView> view);
-    void setContainerVisibility(std::shared_ptr<Snapshot> container, bool visible);
+    void setSnapshotVisibility(std::shared_ptr<Snapshot> container, bool visible);
+
+    void setNodeVisibility(const QUuid& nodeId, bool visible);
 
     QList<std::shared_ptr<Layer>> getAllLayers() const {
         return m_layers.values();

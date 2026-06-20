@@ -8,6 +8,7 @@
 #include "Enums/RenderEnums.h"
 #include "Interfaces/IView.h"
 #include "LayerExplorerWidget.h"
+#include "Models/DataTreeModel/DataTreeModel.h"
 #include "PropertyInspector.h"
 #include "TimeLineWidget.h"
 #include "ui_newmainwindow.h"
@@ -159,13 +160,13 @@ void MainWindow::handleViewCreated(const QUuid& viewId, Visualize::ViewType type
         // Если окно стало невидимым (пользователь нажал на 'x'),
         // значит пора очистить ресурсы в ядре
         if (!visible) {
-            // Вызываем удаление через фасад.
-            // Использование Qt::QueuedConnection гарантирует, что удаление произойдет
-            // только когда текущий цикл обработки событий UI завершится.
-            QMetaObject::invokeMethod(m_app,
-                                      "requestViewRemoval",
-                                      Qt::QueuedConnection,
-                                      Q_ARG(QUuid, viewId));
+            // // Вызываем удаление через фасад.
+            // // Использование Qt::QueuedConnection гарантирует, что удаление произойдет
+            // // только когда текущий цикл обработки событий UI завершится.
+            // QMetaObject::invokeMethod(m_app,
+            //                           "requestViewRemoval",
+            //                           Qt::QueuedConnection,
+            //                           Q_ARG(QUuid, viewId));
         }
     });
     // 5. Размещение дока на форме
@@ -209,15 +210,23 @@ void MainWindow::handleViewRemoved(const QUuid& viewId) {
     }
 }
 void MainWindow::setupSlots() {
+    // обработчик снизу вверх, например если потребуется синхронизировать несколько окон (одновременно
+    // крутить)
     connect(m_app->viewController(),
             &QSpace::Core::Controllers::ViewController::sceneUpdateRequested,
             this,
-            &MainWindow::handleRenderUpdate);
+            &MainWindow::handleRenderUpdate,
+            Qt::QueuedConnection);
     connect(m_app->dataController(),
             &QSpace::Core::Controllers::DataController::sceneUpdateRequested,
             this,
-            &UI::MainWindow::handleRenderUpdate);
-
+            &UI::MainWindow::handleRenderUpdate,
+            Qt::QueuedConnection);
+    connect(m_app->dataTreeModel(),
+            &QSpace::Models::DataTreeModel::sceneUpdateRequested,
+            this,
+            &UI::MainWindow::handleRenderUpdate,
+            Qt::QueuedConnection);
     //----- ПОДКЛЮЧЕНИЕ СЛОТОТОВ LayerExplorerWidget -----
     connect(m_layerExplorerWidget.get(),
             &LayerExplorerWidget::updateNodeSettingsRequested,
@@ -409,17 +418,7 @@ void MainWindow::gridVisibleToggled(bool visible) {
 }
 // ------------------------- слоты обработка действий пользователя ------------------------------
 void MainWindow::handleRenderUpdate() {
-    if (!m_app || !m_app->viewController() || !m_app->viewController()->getViewManager())
-        return;
-
-    // Проходим по всем окнам и просим Qt запланировать их перерисовку
-    m_app->viewController()->getViewManager()->forEachView([](std::shared_ptr<Visualize::IView> view) {
-        if (view && view->getWidget()) {
-            // Метод update() ставит виджет в очередь на перерисовку в текущем цикле событий.
-            // Это самый безопасный и быстрый способ рендеринга VTK внутри Qt.
-            view->getWidget()->update();
-        }
-    });
+    m_app->viewController()->getViewManager()->renderAllViews();
 }
 
 void MainWindow::handleProjectSave() {

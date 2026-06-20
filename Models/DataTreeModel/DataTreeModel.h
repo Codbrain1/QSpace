@@ -122,6 +122,7 @@ class DataTreeModel : public QAbstractItemModel {
     // --- ВОТ ЭТИХ СИГНАЛОВ НЕ ХВАТАЛО ДЛЯ СБОРКИ ---
     void treeModeChanged(QSpace::Models::DataTreeModel::TreeMode mode);
     void treeRebuilt();
+    void sceneUpdateRequested();
 
   private:
     Core::ObjectRegistry* m_registry;

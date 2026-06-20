@@ -123,10 +123,14 @@ class DataController : public QObject {
     QMap<QUuid, TaskInfo>                 m_activeTasks;
     QSet<QUuid>                           m_loadingNodes;
     QMap<QString, Session::DataNodeState> m_restoringNodes;
-    bool                                  m_autoGrouping = true;
-    QUuid                                 m_currentVisualizeExperimentId;
-    QUuid                                 m_currentActiveSnapshotId;
-    std::vector<SnapshotToTimestamp>      m_timeSliderSnapshots;
+
+    bool m_autoGrouping = true;
+
+    // ------- Обработка переключения кадров -------
+    QUuid                            m_currentVisualizeExperimentId;
+    QUuid                            m_currentActiveSnapshotId;
+    std::vector<SnapshotToTimestamp> m_timeSliderSnapshots;
+    // ---------------------------------------------
 
     QString                         extractGroupName(const QString& filename);
     std::shared_ptr<Core::Snapshot> findOrCreateSnapshot(const QString& groupName);

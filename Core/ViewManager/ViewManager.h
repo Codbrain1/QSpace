@@ -24,15 +24,23 @@ class ViewManager : public QObject {
 
     // аргумент принимает указатель на IView
     template <typename Function> void forEachView(Function&& action) {
-        for (auto& [id, renderer] : m_views) {
-            action(renderer);
+        for (auto& [id, view] : m_views) {
+            action(view);
         }
     }
+
+  public slots:
+    void updateAllViews();
+    void updateView(const QUuid& id);
+
+    void renderAllViews();
+    void renderView(const QUuid& id);
 
   signals:
     void viewCreated(const QUuid& id, Visualize::ViewType type);
     void viewRemoved(const QUuid& id, Visualize::ViewType type);
-    void viewUpdateRequested(const QUuid& id);
+    void viewUpdateRequested(const QUuid& id); // В будущем будет использоватся для синхронного
+                                               // вращения в нескольких окнах
     void allViewsUpdateRequested();
 
   private:

@@ -1,5 +1,6 @@
 #include "VtkView.h"
 #include "Common/Logger/Logger.h"
+#include <qelapsedtimer.h>
 #include <qloggingcategory.h>
 #include <qobject.h>
 #include <quuid.h>
@@ -155,7 +156,7 @@ void VtkView::setupDepthPeeling() {
     m_renderWindow->SetUseSRGBColorSpace(true);
     m_vtkRenderer->SetUseDepthPeeling(1);
     m_vtkRenderer->SetUseSSAO(false);
-    m_vtkRenderer->SetMaximumNumberOfPeels(16); // Максимальное количество проходов для peeling
+    m_vtkRenderer->SetMaximumNumberOfPeels(4); // Максимальное количество проходов для peeling
     m_vtkRenderer->SetUseFXAA(true);
 
     vtkNew<vtkRenderStepsPass> steps;
@@ -338,14 +339,15 @@ void VtkView::resetCamera() {
 }
 
 void VtkView::render() {
-    if (m_vtkWidget) {
-        m_vtkWidget->update(); // Делегируем отрисовку Qt
+    if (m_vtkWidget && m_renderWindow) {
+        m_renderWindow->Modified(); // Маркируем окно как измененное конвейером
+        m_vtkWidget->update();      // Делегируем обновление Qt
     }
 }
 
 void VtkView::renderForce() {
-    if (m_vtkWidget) {
-        m_vtkWidget->update(); // Делегируем отрисовку Qt
+    if (m_renderWindow && !m_renderWindow->GetNeverRendered()) {
+        m_renderWindow->Render();
     }
 }
 

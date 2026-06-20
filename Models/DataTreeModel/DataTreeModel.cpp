@@ -5,10 +5,16 @@
 #include "Enums/RenderEnums.h"
 
 #include <QColor>
+#include <QCoreApplication>
+#include <QElapsedTimer>
 #include <QIcon>
 #include <cstddef>
 #include <memory>
+#include <qelapsedtimer.h>
+#include <qlogging.h>
+#include <qloggingcategory.h>
 #include <qnamespace.h>
+#include <qtypes.h>
 #include <quuid.h>
 #include <qvariant.h>
 
@@ -652,49 +658,99 @@ QVariant DataTreeModel::data(const QModelIndex& index, int role) const {
 
 // --- Обработка клика по чекбоксу (Изменение видимости) ---
 bool DataTreeModel::setData(const QModelIndex& index, const QVariant& value, int role) {
+    QElapsedTimer timer;
+    timer.start();
     if (!index.isValid() || role != Qt::CheckStateRole || index.column() != NameColumn)
         return false;
 
-    auto* item    = static_cast<DataTreeItem*>(index.internalPointer());
-    bool  visible = (value.toInt() == Qt::Checked);
+    auto*      item    = static_cast<DataTreeItem*>(index.internalPointer());
+    const bool visible = (value.toInt() == Qt::Checked);
 
-    if (item->type() == DataTreeItem::Experiment) {
-        auto exp = m_registry->getExperiment(item->id());
-        if (exp) {
-            for (auto& snap : exp->snapshots)
-                m_layerManager->setContainerVisibility(snap, visible);
+    // --- 1. Бизнес-логика и ленивое уведомление VTK/Слоев ---
+    switch (item->type()) {
+        case DataTreeItem::Experiment: {
+            if (auto exp = m_registry->getExperiment(item->id())) {
+                for (const auto& snap : exp->snapshots) {
+                    m_layerManager->setSnapshotVisibility(snap, visible);
+                }
+                auto t = timer.elapsed();
+                qCritical() << "setData execution Experiment: " << t << " miliseconds";
+            }
+            break;
         }
-    } else if (item->type() == DataTreeItem::ComponentGroup) {
-        // Проходимся по всем нодам этой группы (например, выключаем ВЕСЬ газ во всех шагах)
-        for (int i = 0; i < item->childCount(); ++i) {
-            DataTreeItem* child = item->child(i);
-            if (child->type() == DataTreeItem::DataNode) {
-                auto node = m_registry->getNode(child->id());
-                if (node) {
-                    node->masterSettings->isVisible = visible;
-                    m_layerManager->updateNodeMasterSettings(node->id); // Каскадно скроет слои
+        case DataTreeItem::ComponentGroup: {
+            const int totalChildren = item->childCount();
+            for (int i = 0; i < totalChildren; ++i) {
+                DataTreeItem* child = item->child(i);
+                if (child->type() == DataTreeItem::DataNode) {
+                    if (auto node = m_registry->getNode(child->id())) {
+                        node->masterSettings->isVisible = visible;
+                        m_layerManager->setNodeVisibility(node->id, visible);
+                    }
                 }
             }
+            break;
         }
-    } else if (item->type() == DataTreeItem::Snapshot) {
-        auto container = m_registry->getSnapshot(item->id());
-        if (container)
-            m_layerManager->setContainerVisibility(container, visible);
-    } else if (item->type() == DataTreeItem::DataNode) {
-        auto node = m_registry->getNode(item->id());
-        if (node) {
-            node->masterSettings->isVisible = visible;
-            m_layerManager->updateNodeMasterSettings(node->id);
+        case DataTreeItem::Snapshot: {
+            if (auto container = m_registry->getSnapshot(item->id())) {
+                m_layerManager->setSnapshotVisibility(container, visible);
+            }
+            break;
         }
-    } else if (item->type() == DataTreeItem::LayerItem) {
-        auto layer = m_layerManager->getLayer(item->id());
-        if (layer) {
-            layer->settings->isVisible = visible;
-            layer->update();
+        case DataTreeItem::DataNode: {
+            if (auto node = m_registry->getNode(item->id())) {
+                node->masterSettings->isVisible = visible;
+                m_layerManager->setNodeVisibility(node->id, visible);
+            }
+            break;
         }
+        case DataTreeItem::LayerItem: {
+            if (auto layer = m_layerManager->getLayer(item->id())) {
+                layer->setVisible(visible);
+                layer->dataNode.lock()->masterSettings->isVisible = visible;
+            }
+            break;
+        }
+        default:
+            return false;
     }
 
+    // --- 2. Уведомление самого нажатого узла ---
     emit dataChanged(index, index, {Qt::CheckStateRole});
+
+    // --- 3. ВОЛНА ВНИЗ: Уведомляем всех потомков (детей, внуков...) ---
+    auto notifyDescendants = [&](auto& self, const QModelIndex& parentIdx) -> void {
+        const int rows = this->rowCount(parentIdx);
+        if (rows == 0)
+            return;
+
+        QModelIndex topLeft     = this->index(0, NameColumn, parentIdx);
+        QModelIndex bottomRight = this->index(rows - 1, NameColumn, parentIdx);
+        emit        dataChanged(topLeft, bottomRight, {Qt::CheckStateRole});
+
+        for (int i = 0; i < rows; ++i) {
+            QModelIndex childIdx = this->index(i, 0, parentIdx);
+            self(self, childIdx);
+        }
+    };
+
+    notifyDescendants(notifyDescendants, index);
+
+    // --- 4. ВОЛНА ВВЕРХ (НОВОЕ): Уведомляем всех предков (родителя, прародителя...) ---
+    QModelIndex currentParent = index.parent();
+    while (currentParent.isValid()) {
+        // Так как чекбоксы живут строго в NameColumn, нам нужно получить правильный индекс
+        // для этой колонки на уровне родителя
+        QModelIndex parentNameIdx = this->index(currentParent.row(), NameColumn, currentParent.parent());
+
+        // Говорим QTreeView: "Перерисуй этот родительский чекбокс, его дети изменились"
+        emit dataChanged(parentNameIdx, parentNameIdx, {Qt::CheckStateRole});
+
+        // Шагаем еще выше по дереву к следующему родителю
+        currentParent = currentParent.parent();
+    }
+    emit sceneUpdateRequested();
+
     return true;
 }
 

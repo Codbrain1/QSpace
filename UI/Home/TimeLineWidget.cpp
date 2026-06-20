@@ -14,39 +14,23 @@ TimeLineWidget::TimeLineWidget(Core::AppCore* app, QWidget* parent)
     connect(m_app->dataController(),
             &QSpace::Core::Controllers::DataController::snapshotsListSizeChanged,
             this,
-            &TimeLineWidget::handleSnapshotsSizeChange);
-
-    m_updateTimer.setSingleShot(true);
-    m_updateTimer.setInterval(50); // 50мс дает более плавный отклик UI
-
+            &TimeLineWidget::handleSnapshotsListChangeSize);
+    connect(this,
+            &TimeLineWidget::currentTimeStampValueChanged,
+            m_app->dataController(),
+            &QSpace::Core::Controllers::DataController::handleTimeSliderValueChanged);
     // 1. Обработка изменения значения (перетаскивание или программный ввод)
-    connect(ui->TimeSlider, &QSlider::valueChanged, this, &TimeLineWidget::handleTimeSlider_valueChanged);
-
-    // 2. НОВОЕ: Обработка отпускания ползунка (финальная тяжелая загрузка)
-    connect(ui->TimeSlider, &QSlider::sliderReleased, this, [this]() {
-        if (!m_app || !m_app->dataController())
-            return;
-
-        m_updateTimer.stop(); // Глушим таймер превью
-        int currentValue = ui->TimeSlider->value();
-
-        // Принудительно вызываем честную загрузку
-        m_app->dataController()->handleTimeSliderValueChanged(currentValue, false);
-        m_pendingSliderValue = -1;
-    });
-
-    // 3. Работа таймера превью
-    connect(&m_updateTimer, &QTimer::timeout, this, [this]() {
-        if (m_pendingSliderValue != -1 && m_app && m_app->dataController()) {
-            // Поскольку таймер работает только при зажатом ползунке, всегда передаем true
-            m_app->dataController()->handleTimeSliderValueChanged(m_pendingSliderValue, true);
-        }
-    });
+    connect(ui->TimeSlider,
+            &QSlider::valueChanged,
+            this,
+            &TimeLineWidget::handleTimeSliderChangeValue); // TODO: транслировать сигнал qt на собственный
+                                                           // сигнал класса
 
     connect(ui->toolButtonPrev, &QToolButton::clicked, this, &TimeLineWidget::handleToolButtonPrev_clicked);
     connect(ui->toolButtonNext, &QToolButton::clicked, this, &TimeLineWidget::handleToolButtonNext_clicked);
 }
 
+// =========== Кнопки смены кадров ===========
 void TimeLineWidget::handleToolButtonPrev_clicked() {
     int currentValue = ui->TimeSlider->value();
     if (currentValue > ui->TimeSlider->minimum()) {
@@ -61,51 +45,38 @@ void TimeLineWidget::handleToolButtonNext_clicked() {
     }
 }
 
-void TimeLineWidget::handleSnapshotsSizeChange(int size) {
-    if (size <= 0) {
+// =========== Изменение значения слайдера (перетаскивание) ===========
+void TimeLineWidget::handleTimeSliderChangeValue(int value) {
+    // TODO реализовать покадровое переключение
+}
+
+// =========== Изменение диапазона слайдера ===========
+void TimeLineWidget::handleSnapshotsListChangeSize(int size) {
+    if (size < 0) {
         ui->TimeSlider->setEnabled(false);
         ui->TimeSlider->setRange(0, 0);
         ui->TimeSlider->setValue(0);
+        ui->label_Snapshot->setStyleSheet("QLabel {color: red;}");
         qCWarning(LogUI) << "unexpected size for slider: " << size;
         return;
     }
 
     ui->TimeSlider->setEnabled(true);
-    ui->TimeSlider->setRange(0, size - 1);
+    ui->TimeSlider->setRange(1, size);
     ui->TimeSlider->setSingleStep(1);
     ui->TimeSlider->setPageStep(qMax(1, size / 10));
-    ui->TimeSlider->setValue(0);
-    setTimeLabelTextInternal();
+    ui->TimeSlider->setValue(1);
+    setTextTimeLabelTextInternal();
 }
 
-void TimeLineWidget::handleTimeSlider_valueChanged(int value) {
-    // ЗАЩИТА ОТ ВЫЛЕТОВ (Обязательно!)
-    if (!m_app || !m_app->dataController())
-        return;
-
-    setTimeLabelTextInternal();
-    m_pendingSliderValue = value;
-
-    if (ui->TimeSlider->isSliderDown()) {
-        // Пользователь тянет ползунок. Запускаем/перезапускаем таймер для превью.
-        if (!m_updateTimer.isActive()) {
-            m_updateTimer.start();
-        }
-    } else {
-        // Значение изменилось НЕ от перетаскивания (клик по треку, стрелки клавиатуры, кнопки Prev/Next)
-        m_updateTimer.stop();
-        m_app->dataController()->handleTimeSliderValueChanged(value, false);
-        m_pendingSliderValue = -1;
-    }
-}
-
-void TimeLineWidget::setTimeLabelTextInternal() {
+// =========== Внутренние методы ===========
+void TimeLineWidget::setTextTimeLabelTextInternal() {
     // ЗАЩИТА ОТ ВЫЛЕТОВ (Обязательно!)
     if (!m_app || !m_app->dataController())
         return;
 
     int    value     = ui->TimeSlider->value();
-    double timestamp = m_app->dataController()->getSnapshotTimeByIndex(value);
+    double timestamp = m_app->dataController()->getSnapshotTimeByIndex(value - 1);
 
     QString snapshotString = QString("Снимок: %1/%2 (T=%3 миллионов лет)")
                                  .arg(value)

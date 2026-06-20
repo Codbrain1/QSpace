@@ -16,17 +16,17 @@ class TimeLineWidget : public QWidget {
 
   signals:
     void currentTimeStampValueChanged(int valueTimestamp);
+
   private slots:
     void handleToolButtonPrev_clicked();
     void handleToolButtonNext_clicked();
-    void handleTimeSlider_valueChanged(int value);
-    void handleSnapshotsSizeChange(int size);
+    void handleTimeSliderChangeValue(int value);
+
+    void handleSnapshotsListChangeSize(int size);
 
   private:
     Ui::TimeLineWidget* ui;
     Core::AppCore*      m_app;
-    QTimer              m_updateTimer;
-    int                 m_pendingSliderValue = -1;
-    void                setTimeLabelTextInternal();
+    void                setTextTimeLabelTextInternal();
 };
 } // namespace QSpace::UI

@@ -2,6 +2,9 @@
 #include "Common/Logger/Logger.h"
 #include "Common/Structures/RenderStructures.h"
 #include "Visualize/ColorMapManager/ColorMapManager.h"
+#include <QElapsedTimer>
+#include <qelapsedtimer.h>
+#include <qloggingcategory.h>
 #include <vtkAbstractMapper.h>
 #include <vtkColorTransferFunction.h>
 #include <vtkPiecewiseFunction.h>
