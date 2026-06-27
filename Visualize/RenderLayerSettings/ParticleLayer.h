@@ -1,12 +1,6 @@
 #pragma once
-#include "BaseLayer.h"
 #include "Common/Interfaces/IRenderLayer.h"
 #include "Common/Structures/CoreStructures.h"
-#include "QSpaceScalarBar.h"
-#include <cmath>
-#include <iomanip>
-#include <memory>
-#include <sstream>
 #include <vtkArrayCalculator.h>
 #include <vtkAxis.h>
 #include <vtkAxisActor2D.h>
@@ -26,6 +20,13 @@
 #include <vtkSmartPointer.h>
 #include <vtkStringArray.h>
 #include <vtkTextProperty.h>
+#include "BaseLayer.h"
+#include "QSpaceScalarBar.h"
+#include <cmath>
+#include <iomanip>
+#include <memory>
+#include <sstream>
+
 
 namespace QSpace::Visualize {
 
@@ -41,9 +42,10 @@ class ParticleLayer : public BaseLayer {
     vtkSmartPointer<vtkPointGaussianMapper> m_mapper;
     vtkSmartPointer<vtkActor>               m_actor;
     void                                    setupDataArrays(Core::VisualSettings& s) override final;
-    void                                    applyRenderModeSettings(const Core::VisualSettings& s) override final;
-    void                                    updateShader(const Core::VisualSettings& s);
-    void                                    postUpdate(const Core::VisualSettings& s) override final {
+    void applyRenderModeSettings(const Core::VisualSettings& s) override final;
+    void updateShader(const Core::VisualSettings& s);
+
+    void postUpdate(const Core::VisualSettings& s) override final {
         if (s.mode == RenderMode::GausianSplat) {
             updateShader(s);
         }

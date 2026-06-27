@@ -15,7 +15,7 @@ class TimeLineWidget : public QWidget {
     ~TimeLineWidget();
 
   signals:
-    void currentTimeStampValueChanged(int valueTimestamp);
+    void currentTimeStampValueChanged(int valueTimestamp, bool isPreview);
 
   private slots:
     void handleToolButtonPrev_clicked();

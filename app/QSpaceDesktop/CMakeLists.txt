@@ -55,7 +55,7 @@ if(WIN32) # на виндовс только gui
         WIN32_EXECUTABLE TRUE
     )
     target_sources(QSpace PRIVATE ${PROJECT_SOURCE_DIR}/app/resources/app_icon.rc)
-    set(VTK_BIN_DIR "D:/NIR/NIR_6_semestr/vtk/vtk-install-ffmpeg-wmf-dll/bin")
+    set(VTK_BIN_DIR "D:/NIR/NIR_6_semestr/vtk/vtk-install-ffmpeg-wmf-qt6_11-dll-OpenMP/bin")
 
     add_custom_command(TARGET QSpace POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory 

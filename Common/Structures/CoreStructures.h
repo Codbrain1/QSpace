@@ -28,7 +28,7 @@ struct VisualSettings {
     bool                  isVisible = true;
     // геометрия
     double PointSize = 0.002; // размер частиц
-    double opacity   = 1.0;   // непрозрачность
+    double opacity   = 0.99;  // непрозрачность
     // цветовая схема
     QString colorByField;
     QUuid   colorMapId;

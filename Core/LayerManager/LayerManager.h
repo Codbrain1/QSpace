@@ -10,9 +10,6 @@
 #include <memory>
 
 namespace QSpace::Core {
-
-// Вспомогательная структура Layer остается в этом же файле или CoreStructures.h
-// Я добавил метод инициализации, чтобы избежать проблем с порядком создания
 struct Layer {
     QUuid                                    layerId;
     QUuid                                    dataNodeId;

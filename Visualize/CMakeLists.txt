@@ -26,4 +26,6 @@ target_link_libraries(Visualize PUBLIC
             VTK::CommonCore
             VTK::RenderingAnnotation
             VTK::InteractionStyle
+            VTK::CommonColor
+            VTK::RenderingCore
 )

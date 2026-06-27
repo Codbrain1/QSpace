@@ -339,16 +339,32 @@ void VtkView::resetCamera() {
 }
 
 void VtkView::render() {
+#ifdef QSPACE_PROJECT_DEBUG_MODE
+    QElapsedTimer timer;
+    timer.start();
+#endif
     if (m_vtkWidget && m_renderWindow) {
         m_renderWindow->Modified(); // Маркируем окно как измененное конвейером
         m_vtkWidget->update();      // Делегируем обновление Qt
     }
+#ifdef QSPACE_PROJECT_DEBUG_MODE
+    qint64 time = timer.elapsed();
+    qCInfo(LogRenderer) << "Time Rendering: " << time << " milliseconds";
+#endif
 }
 
 void VtkView::renderForce() {
+#ifdef QSPACE_PROJECT_DEBUG_MODE
+    QElapsedTimer timer;
+    timer.start();
+#endif
     if (m_renderWindow && !m_renderWindow->GetNeverRendered()) {
         m_renderWindow->Render();
     }
+#ifdef QSPACE_PROJECT_DEBUG_MODE
+    qint64 time = timer.elapsed();
+    qCInfo(LogRenderer) << "Time Rendering Force: " << time << " milliseconds";
+#endif
 }
 
 vtkRenderWindowInteractor* VtkView::getInteractor() const {

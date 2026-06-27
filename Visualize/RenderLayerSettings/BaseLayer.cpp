@@ -24,6 +24,8 @@ BaseLayer::BaseLayer(std::shared_ptr<QSpace::Core::DataNode> node) : m_node(node
     m_opacityFunction = vtkSmartPointer<vtkPiecewiseFunction>::New();
     m_scalarBar       = vtkSmartPointer<QSpaceScalarBar>::New();
     m_scalarBarWidget = nullptr; // Инициализируем как nullptr, будет создан при attachInteractor
+    m_lut->AddRGBPoint(0.0, 0.0, 0.0, 0.0);
+    m_lut->AddRGBPoint(1.0, 1.0, 1.0, 1.0);
     setupLayer();
 }
 

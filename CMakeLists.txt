@@ -19,7 +19,7 @@ option(ENABLE_TESTS "Build Tests" ON) #опция переключения ме�
 if(WIN32) 
     set(CMAKE_PREFIX_PATH 
     "C:/Qt/6.11.0/mingw_64"
-    "D:/NIR/NIR_6_semestr/vtk/vtk-install-ffmpeg-wmf-dll/lib/cmake/vtk-9.5")
+    "D:/NIR/NIR_6_semestr/vtk/vtk-install-ffmpeg-wmf-qt6_11-dll-OpenMP/lib/cmake/vtk-9.5")
     # Отключение Vulkan
     set(QT_NO_VULKAN ON)
     set(CMAKE_CXX_COMPILER "C:/Qt/Tools/mingw1310_64/bin/g++.exe")
@@ -72,6 +72,9 @@ add_library(project_config INTERFACE)
 target_compile_options(project_config INTERFACE -Wall -Wextra -fopenmp)
 target_compile_options(project_config INTERFACE $<$<CONFIG:Release>:-O2>)
 target_compile_options(project_config INTERFACE $<$<CONFIG:Debug>: -O0 -g3 -fno-omit-frame-pointer>)
+target_compile_definitions(project_config INTERFACE
+    $<$<CONFIG:Debug>:QSPACE_PROJECT_DEBUG_MODE>
+)
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
 
 target_precompile_headers(project_config INTERFACE 
@@ -102,6 +105,7 @@ add_subdirectory(Visualize)
 add_subdirectory(Session)
 add_subdirectory(UI)
 # add_subdirectory(Charting)
+add_subdirectory(Sandbox)
 
 include(GNUInstallDirs)
 set(CPACK_PACKAGE_NAME "QSpace")
@@ -119,7 +123,7 @@ set(CPACK_NSIS_INSTALLED_ICON_NAME "bin\\\\QSpace.exe") # Иконка для П
 # --- Кастомизация дизайна установщика (MUI2) ---
 # ВАЖНО: Пути должны быть абсолютными. Используем ${CMAKE_SOURCE_DIR}
 # NSIS принимает только формат .ico для иконок и .bmp для картинок!
-set(CPACK_NSIS_MUI_ICON "${CMAKE_SOURCE_DIR}/app/icons/logo.ico")
+set(CPACK_NSIS_MUI_ICON "${CMAKE_SOURCE_DIR}/app/resources/icons/logo.ico")
 # set(CPACK_NSIS_MUI_UNIICON "${CMAKE_SOURCE_DIR}/app/icons/uninstall_icon.ico")
 # Картинка слева на приветственном экране (рекомендуемый размер 164x314)
 # set(CPACK_NSIS_MUI_WELCOMEFINISHPAGE_BITMAP "${CMAKE_SOURCE_DIR}/app/icons/wizard_side.bmp")
