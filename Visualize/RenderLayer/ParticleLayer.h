@@ -27,7 +27,6 @@
 #include <memory>
 #include <sstream>
 
-
 namespace QSpace::Visualize {
 
 class ParticleLayer : public BaseLayer {

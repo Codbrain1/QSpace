@@ -1,11 +1,14 @@
 #pragma once
 #include "Common/Structures/CoreStructures.h"
-#include <QWidget>
 #include <memory>
-#include <vtkProp.h>
-#include <vtkRenderWindowInteractor.h>
-#include <vtkScalarBarActor.h>
-#include <vtkSmartPointer.h>
+// #include <vtkProp.h>
+// #include <vtkRenderWindowInteractor.h>
+// #include <vtkScalarBarActor.h>
+// #include <vtkSmartPointer.h>
+// OpenGL-специфичные заголовки — только для новой ветки.
+#include "Common/Structures/RenderContext.h"
+#include <QOpenGLFunctions_3_3_Core>
+#include <QVector3D>
 
 namespace QSpace::Visualize
 {
@@ -23,21 +26,32 @@ public:
 };
 
 // Интерфейс исключительно для VTK
-class IVtkRenderLayer : public IRenderLayer
+// TODO deprecated, удалить после перехода на OpenGL
+// class IVtkRenderLayer : public IRenderLayer
+// {
+// public:
+//   virtual vtkSmartPointer<vtkProp> getVtkProp() = 0;
+//   virtual vtkSmartPointer<vtkScalarBarActor> getScalarBar() const = 0;
+//   virtual void attachInteractor(vtkRenderWindowInteractor *interactor) = 0;
+//   virtual void detachInteractor() = 0;
+//   virtual void updateColorsForContrast(double contrast) = 0;
+// };
+// Интерфейс исключительно для OpenGL — новая ветка, зеркало IVtkRenderLayer
+class IOpenGLRenderLayer : public IRenderLayer
 {
 public:
-  virtual vtkSmartPointer<vtkProp> getVtkProp() = 0;
-  virtual vtkSmartPointer<vtkScalarBarActor> getScalarBar() const = 0;
-  virtual void attachInteractor(vtkRenderWindowInteractor *interactor) = 0;
-  virtual void detachInteractor() = 0;
-  virtual void updateColorsForContrast(double contrast) = 0;
-};
+  // GLViewport вызывает это один раз при создании GL-контекста (или при attach,
+  // если контекст уже создан) — здесь слой создаёт свои буферы/шейдеры
+  virtual void initializeGL(QOpenGLFunctions_3_3_Core *gl) = 0;
 
-// Задел для 2D виджетов (QtCharts, QCustomPlot и т.д.)
-class IWidgetRenderLayer : public IRenderLayer
-{
-public:
-  virtual QWidget *getWidget() = 0;
-};
+  // основной проход отрисовки, вызывается GLViewport каждый кадр для видимых слоёв
+  virtual void render(QOpenGLFunctions_3_3_Core *gl, const Visualuse::RenderContext &ctx) = 0;
 
+  // освобождение GPU-ресурсов перед уничтожением контекста/detach
+  virtual void releaseGL(QOpenGLFunctions_3_3_Core *gl) = 0;
+
+  // для автоподгонки камеры под данные слоя; false — если слой не может
+  // предоставить границы (например, ещё нет данных)
+  virtual bool boundingBox(QVector3D &outMin, QVector3D &outMax) const = 0;
+};
 } // namespace QSpace::Visualize

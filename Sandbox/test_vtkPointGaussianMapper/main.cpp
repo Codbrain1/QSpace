@@ -25,15 +25,34 @@
 class ShortcutHandler : public QObject {
   private:
     std::shared_ptr<QSpace::Visualize::ParticleLayer> m_layer;
-    QSpace::Visualize::VtkView*                       m_view;
-    QSpace::Core::VisualSettings*                     m_settings;
+    std::shared_ptr<QSpace::Visualize::ParticleLayer> m_layer1;
+    std::shared_ptr<QSpace::Visualize::ParticleLayer> m_layer2;
+    std::shared_ptr<QSpace::Visualize::ParticleLayer> m_layer3;
+    std::shared_ptr<QSpace::Visualize::ParticleLayer> m_layer4;
+    std::shared_ptr<QSpace::Visualize::ParticleLayer> m_layer5;
+
+    QSpace::Visualize::VtkView*   m_view;
+    QSpace::Core::VisualSettings* m_settings;
 
   public:
     ShortcutHandler(std::shared_ptr<QSpace::Visualize::ParticleLayer> layer,
+                    std::shared_ptr<QSpace::Visualize::ParticleLayer> layer1,
+                    std::shared_ptr<QSpace::Visualize::ParticleLayer> layer2,
+                    std::shared_ptr<QSpace::Visualize::ParticleLayer> layer3,
+                    std::shared_ptr<QSpace::Visualize::ParticleLayer> layer4,
+                    std::shared_ptr<QSpace::Visualize::ParticleLayer> layer5,
                     QSpace::Visualize::VtkView*                       view,
                     QSpace::Core::VisualSettings*                     settings,
                     QObject*                                          parent = nullptr)
-        : QObject(parent), m_layer(layer), m_view(view), m_settings(settings) {
+        : QObject(parent),
+          m_layer(layer),
+          m_layer1(layer1),
+          m_layer2(layer2),
+          m_layer3(layer3),
+          m_layer4(layer4),
+          m_layer5(layer5),
+          m_view(view),
+          m_settings(settings) {
     }
 
   protected:
@@ -45,10 +64,15 @@ class ShortcutHandler : public QObject {
 
 
 
+                // 1. Принудительно заставляем VTK обновить конвейер данных (мапперы, шейдеры)
                 QElapsedTimer timer;
                 timer.start();
-                // 1. Принудительно заставляем VTK обновить конвейер данных (мапперы, шейдеры)
                 m_layer->update();
+                m_layer1->update();
+                m_layer2->update();
+                m_layer3->update();
+                m_layer4->update();
+                m_layer5->update();
                 // 2. Вызываем перерисовку окна VTK
                 m_view->renderForce();
 
@@ -93,9 +117,17 @@ int main(int argc, char* argv[]) {
     auto reader = QSpace::IO::IOFactory::createReader(QSpace::IO::FileFormat::BIN);
     reader->setPolicy(QSpace::IO::FilePolicy::ForceStandart);
 
-    auto    scheme = QSpace::IO::SchemeFactory::createSheme_v2(QSpace::Visualize::EntityType::Gas,
+    auto scheme = QSpace::IO::SchemeFactory::createSheme_v2(QSpace::Visualize::EntityType::Gas,
                                                             QSpace::IO::FileFormat::BIN);
-    QString path   = "D:/NIR/NIR_6_semestr/QSpace/Sandbox/TEST_DATA/TF250_v2/G_    0.bin";
+    auto scheme1 =
+        QSpace::IO::SchemeFactory::createSheme_v2(QSpace::Visualize::EntityType::DarkMatter,
+                                                  QSpace::IO::FileFormat::BIN);
+    QString path  = "D:/NIR/NIR_6_semestr/QSpace/Sandbox/TEST_DATA/TF250_v2/G_    0.bin";
+    QString path1 = "D:/NIR/NIR_6_semestr/QSpace/Sandbox/TEST_DATA/TF250_v2/DM_    0.bin";
+    QString path2 = "D:/NIR/NIR_6_semestr/QSpace/Sandbox/TEST_DATA/TF250_v2/DM_    1.bin";
+    QString path3 = "D:/NIR/NIR_6_semestr/QSpace/Sandbox/TEST_DATA/TF250_v2/DM_    2.bin";
+    QString path4 = "D:/NIR/NIR_6_semestr/QSpace/Sandbox/TEST_DATA/TF250_v2/DM_    3.bin";
+    QString path5 = "D:/NIR/NIR_6_semestr/QSpace/Sandbox/TEST_DATA/TF250_v2/DM_    4.bin";
 
     if (!reader) {
         qCritical() << "Exception create reader!";
@@ -105,8 +137,13 @@ int main(int argc, char* argv[]) {
     // Чтение файла
     QElapsedTimer timer;
     timer.start();
-    auto   readResult = reader->read(path, scheme);
-    qint64 timestamp  = timer.elapsed();
+    auto   readResult  = reader->read(path, scheme);
+    auto   readResult1 = reader->read(path1, scheme1);
+    auto   readResult2 = reader->read(path2, scheme1);
+    auto   readResult3 = reader->read(path3, scheme1);
+    auto   readResult4 = reader->read(path4, scheme1);
+    auto   readResult5 = reader->read(path5, scheme1);
+    qint64 timestamp   = timer.elapsed();
 
     // Проверка результата чтения
     if (readResult.isSuccess()) {
@@ -143,6 +180,32 @@ int main(int argc, char* argv[]) {
                                                  "test gas",
                                                  readResult.timestamp,
                                                  QSpace::Visualize::EntityType::Gas);
+    std::shared_ptr<QSpace::Core::DataNode> node1 =
+        std::make_shared<QSpace::Core::DataNode>(readResult1.data,
+                                                 "test DM0",
+                                                 readResult1.timestamp,
+                                                 QSpace::Visualize::EntityType::DarkMatter);
+    std::shared_ptr<QSpace::Core::DataNode> node2 =
+        std::make_shared<QSpace::Core::DataNode>(readResult2.data,
+                                                 "test DM1",
+                                                 readResult2.timestamp,
+                                                 QSpace::Visualize::EntityType::DarkMatter);
+    std::shared_ptr<QSpace::Core::DataNode> node3 =
+        std::make_shared<QSpace::Core::DataNode>(readResult3.data,
+                                                 "test DM2",
+                                                 readResult3.timestamp,
+                                                 QSpace::Visualize::EntityType::DarkMatter);
+    std::shared_ptr<QSpace::Core::DataNode> node4 =
+        std::make_shared<QSpace::Core::DataNode>(readResult4.data,
+                                                 "test DM3",
+                                                 readResult4.timestamp,
+                                                 QSpace::Visualize::EntityType::DarkMatter);
+    std::shared_ptr<QSpace::Core::DataNode> node5 =
+        std::make_shared<QSpace::Core::DataNode>(readResult5.data,
+                                                 "test DM4",
+                                                 readResult5.timestamp,
+                                                 QSpace::Visualize::EntityType::DarkMatter);
+
     timestamp = timer.elapsed();
     qInfo() << "Time DataNode created: " << timestamp - timeStart << " milliseconds";
 
@@ -150,17 +213,53 @@ int main(int argc, char* argv[]) {
         qCritical() << "node is not created!!";
         return 0;
     }
-    // node->masterSettings->useLogScale = false;
+    node->masterSettings->useLogScale  = false;
+    node1->masterSettings->useLogScale = false;
+    node2->masterSettings->useLogScale = false;
+    node3->masterSettings->useLogScale = false;
+    node4->masterSettings->useLogScale = false;
+    node5->masterSettings->useLogScale = false;
     // создаем слой с настройками
     timeStart = timer.elapsed();
 
-    auto layer = std::make_shared<QSpace::Visualize::ParticleLayer>(node);
+    auto layer  = std::make_shared<QSpace::Visualize::ParticleLayer>(node);
+    auto layer1 = std::make_shared<QSpace::Visualize::ParticleLayer>(node1);
+    auto layer2 = std::make_shared<QSpace::Visualize::ParticleLayer>(node2);
+    auto layer3 = std::make_shared<QSpace::Visualize::ParticleLayer>(node3);
+    auto layer4 = std::make_shared<QSpace::Visualize::ParticleLayer>(node4);
+    auto layer5 = std::make_shared<QSpace::Visualize::ParticleLayer>(node5);
     layer->setSettings(node->masterSettings);
     layer->setData(node);
+
+    layer1->setSettings(node1->masterSettings);
+    layer1->setData(node1);
+
+    layer2->setSettings(node2->masterSettings);
+    layer2->setData(node2);
+
+    layer3->setSettings(node3->masterSettings);
+    layer3->setData(node3);
+
+    layer4->setSettings(node4->masterSettings);
+    layer4->setData(node4);
+
+    layer5->setSettings(node5->masterSettings);
+    layer5->setData(node5);
+
     view->addProp(layer->getVtkProp());
+    view->addProp(layer1->getVtkProp());
+    view->addProp(layer2->getVtkProp());
+    view->addProp(layer3->getVtkProp());
+    view->addProp(layer4->getVtkProp());
+    view->addProp(layer5->getVtkProp());
 
     if (auto interactor = view->getInteractor()) {
         layer->attachInteractor(interactor);
+        layer1->attachInteractor(interactor);
+        layer2->attachInteractor(interactor);
+        layer3->attachInteractor(interactor);
+        layer4->attachInteractor(interactor);
+        layer5->attachInteractor(interactor);
     }
 
     timestamp = timer.elapsed();
@@ -175,8 +274,15 @@ int main(int argc, char* argv[]) {
     qInfo() << "Time Data Rendering: " << timestamp - timeStart << " milliseconds";
 
 
-    ShortcutHandler* handler =
-        new ShortcutHandler(layer, view.get(), node->masterSettings.get(), window.get());
+    ShortcutHandler* handler = new ShortcutHandler(layer,
+                                                   layer1,
+                                                   layer2,
+                                                   layer3,
+                                                   layer4,
+                                                   layer5,
+                                                   view.get(),
+                                                   node->masterSettings.get(),
+                                                   window.get());
     window->installEventFilter(handler);
     // Дополнительно вешаем на сам виджет VTK, так как при фокусе на сцену окно может не перехватить
     // нажатие

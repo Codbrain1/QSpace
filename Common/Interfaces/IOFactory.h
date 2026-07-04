@@ -7,16 +7,11 @@
 #include <qcontainerfwd.h>
 namespace QSpace::IO
 {
-class IOFactory
+std::unique_ptr<IReader> createReader(FileFormat format); // строго задаем формат
+std::unique_ptr<IWriter> createWriter(FileFormat format); // строго задаем формат файла при записи
+namespace Utils
 {
-public:
-  static std::unique_ptr<IReader> createReader(QSpace::IO::FileFormat format); // строго задаем формат
-  static std::unique_ptr<IWriter> createWriter(QSpace::IO::FileFormat format); // строго задаем формат файла при записи
-};
-class Utils
-{
-public:
-  static QSpace::IO::FileFormat getFormat(const QString &path);
-  static QSpace::Visualize::EntityType getEntityType(const QString &name);
+FileFormat getFormat(const QString &path);
+QSpace::Visualize::EntityType getEntityType(const QString &name);
 }; // namespace Utils
 } // namespace QSpace::IO

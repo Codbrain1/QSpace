@@ -19,11 +19,11 @@
 
 // Проверяем: если компилятор «видит» VTK в путях инклудов текущего модуля,
 // то добавляем его в PCH. Если это изолированный Logger — просто пропускаем.
-#if __has_include(<vtkSmartPointer.h>)
-#include <vtkDataSet.h>
-#include <vtkObject.h>
-#include <vtkSmartPointer.h>
+// #if __has_include(<vtkSmartPointer.h>)
+// #include <vtkDataSet.h>
+// #include <vtkObject.h>
+// #include <vtkSmartPointer.h>
 
-#endif
+// #endif
 
 #endif

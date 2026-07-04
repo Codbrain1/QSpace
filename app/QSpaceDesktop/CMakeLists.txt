@@ -64,7 +64,7 @@ if(WIN32) # на виндовс только gui
     COMMENT "Copying VTK binaries..."
     )
     add_custom_command(TARGET QSpace POST_BUILD
-    COMMAND "C:/Qt/6.11.0/mingw_64/bin/windeployqt.exe"
+    COMMAND "C:/Qt/6.11.1/mingw_64/bin/windeployqt.exe"
     --compiler-runtime
         $<TARGET_FILE:QSpace>
             COMMENT "Running windeployqt..."

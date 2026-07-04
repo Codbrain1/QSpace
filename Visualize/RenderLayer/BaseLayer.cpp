@@ -130,12 +130,11 @@ void BaseLayer::applyColorMap(const QUuid& colorMapUuid, double range[2]) {
     m_lut->RemoveAllPoints();
     m_opacityFunction->RemoveAllPoints();
 
-    double minVal = range[0];
-    double maxVal = range[1];
-    double span   = maxVal - minVal + 1e-9;
-
-    auto& cmManager = ColorMapManager::instance();
-    auto  colorMap =
+    double minVal    = range[0];
+    double maxVal    = range[1];
+    double span      = maxVal - minVal + 1e-9;
+    auto&  cmManager = ColorMapManager::instance();
+    auto   colorMap =
         cmManager.getMap(colorMapUuid).value_or(ColorMapPresets::getStandardPresets().first());
 
     // Временная LUT для интерполяции базовых цветов

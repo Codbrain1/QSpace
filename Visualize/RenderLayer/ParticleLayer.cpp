@@ -44,12 +44,13 @@ ParticleLayer::ParticleLayer(std::shared_ptr<Core::DataNode> node) : BaseLayer(n
     m_mapper->SetStatic(true);
     m_mapper->SetEmissive(false);
 
+    m_actor->SetDragable(false);
+
     // Настройка маппинга
     m_mapper->ScalarVisibilityOn();
     m_mapper->SetScalarModeToUsePointFieldData();
     m_mapper->SetColorModeToMapScalars();
     m_mapper->SetLookupTable(m_lut);
-
     m_actor->PickableOn();
     m_baseProp   = m_actor;
     m_baseMapper = m_mapper;

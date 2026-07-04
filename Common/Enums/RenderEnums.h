@@ -6,11 +6,7 @@
 
 namespace QSpace::Visualize
 {
-enum class ViewType
-{
-  VTK_3D,
-  Widget_2D
-};
+
 enum class EntityType
 {
   Unknown,
@@ -35,14 +31,7 @@ enum class RenderMode
 //   Rainbow,
 //   Grayscale
 // };
-enum class CameraViewType
-{
-  XY_Top,   // Сверху
-  XZ_Front, // Спереди
-  YZ_Right, // Справа
-  Iso       // Изометрия
-  // MINOR:: добавить стандратные позиции
-};
+
 enum class ScalarBarRangeInterpolation
 {
   Sigmoid,
