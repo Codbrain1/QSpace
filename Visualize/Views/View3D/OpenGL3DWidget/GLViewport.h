@@ -4,11 +4,13 @@
 #include <QMap>
 #include <QOpenGLFunctions_3_3_Core>
 #include <QOpenGLWidget>
+#include <QSet>
 #include <QUuid>
 #include "../View3DSettings.h"
 #include "AxisRenderer.h"
 #include "GridRenderer.h"
 #include <memory>
+
 
 namespace QSpace::Visualize::Views::View3D {
 
@@ -27,6 +29,14 @@ class GLViewport : public QOpenGLWidget, protected QOpenGLFunctions_3_3_Core {
     void setCameraPreset(int presetIndex);
     void forceFullRedraw();
 
+  signals:
+    // испускается когда любой видимый слой готов сообщить актуальный диапазон/палитру —
+    // внешний colorbar (QCustomPlotView2D) подписывается на это, чтобы синхронизировать
+    // QCPColorScale::setDataRange()/градиент без прямой зависимости от GLViewport.
+    // ПРЕДПОЛОЖЕНИЕ: сигнатура минимальна (id слоя); сам диапазон/colorMapId colorbar
+    // читает через LayerSettings, на который у него уже есть shared_ptr от LayerManager.
+    void layerVisualsChanged(const QUuid& layerId);
+
   protected:
     void initializeGL() override;
     void resizeGL(int w, int h) override;
@@ -39,8 +49,9 @@ class GLViewport : public QOpenGLWidget, protected QOpenGLFunctions_3_3_Core {
     void wheelEvent(QWheelEvent* event) override;
 
   private:
-    Visualuse::RenderContext buildRenderContext();
+    Visualize::RenderContext buildRenderContext();
     void                     fitCameraToLayers();
+    void                     processPendingColorMapInvalidations();
 
     View3DSettings* m_settings; // не владеем
 
@@ -49,7 +60,7 @@ class GLViewport : public QOpenGLWidget, protected QOpenGLFunctions_3_3_Core {
     GridRenderer m_gridRenderer;
     AxisRenderer m_axisRenderer;
 
-    Visualuse::RenderContext m_lastContext;
+    Visualize::RenderContext m_lastContext;
     float                    m_axisExtent = 10.0f;
 
     QVector3D m_center{0, 0, 0};
@@ -61,6 +72,13 @@ class GLViewport : public QOpenGLWidget, protected QOpenGLFunctions_3_3_Core {
 
     QColor m_backgroundColor{13, 13, 20};
     bool   m_needsCameraFit = true;
+
+    // ---- отложенная инвалидация текстур палитр ----
+    // GL-контекст не гарантированно активен в слоте, вызванном сигналом
+    // ColorMapManager::paleteAdded (тот эмитится из произвольного места UI),
+    // поэтому сами ID палитр только накапливаем здесь, а реальный
+    // ColorMapTexture::invalidate() дёргаем внутри paintGL(), где контекст точно current.
+    QSet<QUuid> m_pendingColorMapInvalidations;
 };
 
 } // namespace QSpace::Visualize::Views::View3D

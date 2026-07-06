@@ -21,7 +21,7 @@ class GridRenderer : public QObject {
     void releaseGL(QOpenGLFunctions_3_3_Core* gl);
 
     void render(QOpenGLFunctions_3_3_Core*      gl,
-                const Visualuse::RenderContext& ctx,
+                const Visualize::RenderContext& ctx,
                 GridSettings*                   settings);
 
   private:

@@ -1,5 +1,5 @@
 #pragma once
-#include "Common/Structures/CoreStructures.h"
+#include "Common/Structures/ObjectRegistryStructures.h"
 #include <QObject>
 #include <qobject.h>
 #include <qtmetamacros.h>

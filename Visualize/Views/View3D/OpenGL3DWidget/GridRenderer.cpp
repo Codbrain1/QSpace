@@ -75,9 +75,9 @@ void GridRenderer::rebuildGeometry(QOpenGLFunctions_3_3_Core* gl, GridSettings* 
     m_cachedLineCount = lines;
 }
 
-void GridRenderer::render(QOpenGLFunctions_3_3_Core*   gl,
-                          const Common::RenderContext& ctx,
-                          GridSettings*                settings) {
+void GridRenderer::render(QOpenGLFunctions_3_3_Core*      gl,
+                          const Visualize::RenderContext& ctx,
+                          GridSettings*                   settings) {
     if (!settings->visible() || !m_glInitialized)
         return;
 

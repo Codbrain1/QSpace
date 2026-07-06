@@ -3,7 +3,7 @@
 #include <QSize>
 #include <QVector3D>
 
-namespace QSpace::Visualuse {
+namespace QSpace::Visualize {
 // нужен всем рендерерам
 struct RenderContext {
     QMatrix4x4 viewMatrix;
@@ -15,4 +15,4 @@ struct RenderContext {
     bool       orthographic       = true;
 };
 
-} // namespace QSpace::Visualuse
+} // namespace QSpace::Visualize

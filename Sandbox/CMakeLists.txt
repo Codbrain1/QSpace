@@ -17,32 +17,27 @@
 #         Qt6::Gui
 #         Qt6::Widgets
 #             )
-# add_sandbox_test(TestSPHVisualize  
-#     SOURCES
-#         TestSPHVisualize/main.cpp 
-#     LIBS
-#         QSpace::Visualize QSpace::IO VTK::CommonCore
-#         Qt6::3DCore
-#         Qt6::3DExtras
-#         Qt6::3DInput
-#         Qt6::3DRender
-#         Qt6::Core
-#         Qt6::Gui
-#         Qt6::Widgets
-#             )
-# add_sandbox_test(TestCONV  
-#     SOURCES
-#         testCONV/main.cpp 
-#     LIBS
-#         QSpace::Visualize QSpace::IO VTK::CommonCore
-#         Qt6::OpenGL
-#     Qt6::OpenGLWidgets
-#         Qt6::3DCore
-#         Qt6::3DExtras
-#         Qt6::3DInput
-#         Qt6::3DRender
-#         Qt6::Core
-#         Qt6::Gui
-#         Qt6::Widgets
-#             )
+add_sandbox_test(TestSPHVisualize  
+    SOURCES
+        TestSPHVisualize/main.cpp 
+    LIBS
+        QSpace::Common QSpace::Visualize QSpace::IO VTK::CommonCore
+        Qt6::Core
+        Qt6::Gui
+        Qt6::Widgets
+        Qt6::OpenGL
+        Qt6::OpenGLWidgets
+            )
+
+add_sandbox_test(TestCONV  
+    SOURCES
+        testCONV/main.cpp 
+    LIBS
+        QSpace::Visualize QSpace::IO VTK::CommonCore
+        Qt6::OpenGL
+        Qt6::OpenGLWidgets
+        Qt6::Core
+        Qt6::Gui
+        Qt6::Widgets
+            )
 

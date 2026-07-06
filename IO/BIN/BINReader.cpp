@@ -26,7 +26,6 @@
 #include <vtkPoints.h>
 #include <vtkPolyData.h>
 #include <vtkType.h>
-#include "Structures/IOStructures.h"
 #include <cstddef>
 #include <variant>
 
@@ -633,7 +632,7 @@ bool BINReader::readColumnStream(QFile&                       file,
         size_t particlesRead = 0;
         while (particlesRead < static_cast<size_t>(N)) {
             int toRead      = std::min(static_cast<size_t>(chunkElements),
-                                  static_cast<size_t>(N) - particlesRead);
+                                       static_cast<size_t>(N) - particlesRead);
             int bytesToRead = toRead * typeSize;
             if (file.read(bufferPtr, bytesToRead) != bytesToRead) {
                 qCCritical(LogIO) << "Unexpected end of file reading column:" << col.name;

@@ -1,7 +1,5 @@
 
 #include "OpenGL3DWidget.h"
-// ПРЕДПОЛОЖЕНИЕ: точный путь/имя заголовка с enum CameraViewType и ViewType —
-// подставьте реальный, если отличается.
 #include "Common/Enums/ViewEnums.h"
 #include "Logger/Logger.h"
 
@@ -10,7 +8,7 @@ namespace QSpace::Visualize::Views::View3D {
 OpenGL3DWidget::OpenGL3DWidget(QObject* parent)
     : AbstractView3D(parent),
       m_settings(std::make_unique<View3DSettings>()),
-      m_viewport(std::make_unique<GLViewport>(m_settings.get(), nullptr)) {
+      m_viewport(std::make_unique<GLViewport>(m_settings.get())) {
 }
 
 QWidget* OpenGL3DWidget::getWidget() {

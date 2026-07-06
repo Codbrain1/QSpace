@@ -1,9 +1,7 @@
 #include "ViewManager.h"
-#include "Interfaces/IView.h"
-#include "Visualize/VtkView.h"
+#include "Visualize/Views/ViewFactory.h"
 #include <qobject.h>
 #include <quuid.h>
-#include "Enums/RenderEnums.h"
 #include <memory>
 
 namespace QSpace::Core {
@@ -16,6 +14,7 @@ QUuid ViewManager::createView(Visualize::ViewType type) {
     // 1. Генерируем ID заранее, так как он понадобится нам для настройки связей
     QUuid id = QUuid::createUuid();
 
+    // CRITICAL испарвить на вызов фабричного метода
     // 2. Фабричная логика: создаем нужную реализацию
     switch (type) {
         case QSpace::Visualize::ViewType::VTK_3D: {

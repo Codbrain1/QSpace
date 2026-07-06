@@ -85,10 +85,10 @@ void AxisRenderer::rebuildGeometry(QOpenGLFunctions_3_3_Core* gl, float extent) 
     m_cachedExtent = extent;
 }
 
-void AxisRenderer::render(QOpenGLFunctions_3_3_Core*   gl,
-                          const Common::RenderContext& ctx,
-                          AxisSettings*                settings,
-                          float                        extent) {
+void AxisRenderer::render(QOpenGLFunctions_3_3_Core*      gl,
+                          const Visualize::RenderContext& ctx,
+                          AxisSettings*                   settings,
+                          float                           extent) {
     if (!settings->visible() || !m_glInitialized)
         return;
 

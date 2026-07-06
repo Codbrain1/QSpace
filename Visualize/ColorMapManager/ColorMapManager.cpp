@@ -1,10 +1,10 @@
 
 #include "ColorMapManager.h"
 #include "Common/Logger/Logger.h"
-#include "Common/Structures/RenderStructures.h"
 #include <QList>
 #include <qobject.h>
 #include <quuid.h>
+
 namespace QSpace::Visualize {
 ColorMapManager& ColorMapManager::instance() {
     static ColorMapManager _instance;
@@ -22,16 +22,19 @@ std::optional<ColorMap> ColorMapManager::getMap(const QUuid& id) const {
 QList<ColorMap> ColorMapManager::getAllMaps() const {
     return m_availableMaps.values();
 }
+
 void ColorMapManager::AddCustomMap(const ColorMap& map) {
     m_availableMaps.insert(map.id, map);
     emit paleteAdded(map);
 }
+
 void ColorMapManager::removeCustomMap(const QUuid& id) {
     auto it = m_availableMaps.find(id);
     if (it != m_availableMaps.end() && !it->isPreset) {
         m_availableMaps.erase(it);
     } else {
-        qCritical(LogRenderer) << "Attempted to remove a preset or non-existent colormap with ID:" << id;
+        qCritical(LogRenderer) << "Attempted to remove a preset or non-existent colormap with ID:"
+                               << id;
     }
 }
 
@@ -42,9 +45,11 @@ ColorMapManager::ColorMapManager(QObject* parent) : QObject(parent) {
         m_availableMaps.insert(map.id, map);
     }
 }
+
 bool ColorMapManager::contains(const QUuid& id) {
     return m_availableMaps.contains(id);
 }
+
 QIcon ColorMapManager::createColorMapIcon(const QSpace::Visualize::ColorMap& map, QSize size) {
     QPixmap  pix(size);
     QPainter painter(&pix);

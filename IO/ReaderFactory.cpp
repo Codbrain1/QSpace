@@ -1,4 +1,4 @@
-#include "Common/Interfaces/IOFactory.h"
+#include "ReaderFactory.h"
 #include "Common/Enums/IOEnums.h"
 #include "Interfaces/IReader.h"
 #include <qcontainerfwd.h>
@@ -7,7 +7,7 @@
 #include <memory>
 
 namespace QSpace::IO {
-std::unique_ptr<IReader> IOFactory::createReader(IO::FileFormat format) {
+std::unique_ptr<IReader> createReader(IO::FileFormat format) {
     if (format == FileFormat::BIN) {
         return std::make_unique<BINReader>();
     } else // TODO:: добавить другие форматы

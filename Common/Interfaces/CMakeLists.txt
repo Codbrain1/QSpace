@@ -2,7 +2,6 @@ add_library(Interfaces STATIC)
 target_sources(Interfaces PRIVATE
             IReader.h
             IWriter.h
-            IOFactory.h
             IRenderLayer.h
 )
 set_target_properties(Interfaces PROPERTIES AUTOMOC ON)

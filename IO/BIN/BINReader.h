@@ -1,26 +1,29 @@
 #pragma once
 #include "Common/Enums/IOEnums.h"
 #include "Common/Interfaces/IReader.h"
-#include "Structures/IOStructures.h"
+#include "Common/Structures/FileSchemeStructures.h"
 #include <QFile>
 #include <QtEndian>
-#include <cstddef>
-#include <functional>
 #include <qcontainerfwd.h>
 #include <qobject.h>
 #include <qtypes.h>
 #include <vtkAbstractArray.h>
 #include <vtkPointSet.h>
 #include <vtkPolyData.h>
+#include "../ReadResult.h"
+#include <cstddef>
+#include <functional>
 
 
 namespace QSpace::IO {
 class BINReader : public IReader {
   public:
     ~BINReader() override;
+
     void setPolicy(FilePolicy policy) override {
         m_policy = policy;
     }
+
     // Тип функции-парсера:
     // Вход: указатель на текущий байт файла (ptr), индекс текущей частицы (i)
     // Выход: указатель на следующий байт после прочитанного
@@ -29,6 +32,7 @@ class BINReader : public IReader {
   private:
     using ParserFunc    = std::function<const uchar*(const uchar*, int)>;
     FilePolicy m_policy = FilePolicy::Auto;
+
     struct ReadContext {
         vtkSmartPointer<vtkPolyData>             polyData;
         vtkSmartPointer<vtkPoints>               points;
@@ -38,6 +42,7 @@ class BINReader : public IReader {
         const qint64                             dataStartPos;
         size_t                                   particleSize;
     };
+
     // ---подготовка структур данных из vtk---
     // создает массивы vtk и настраивает их на заданные данные
     bool prepareVTK(ReadContext& context) const;
@@ -51,8 +56,10 @@ class BINReader : public IReader {
     bool readMmap(QFile& file, ReadContext& context, qint64 expectedDataSize) const;
 
     // ---стратегии чтения---
-    bool readInterleavedMmap(const uchar* startPtr, ReadContext& context, double* rawPointsPtr) const;
-    bool readNonInterleavedMmap(const uchar* startPtr, ReadContext& context, double* rawPointsPtr) const;
+    bool
+    readInterleavedMmap(const uchar* startPtr, ReadContext& context, double* rawPointsPtr) const;
+    bool
+    readNonInterleavedMmap(const uchar* startPtr, ReadContext& context, double* rawPointsPtr) const;
     bool readInterleavedStream(QFile& file, ReadContext& context, double* rawPointsPtr) const;
     bool readNonInterleavedStream(QFile& file, ReadContext& context, double* rawPointsPtr) const;
 
@@ -70,8 +77,11 @@ class BINReader : public IReader {
                                        vtkAbstractArray*            attributArrayPtr) const;
 
     template <class T>
-    static void
-    processCoordChunk(const uchar* srcBuffer, double* rawPointsPtr, size_t indParticle, size_t count, int indComp);
+    static void processCoordChunk(const uchar* srcBuffer,
+                                  double*      rawPointsPtr,
+                                  size_t       indParticle,
+                                  size_t       count,
+                                  int          indComp);
     template <class TSrc, class TDst>
     static void processAttribChunk(const uchar* srcBuffer,
                                    TDst*        attribArray,
@@ -99,6 +109,7 @@ void BINReader::processCoordChunk(const uchar* srcBuffer,
         dst += 3;
     }
 }
+
 template <class TSrc, class TDst>
 void BINReader::processAttribChunk(const uchar* srcBuffer,
                                    TDst*        attribArray,

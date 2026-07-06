@@ -1,5 +1,5 @@
 #pragma once
-#include "Common/Structures/CoreStructures.h"
+#include "Common/Structures/ObjectRegistryStructures.h"
 
 namespace QSpace::Physics::Math {
 QSpace::Core::DataNode::MetaData calculateMetaData(vtkSmartPointer<vtkDataSet> dataSet,

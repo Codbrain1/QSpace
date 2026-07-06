@@ -1,8 +1,9 @@
 add_library(Structures INTERFACE)
 target_sources(Structures INTERFACE
-    IOStructures.h
-    CoreStructures.h
-    RenderStructures.h
+    ColormapPresets.h
+    FileSchemeStructures.h
+    ObjectRegistryStructures.h
+    RenderContext.h
     SessionStructures.h
 )
 

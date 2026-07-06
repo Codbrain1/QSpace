@@ -1,4 +1,6 @@
 #include "GLViewport.h"
+#include "Visualize/ColorMapManager/ColorMapManager.h"
+#include "Visualize/ColorMapManager/ColorMapTexture.h"
 #include <QMouseEvent>
 #include <QPainter>
 #include <QWheelEvent>
@@ -6,10 +8,51 @@
 #include <algorithm>
 #include <cmath>
 
-
 namespace QSpace::Visualize::Views::View3D {
 
-// ... конструктор/деструктор без изменений (см. предыдущее сообщение) ...
+GLViewport::GLViewport(View3DSettings* settings, QWidget* parent)
+    : QOpenGLWidget(parent), m_settings(settings) {
+    QSurfaceFormat fmt;
+    fmt.setVersion(3, 3);
+    fmt.setProfile(QSurfaceFormat::CoreProfile);
+    fmt.setSamples(m_settings->viewport()->multisamples());
+    setFormat(fmt);
+
+    // держим виджет в курсе изменений настроек сцены (grid/axis/viewport) —
+    // перерисовка при любом изменении
+    connect(m_settings, &View3DSettings::anyChanged, this, [this]() {
+        m_backgroundColor = m_settings->viewport()->backgroundColor();
+        update();
+    });
+
+    // ---- палитры: любое изменение состава/содержимого палитр в ColorMapManager
+    // может сделать закэшированные GPU-текстуры устаревшими. Сам вызов
+    // ColorMapTexture::invalidate() здесь НЕЛЬЗЯ делать напрямую — слот вызывается
+    // без гарантированно активного GL-контекста этого виджета. Поэтому только
+    // помечаем нужный id как "грязный" и просим перерисовку; реальная инвалидация
+    // происходит в paintGL(), где makeCurrent() уже выполнен фреймворком Qt.
+    connect(&ColorMapManager::instance(),
+            &ColorMapManager::paleteAdded,
+            this,
+            [this](const ColorMap& map) {
+                m_pendingColorMapInvalidations.insert(map.id);
+                update();
+            });
+
+    m_backgroundColor = m_settings->viewport()->backgroundColor();
+
+    setMouseTracking(true);
+}
+
+GLViewport::~GLViewport() {
+    makeCurrent();
+    for (auto& layer : m_layers)
+        layer->releaseGL(this);
+    m_gridRenderer.releaseGL(this);
+    m_axisRenderer.releaseGL(this);
+    Layers::ColorMapTexture::releaseForContext(context());
+    doneCurrent();
+}
 
 void GLViewport::attachRenderLayer(const QUuid&                                   layerId,
                                    std::shared_ptr<Visualize::IOpenGLRenderLayer> layer) {
@@ -40,6 +83,48 @@ void GLViewport::detachRenderLayer(const QUuid& layerId) {
     update();
 }
 
+void GLViewport::setBackgroundColor(double r, double g, double b) {
+    m_backgroundColor = QColor::fromRgbF(r, g, b);
+    m_settings->viewport()->setBackgroundColor(m_backgroundColor); // держим настройки синхронными
+    update();
+}
+
+void GLViewport::resetCamera() {
+    m_yaw            = 0.0f;
+    m_pitch          = 0.3f; // небольшой наклон по умолчанию — удобнее чистого top-down
+    m_needsCameraFit = true;
+    update();
+}
+
+void GLViewport::setCameraPreset(int presetIndex) {
+    // ПРЕДПОЛОЖЕНИЕ: соответствие индексов вашему enum CameraViewType — подставьте
+    // реальные значения при интеграции, если порядок отличается.
+    switch (presetIndex) {
+        case 1:
+            m_yaw   = 0.0f;
+            m_pitch = qDegreesToRadians(89.9f);
+            break; // Top
+        case 2:
+            m_yaw   = 0.0f;
+            m_pitch = 0.0f;
+            break; // Front
+        case 3:
+            m_yaw   = qDegreesToRadians(90.0f);
+            m_pitch = 0.0f;
+            break; // Side
+        default:
+            m_yaw   = qDegreesToRadians(35.0f);
+            m_pitch = qDegreesToRadians(25.0f);
+            break; // Isometric
+    }
+    update();
+}
+
+void GLViewport::forceFullRedraw() {
+    m_needsCameraFit = true;
+    update();
+}
+
 void GLViewport::initializeGL() {
     initializeOpenGLFunctions();
     glEnable(GL_PROGRAM_POINT_SIZE);
@@ -53,6 +138,9 @@ void GLViewport::initializeGL() {
 
     for (auto& layer : m_layers)
         layer->initializeGL(this);
+}
+
+void GLViewport::resizeGL(int, int) {
 }
 
 void GLViewport::fitCameraToLayers() {
@@ -87,14 +175,65 @@ void GLViewport::fitCameraToLayers() {
     m_settings->grid()->setExtent(m_axisExtent);
 }
 
+Visualize::RenderContext GLViewport::buildRenderContext() {
+    Visualize::RenderContext ctx;
+    ctx.viewportPx   = size();
+    ctx.orthographic = m_settings->viewport()->orthographic();
+
+    const float aspect = width() > 0 ? float(width()) / float(std::max(1, height())) : 1.0f;
+
+    if (ctx.orthographic) {
+        const float halfH = std::max(m_distance, 0.001f);
+        const float halfW = halfH * aspect;
+        ctx.projMatrix.ortho(-halfW,
+                             halfW,
+                             -halfH,
+                             halfH,
+                             m_settings->viewport()->nearClip(),
+                             m_settings->viewport()->farClip());
+        ctx.pixelsPerWorldUnit = float(height()) / (2.0f * halfH);
+    } else {
+        ctx.projMatrix.perspective(m_settings->viewport()->fovYDegrees(),
+                                   aspect,
+                                   m_settings->viewport()->nearClip(),
+                                   m_settings->viewport()->farClip());
+        const float fovYRad    = qDegreesToRadians(m_settings->viewport()->fovYDegrees());
+        ctx.pixelsPerWorldUnit = float(height()) / (2.0f * std::tan(fovYRad * 0.5f));
+    }
+
+    ctx.cameraPos = QVector3D(m_center.x() + m_distance * std::cos(m_pitch) * std::sin(m_yaw),
+                              m_center.y() + m_distance * std::sin(m_pitch),
+                              m_center.z() + m_distance * std::cos(m_pitch) * std::cos(m_yaw));
+
+    ctx.viewMatrix.lookAt(ctx.cameraPos, m_center, QVector3D(0, 1, 0));
+    ctx.mvp = ctx.projMatrix * ctx.viewMatrix;
+
+    return ctx;
+}
+
+void GLViewport::processPendingColorMapInvalidations() {
+    // вызывается ИЗНУТРИ paintGL() — здесь GL-контекст этого виджета точно активен
+    // (Qt гарантирует makeCurrent() перед вызовом paintGL()), поэтому здесь и только
+    // здесь безопасно удалять GL-текстуры палитр.
+    if (m_pendingColorMapInvalidations.isEmpty())
+        return;
+
+    for (const QUuid& id : std::as_const(m_pendingColorMapInvalidations))
+        Layers::ColorMapTexture::invalidate(id);
+
+    m_pendingColorMapInvalidations.clear();
+}
+
 void GLViewport::paintGL() {
+    processPendingColorMapInvalidations();
+
     if (m_needsCameraFit) {
         fitCameraToLayers();
         m_needsCameraFit = false;
     }
 
-    Common::RenderContext ctx = buildRenderContext();
-    m_lastContext             = ctx;
+    Visualize::RenderContext ctx = buildRenderContext();
+    m_lastContext                = ctx;
 
     glClearColor(float(m_backgroundColor.redF()),
                  float(m_backgroundColor.greenF()),
@@ -104,15 +243,70 @@ void GLViewport::paintGL() {
 
     m_gridRenderer.render(this, ctx, m_settings->grid());
 
-    for (auto& layer : m_layers)
-        if (layer->isVisible())
-            layer->render(this, ctx);
+    for (auto it = m_layers.constBegin(); it != m_layers.constEnd(); ++it) {
+        if (!it.value()->isVisible())
+            continue;
+
+        it.value()->render(this, ctx);
+
+        // уведомляем внешние подписчики (colorbar) о том, что у этого слоя
+        // могли поменяться визуальные параметры (диапазон авто-калибруется
+        // некоторыми рендерерами прямо внутри render(), например SPHRendererLayer) —
+        // colorbar сам решает, нужно ли ему перечитать rangeMin/rangeMax/colorMapId
+        emit layerVisualsChanged(it.key());
+    }
 
     m_axisRenderer.render(this, ctx, m_settings->axis(), m_axisExtent);
 }
 
-// buildRenderContext(), paintEvent(), mouse*/wheelEvent(), resetCamera(),
-// setCameraPreset(), forceFullRedraw(), setBackgroundColor() — без изменений
-// от предыдущего сообщения.
+void GLViewport::paintEvent(QPaintEvent* event) {
+    QOpenGLWidget::paintEvent(event); // выполнит paintGL() через внутренний механизм Qt
+
+    if (!m_settings->axis()->visible() || !m_settings->axis()->showLabels())
+        return;
+
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setFont(
+        QFont(m_settings->axis()->labelFontFamily(), m_settings->axis()->labelFontSize()));
+
+    const auto ticks = m_axisRenderer.buildTicks(m_settings->axis(), m_axisExtent);
+    for (const auto& tick : ticks) {
+        const QVector4D clip = m_lastContext.mvp * QVector4D(tick.worldPos, 1.0f);
+        if (clip.w() <= 0.0f)
+            continue;
+
+        const QPointF screen((clip.x() / clip.w() * 0.5f + 0.5f) * width(),
+                             (1.0f - (clip.y() / clip.w() * 0.5f + 0.5f)) * height());
+
+        painter.setPen(tick.color);
+        painter.drawText(screen, tick.text);
+    }
+}
+
+void GLViewport::mousePressEvent(QMouseEvent* event) {
+    m_dragging     = true;
+    m_lastMousePos = event->pos();
+}
+
+void GLViewport::mouseMoveEvent(QMouseEvent* event) {
+    if (!m_dragging)
+        return;
+    const QPoint delta = event->pos() - m_lastMousePos;
+    m_lastMousePos     = event->pos();
+    m_yaw += delta.x() * 0.01f;
+    m_pitch = std::clamp(m_pitch + delta.y() * 0.01f, -1.5f, 1.5f);
+    update();
+}
+
+void GLViewport::mouseReleaseEvent(QMouseEvent*) {
+    m_dragging = false;
+}
+
+void GLViewport::wheelEvent(QWheelEvent* event) {
+    const float delta = event->angleDelta().y() / 120.0f;
+    m_distance        = std::max(m_distance * std::pow(0.9f, delta), 0.001f);
+    update();
+}
 
 } // namespace QSpace::Visualize::Views::View3D

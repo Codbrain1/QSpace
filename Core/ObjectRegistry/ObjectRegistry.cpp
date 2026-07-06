@@ -1,6 +1,6 @@
 #include "ObjectRegistry.h"
 #include "Common/Logger/Logger.h"
-#include "Common/Structures/CoreStructures.h"
+#include "Common/Structures/ObjectRegistryStructures.h"
 #include <qcontainerfwd.h>
 #include <qloggingcategory.h>
 #include <qobject.h>

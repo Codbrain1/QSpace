@@ -1,4 +1,5 @@
 #pragma once
+#include <QUuid>
 
 struct Layer {
     QUuid                                    layerId;

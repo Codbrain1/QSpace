@@ -35,7 +35,7 @@ class AxisRenderer : public QObject {
     // extent — длина осей в мировых единицах (обычно берётся из GridSettings::extent()
     // или из bounding box данных, который вычисляет GLViewport)
     void render(QOpenGLFunctions_3_3_Core*      gl,
-                const Visualuse::RenderContext& ctx,
+                const Visualize::RenderContext& ctx,
                 AxisSettings*                   settings,
                 float                           extent);
 

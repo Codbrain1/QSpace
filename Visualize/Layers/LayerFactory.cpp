@@ -1,12 +1,7 @@
-#include "Common/Interfaces/LayerFactory.h"
-#include "Common/Structures/CoreStructures.h"
-#include "RenderLayerSettings/ParticleLayer.h"
-#include <memory>
+#include "LayerFactory.h"
 
-namespace QSpace::Visualize {
-std::shared_ptr<IRenderLayer>
-LayerEngineFactory::createLayerEngine(const std::shared_ptr<Core::DataNode> node) {
-    // TODO: реализовать другие классы для слоев и добавить их в фабрику слоев
-    return std::make_shared<ParticleLayer>(node);
+namespace QSpace::Visualize::Layers::LayerFactory {
+std::shared_ptr<IRenderLayer> createLayer(const std::shared_ptr<Core::DataNode> node) {
 }
-} // namespace QSpace::Visualize
+
+} // namespace QSpace::Visualize::Layers::LayerFactory

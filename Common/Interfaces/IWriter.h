@@ -1,6 +1,6 @@
 #pragma once
 #include "Common/Enums/IOEnums.h"
-#include "Common/Structures/IOStructures.h"
+#include "Common/Structures/FileSchemeStructures.h"
 #include "Logger/Logger.h"
 #include <Qstring>
 #include <qcontainerfwd.h>
@@ -9,7 +9,6 @@
 #include <vtkDataObject.h>
 #include <vtkDataSet.h>
 #include <vtkMultiBlockDataSet.h>
-
 
 namespace QSpace
 {

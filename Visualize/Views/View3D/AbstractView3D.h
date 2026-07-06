@@ -10,8 +10,9 @@ namespace QSpace::Visualize::Views {
 class AbstractView3D : public AbstractView {
     Q_OBJECT
   public:
-    explicit AbstractView3D(QObject* parent = nullptr);
-    virtual ~AbstractView3D()                                                        = default;
+    explicit AbstractView3D(QObject* parent = nullptr) : AbstractView(parent) {};
+    virtual ~AbstractView3D() = default;
+
     virtual void                    setCameraView(View3D::CameraViewType cameraView) = 0;
     virtual View3D::View3DSettings& sceneSettings()                                  = 0;
 

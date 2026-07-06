@@ -1,15 +1,25 @@
-add_subdirectory(IOFactory)
-add_subdirectory(BIN)
-add_subdirectory(GRD)
-# add_subdirectory(HDF5)
-# add_subdirectory(VTK)
-add_library(IO INTERFACE)
+
+add_library(IO STATIC)
 add_library(QSpace::IO ALIAS IO)
-target_include_directories(IO INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/..)
-target_link_libraries(IO INTERFACE
-                    IOFactory
-                    IO_BIN
-                    IO_GRD
-                    # IO_HDF5
-                    # IO_VTK
+set(IO_BIN
+BIN/BINReader.h
+BIN/BINReader.cpp
+
+)
+# IO_GRD
+# IO_HDF5
+# IO_VTK
+target_sources(IO PUBLIC
+            ReaderFactory.cpp
+            ReaderFactory.h
+            ReadResult.h
+            SchemeFactory.h
+            SchemeFactory.cpp
+            ${IO_BIN}
+)   
+
+target_include_directories(IO PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_link_libraries(IO PUBLIC
+        QSpace::Common
+        Qt6::Core
 )

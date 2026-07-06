@@ -24,7 +24,7 @@
 #include "UI/Home/MainWindow.h"
 
 int main(int argc, char* argv[]) {
-    vtkOutputWindow::SetGlobalWarningDisplay(0);
+    QApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
     QApplication app(argc, argv); // создание экземпляра приложения
 
     // --- ИНИЦИАЛИЗАЦИЯ СТИЛЕЙ (QSS) ---

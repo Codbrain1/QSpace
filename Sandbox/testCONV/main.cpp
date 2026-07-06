@@ -530,8 +530,10 @@ void ParticleGLWidget::wheelEvent(QWheelEvent* event) {
 
 #include "Common/Enums/IOEnums.h"
 #include "Common/Enums/RenderEnums.h"
-#include "Common/Interfaces/IOFactory.h"
-#include "Common/Structures/IOStructures.h"
+#include "Common/Structures/FileSchemeStructures.h"
+#include "IO/ReaderFactory.h"
+#include "IO/SchemeFactory.h"
+
 
 #include <QApplication>
 #include <QElapsedTimer>
@@ -550,7 +552,7 @@ int main(int argc, char* argv[]) {
 
     const QString dataPath = "D:/NIR/NIR_6_semestr/QSpace/Sandbox/TEST_DATA/TF250_v2/DM_    0.bin";
 
-    auto reader = QSpace::IO::IOFactory::createReader(QSpace::IO::FileFormat::BIN);
+    auto reader = QSpace::IO::createReader(QSpace::IO::FileFormat::BIN);
     if (!reader) {
         qCritical() << "Failed to create reader";
         return 1;
@@ -558,8 +560,8 @@ int main(int argc, char* argv[]) {
     reader->setPolicy(QSpace::IO::FilePolicy::ForceStandart);
 
     auto scheme =
-        QSpace::IO::SchemeFactory::createSheme_v2(QSpace::Visualize::EntityType::DarkMatter,
-                                                  QSpace::IO::FileFormat::BIN);
+        QSpace::IO::SchemeFactory::createScheme_v2(QSpace::Visualize::EntityType::DarkMatter,
+                                                   QSpace::IO::FileFormat::BIN);
 
     QElapsedTimer readTimer;
     readTimer.start();

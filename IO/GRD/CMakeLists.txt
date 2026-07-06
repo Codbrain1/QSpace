@@ -1,1 +1,0 @@
-add_library(IO_GRD STATIC)

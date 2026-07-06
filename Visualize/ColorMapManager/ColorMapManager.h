@@ -1,5 +1,5 @@
 #pragma once
-#include "Common/Structures/RenderStructures.h"
+#include "Common/Structures/ColormapPresets.h"
 #include <QApplication>
 #include <QColor>
 #include <QIcon>

@@ -1,14 +1,10 @@
 #pragma once
-#include "Common/Structures/CoreStructures.h"
-#include <memory>
-// #include <vtkProp.h>
-// #include <vtkRenderWindowInteractor.h>
-// #include <vtkScalarBarActor.h>
-// #include <vtkSmartPointer.h>
-// OpenGL-специфичные заголовки — только для новой ветки.
+#include "Common/Structures/ObjectRegistryStructures.h"
 #include "Common/Structures/RenderContext.h"
+#include "Visualize/Layers/LayerSettings.h"
 #include <QOpenGLFunctions_3_3_Core>
 #include <QVector3D>
+#include <memory>
 
 namespace QSpace::Visualize
 {
@@ -20,7 +16,7 @@ public:
   virtual ~IRenderLayer() = default;
   virtual void update() = 0;
   virtual void setData(std::weak_ptr<Core::DataNode> node) = 0;
-  virtual void setSettings(std::shared_ptr<Core::VisualSettings> settings) = 0;
+  virtual void setSettings(std::shared_ptr<Layers::LayerSettings> settings) = 0;
   virtual void setVisible(bool visible) = 0;
   virtual bool isVisible() const = 0;
 };
@@ -45,7 +41,7 @@ public:
   virtual void initializeGL(QOpenGLFunctions_3_3_Core *gl) = 0;
 
   // основной проход отрисовки, вызывается GLViewport каждый кадр для видимых слоёв
-  virtual void render(QOpenGLFunctions_3_3_Core *gl, const Visualuse::RenderContext &ctx) = 0;
+  virtual void render(QOpenGLFunctions_3_3_Core *gl, const Visualize::RenderContext &ctx) = 0;
 
   // освобождение GPU-ресурсов перед уничтожением контекста/detach
   virtual void releaseGL(QOpenGLFunctions_3_3_Core *gl) = 0;
