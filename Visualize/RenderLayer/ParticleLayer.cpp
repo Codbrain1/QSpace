@@ -56,7 +56,7 @@ ParticleLayer::ParticleLayer(std::shared_ptr<Core::DataNode> node) : BaseLayer(n
     m_baseMapper = m_mapper;
 }
 
-void ParticleLayer::applyRenderModeSettings(const Core::VisualSettings& s) {
+void ParticleLayer::applyRenderModeSettings(const Visualize::Layers::LayerSettings& s) {
     if (s.mode == RenderMode::GausianSplat) {
         m_mapper->SetScaleFactor(s.PointSize);
         m_mapper->SetScalarOpacityFunction(m_opacityFunction);
@@ -74,7 +74,7 @@ void ParticleLayer::applyRenderModeSettings(const Core::VisualSettings& s) {
     m_actor->GetProperty()->SetOpacity(s.opacity);
 }
 
-// void ParticleLayer::setupDataArrays(Core::VisualSettings& s) {
+// void ParticleLayer::setupDataArrays(Visualize::Layers::LayerSettings& s) {
 //     if (s.colorByField.isEmpty()) {
 //         m_mapper->ScalarVisibilityOff();
 //         m_actor->GetProperty()->SetColor(1.0, 1.0, 1.0);
@@ -153,7 +153,7 @@ void ParticleLayer::applyRenderModeSettings(const Core::VisualSettings& s) {
 //     m_mapper->SetScalarRange(range);
 // }
 
-void ParticleLayer::setupDataArrays(Core::VisualSettings& s) {
+void ParticleLayer::setupDataArrays(Visualize::Layers::LayerSettings& s) {
     if (s.colorByField.isEmpty()) {
         m_mapper->ScalarVisibilityOff();
         m_actor->GetProperty()->SetColor(1.0, 1.0, 1.0);
@@ -259,7 +259,7 @@ void ParticleLayer::setupDataArrays(Core::VisualSettings& s) {
     m_mapper->SetScalarRange(range);
 }
 
-void ParticleLayer::updateShader(const Core::VisualSettings& s) {
+void ParticleLayer::updateShader(const Visualize::Layers::LayerSettings& s) {
     // 1. Обработка дефолтного шейдера
     if (shaderTypeFromString(s.ShaderType) == ShaderType::Default) {
         // Сбрасываем только если там сейчас не nullptr

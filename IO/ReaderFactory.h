@@ -1,11 +1,10 @@
 #pragma once
 #include "Common/Enums/IOEnums.h"
-#include "Common/Enums/RenderEnums.h"
+#include "Common/Enums/VisualizeBaseEnums.h"
 #include "Common/Interfaces/IReader.h"
 #include "Common/Interfaces/IWriter.h"
 #include <qcontainerfwd.h>
 #include <memory>
-
 
 namespace QSpace::IO {
 std::unique_ptr<IReader> createReader(FileFormat format); // строго задаем формат

@@ -1,12 +1,14 @@
-// Visualize/Layers/ParticleRendererLayer.cpp
+
 #include "ParticleRendererLayer.h"
 #include "Common/Structures/RenderContext.h"
 #include "Visualize/ColorMapManager/ColorMapTexture.h"
+#include "Visualize/Layers/vtkAdapter.h"
 #include <algorithm>
 
 namespace QSpace::Visualize::Layers {
 
 void ParticleRendererLayer::buildShader() {
+    // TODO перенести шейдеры в отдельные файлы
     static const char* vs = R"(
         #version 330 core
         layout(location = 0) in vec3 aPos;
@@ -49,7 +51,8 @@ void ParticleRendererLayer::buildShader() {
     )";
     m_program.addShaderFromSourceCode(QOpenGLShader::Vertex, vs);
     m_program.addShaderFromSourceCode(QOpenGLShader::Fragment, fs);
-    if (!m_program.link())
+
+    if (!m_program.link()) // собирает шейдеры в единую программу
         qWarning().noquote() << "ParticleRendererLayer shader error:" << m_program.log();
 }
 
@@ -58,7 +61,7 @@ void ParticleRendererLayer::initializeGL(QOpenGLFunctions_3_3_Core* gl) {
     buildShader();
     m_vao.create();
     m_vao.bind();
-    m_vboPos.create();
+    m_vboPosition.create();
     m_vboScalar.create();
     m_vao.release();
 }
@@ -70,24 +73,35 @@ void ParticleRendererLayer::uploadBuffersIfDirty(QOpenGLFunctions_3_3_Core* gl) 
     if (!node)
         return;
 
-    // ПРЕДПОЛОЖЕНИЕ: адаптер DataNode -> позиции/скаляр по имени colorByField.
-    QVector<QVector3D> positions;
-    QVector<float>     scalars; // = node->scalarField(m_settings->colorByField());
+    QVector<QVector3D> positions = Visualize::vtkAdapter::extractPositions(node);
+    QVector<float>     scalars;
+    if (m_settings && !m_settings->colorByField().isEmpty()) {
+        scalars = Visualize::vtkAdapter::extractScalarField(node, m_settings->colorByField());
+    } else {
+        scalars = QVector<float>();
+    }
+
     m_particleCount = positions.size();
+    if (m_particleCount == 0) {
+        qWarning() << "ParticleRendererLayer: DataNode contains no points";
+        m_dirty = false;
+        return;
+    }
 
     m_vao.bind();
-    m_vboPos.bind();
-    m_vboPos.allocate(positions.constData(), positions.size() * int(sizeof(QVector3D)));
+    m_vboPosition.bind();
+    m_vboPosition.allocate(positions.constData(), positions.size() * int(sizeof(QVector3D)));
     gl->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(QVector3D), nullptr);
     gl->glEnableVertexAttribArray(0);
 
     m_vboScalar.bind();
-    if (!scalars.isEmpty())
+    if (!scalars.isEmpty()) {
         m_vboScalar.allocate(scalars.constData(), scalars.size() * int(sizeof(float)));
-    else {
+    } else {
         QVector<float> zeros(positions.size(), 0.0f);
         m_vboScalar.allocate(zeros.constData(), zeros.size() * int(sizeof(float)));
     }
+
     gl->glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, sizeof(float), nullptr);
     gl->glEnableVertexAttribArray(1);
     m_vao.release();
@@ -105,34 +119,21 @@ void ParticleRendererLayer::autoCalibrateRangeIfNeeded() {
     if (!node)
         return;
 
-    // ПРЕДПОЛОЖЕНИЕ: пересчёт перцентилей поля colorByField на CPU при загрузке.
-    // Заполняет базовые rangeMin/rangeMax (используются всеми тремя рендерерами одинаково).
-    QVector<float> scalars; // = node->scalarField(m_settings->colorByField());
-    if (scalars.isEmpty())
-        return;
-
-    QVector<float> sorted = scalars;
-    if (m_settings->useLogScale())
-        for (auto& v : sorted)
-            v = std::log10(std::max(std::abs(v), 1e-30f));
-    std::sort(sorted.begin(), sorted.end());
-
-    auto pct = [&](float p) {
-        int idx = std::clamp(int(p * (sorted.size() - 1)), 0, static_cast<int>(sorted.size() - 1));
-        return sorted[idx];
-    };
-    m_settings->setBaseRangeMin(pct(0.01f));
-    m_settings->setBaseRangeMax(pct(0.99f));
-    m_settings->setRangeMin(pct(0.01f));
-    m_settings->setRangeMax(pct(0.99f));
+    auto range = vtkAdapter::getScalarRange(node, m_settings->colorByField());
+    m_settings->setBaseRangeMin(range.first);
+    m_settings->setBaseRangeMax(range.second);
+    m_settings->setRangeMin(range.first);
+    m_settings->setRangeMax(range.second);
 }
 
 void ParticleRendererLayer::render(QOpenGLFunctions_3_3_Core*      gl,
                                    const Visualize::RenderContext& ctx) {
-    if (!m_settings || m_particleCount == 0)
+    if (!m_settings)
         return;
+    // загружаем данные на видеокарту если были внесены какие либо изменения
     uploadBuffersIfDirty(gl);
-
+    if (m_particleCount == 0)
+        return;
     gl->glEnable(GL_BLEND);
     if (static_cast<LayerSettings::BlendMode>(m_settings->blendMode()) ==
         LayerSettings::BlendMode::Additive)
@@ -167,7 +168,7 @@ void ParticleRendererLayer::render(QOpenGLFunctions_3_3_Core*      gl,
 }
 
 void ParticleRendererLayer::releaseGL(QOpenGLFunctions_3_3_Core*) {
-    m_vboPos.destroy();
+    m_vboPosition.destroy();
     m_vboScalar.destroy();
     m_vao.destroy();
 }

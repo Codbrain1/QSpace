@@ -31,8 +31,8 @@ class ShortcutHandler : public QObject {
     std::shared_ptr<QSpace::Visualize::ParticleLayer> m_layer4;
     std::shared_ptr<QSpace::Visualize::ParticleLayer> m_layer5;
 
-    QSpace::Visualize::VtkView*   m_view;
-    QSpace::Core::VisualSettings* m_settings;
+    QSpace::Visualize::VtkView*               m_view;
+    QSpace::Visualize::Layers::LayerSettings* m_settings;
 
   public:
     ShortcutHandler(std::shared_ptr<QSpace::Visualize::ParticleLayer> layer,
@@ -42,7 +42,7 @@ class ShortcutHandler : public QObject {
                     std::shared_ptr<QSpace::Visualize::ParticleLayer> layer4,
                     std::shared_ptr<QSpace::Visualize::ParticleLayer> layer5,
                     QSpace::Visualize::VtkView*                       view,
-                    QSpace::Core::VisualSettings*                     settings,
+                    QSpace::Visualize::Layers::LayerSettings*         settings,
                     QObject*                                          parent = nullptr)
         : QObject(parent),
           m_layer(layer),

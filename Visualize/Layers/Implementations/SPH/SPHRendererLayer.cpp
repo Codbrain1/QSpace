@@ -1,5 +1,6 @@
 #include "SPHRendererLayer.h"
 #include "Visualize/ColorMapManager/ColorMapTexture.h"
+#include "Visualize/Layers/vtkAdapter.h"
 #include <algorithm>
 #include <cmath>
 
@@ -18,7 +19,7 @@ void SPHRendererLayer::buildShaders() {
         out float vKernelNorm;
         void main() {
             gl_Position = uMVP * vec4(aPos, 1.0);
-            gl_PointSize = 2.0 * uPointScale  uWorldRadius;
+            gl_PointSize = 2.0 * uPointScale * uWorldRadius; // была пропущена '*' — исправлено
             vMass = aMass;
             vKernelNorm = uKernelNorm;
         }
@@ -114,9 +115,33 @@ void SPHRendererLayer::uploadBuffersIfDirty(QOpenGLFunctions_3_3_Core* gl) {
     if (!node)
         return;
 
-    QVector<QVector3D> positions; // ПРЕДПОЛОЖЕНИЕ: адаптер DataNode
-    QVector<float>     masses;
+    QVector<QVector3D> positions = Visualize::vtkAdapter::extractPositions(node);
+
+    // "mass" здесь — это то самое поле, которое проецируется и накапливается
+    // как поверхностная плотность (colorByField). Если поле не задано — считаем
+    // все частицы равновесными (weight=1), и результат — числовая плотность частиц.
+    QVector<float> masses;
+    if (m_settings && !m_settings->colorByField().isEmpty())
+        masses = Visualize::vtkAdapter::extractScalarField(node, m_settings->colorByField());
+
     m_particleCount = positions.size();
+    if (m_particleCount == 0) {
+        qWarning() << "SPHRendererLayer: DataNode contains no points";
+        m_dirty     = false;
+        m_hasBounds = false;
+        return;
+    }
+
+    m_boundsMin = m_boundsMax = positions[0];
+    for (const auto& p : positions) {
+        m_boundsMin.setX(std::min(m_boundsMin.x(), p.x()));
+        m_boundsMin.setY(std::min(m_boundsMin.y(), p.y()));
+        m_boundsMin.setZ(std::min(m_boundsMin.z(), p.z()));
+        m_boundsMax.setX(std::max(m_boundsMax.x(), p.x()));
+        m_boundsMax.setY(std::max(m_boundsMax.y(), p.y()));
+        m_boundsMax.setZ(std::max(m_boundsMax.z(), p.z()));
+    }
+    m_hasBounds = true;
 
     m_vaoParticles.bind();
     m_vboPos.bind();
@@ -125,9 +150,9 @@ void SPHRendererLayer::uploadBuffersIfDirty(QOpenGLFunctions_3_3_Core* gl) {
     gl->glEnableVertexAttribArray(0);
 
     m_vboMass.bind();
-    if (!masses.isEmpty())
+    if (!masses.isEmpty()) {
         m_vboMass.allocate(masses.constData(), masses.size() * int(sizeof(float)));
-    else {
+    } else {
         QVector<float> ones(positions.size(), 1.0f);
         m_vboMass.allocate(ones.constData(), ones.size() * int(sizeof(float)));
     }
@@ -177,7 +202,6 @@ void SPHRendererLayer::calibrateIfNeeded(QOpenGLFunctions_3_3_Core* gl) {
                                  static_cast<int>(logValues.size() - 1));
             return logValues[idx];
         };
-        // пишем в БАЗОВЫЕ rangeMin/rangeMax — logDensityMin/Max больше не существуют
         m_settings->setRangeMin(pct(0.02f));
         m_settings->setRangeMax(pct(0.995f));
         m_settings->setBaseRangeMin(pct(0.02f));
@@ -187,9 +211,12 @@ void SPHRendererLayer::calibrateIfNeeded(QOpenGLFunctions_3_3_Core* gl) {
 }
 
 void SPHRendererLayer::render(QOpenGLFunctions_3_3_Core* gl, const Visualize::RenderContext& ctx) {
-    if (!m_settings || m_particleCount == 0)
+    if (!m_settings)
         return;
     uploadBuffersIfDirty(gl);
+
+    if (m_particleCount == 0)
+        return;
     ensureAccumFBO(ctx.viewportPx);
 
     const float h          = m_settings->smoothingRadius();
@@ -220,6 +247,9 @@ void SPHRendererLayer::render(QOpenGLFunctions_3_3_Core* gl, const Visualize::Re
     calibrateIfNeeded(gl);
 
     gl->glViewport(0, 0, ctx.viewportPx.width(), ctx.viewportPx.height());
+    gl->glEnable(GL_BLEND);
+    gl->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     gl->glActiveTexture(GL_TEXTURE0);
     gl->glBindTexture(GL_TEXTURE_2D, m_accumFBO->texture());
     gl->glActiveTexture(GL_TEXTURE1);
@@ -241,6 +271,7 @@ void SPHRendererLayer::render(QOpenGLFunctions_3_3_Core* gl, const Visualize::Re
     gl->glBindTexture(GL_TEXTURE_2D, 0);
     gl->glActiveTexture(GL_TEXTURE0);
     gl->glBindTexture(GL_TEXTURE_1D, 0);
+    gl->glDisable(GL_BLEND);
 }
 
 void SPHRendererLayer::releaseGL(QOpenGLFunctions_3_3_Core*) {
@@ -252,8 +283,12 @@ void SPHRendererLayer::releaseGL(QOpenGLFunctions_3_3_Core*) {
     m_accumFBO.reset();
 }
 
-bool SPHRendererLayer::boundingBox(QVector3D&, QVector3D&) const {
-    return false;
+bool SPHRendererLayer::boundingBox(QVector3D& outMin, QVector3D& outMax) const {
+    if (!m_hasBounds)
+        return false;
+    outMin = m_boundsMin;
+    outMax = m_boundsMax;
+    return true;
 }
 
 } // namespace QSpace::Visualize::Layers

@@ -1,7 +1,6 @@
 #pragma once
 
-#include "Core/SessionManager/SessionManager.h"
-#include "Structures/RenderStructures.h"
+#include "Common/Structures/ColormapPresets.h"
 #include <QDialog>
 #include <optional>
 #include <qtmetamacros.h>
@@ -16,8 +15,7 @@ namespace QSpace::UI {
 class ColorMapEditorDialog : public QDialog {
     Q_OBJECT
   public:
-    explicit ColorMapEditorDialog(const QSpace::Visualize::ColorMap& baseMap,
-                                  QWidget*                           parent = nullptr);
+    explicit ColorMapEditorDialog(const QSpace::Visualize::ColorMap& baseMap, QWidget* parent = nullptr);
     ~ColorMapEditorDialog();
     Visualize::ColorMap getEditedMap() const;
   signals:

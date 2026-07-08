@@ -1,4 +1,3 @@
-// Visualize/Layers/SPHRendererLayer.h
 #pragma once
 #include "Common/Interfaces/IRenderLayer.h"
 #include <QOpenGLBuffer>
@@ -55,6 +54,11 @@ class SPHRendererLayer : public IOpenGLRenderLayer {
     bool m_dirty            = true;
     bool m_visible          = true;
     bool m_needsCalibration = true;
+
+    // добавлено — нужно для boundingBox() и авто-подгонки камеры GLViewport
+    QVector3D m_boundsMin{0, 0, 0};
+    QVector3D m_boundsMax{0, 0, 0};
+    bool      m_hasBounds = false;
 
     std::weak_ptr<Core::DataNode>           m_dataNode;
     std::shared_ptr<SPHPointsLayerSettings> m_settings;

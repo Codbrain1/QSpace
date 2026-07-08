@@ -5,7 +5,7 @@
 #include "Enums/CoreEnums.h"
 #include "Models/DataTreeModel/DataTreeModel.h"
 #include "SelectExperimentDialog.h"
-#include "Structures/CoreStructures.h"
+#include "Structures/ObjectRegistryStructures.h"
 #include "ui_LayerExplorerWidget.h"
 #include <Core/AppCore/DataController.h>
 #include <QActionGroup>
@@ -206,7 +206,8 @@ void LayerExplorerWidget::setupSlots() {
         //                 bool  checked = (topLeft.data(Qt::CheckStateRole).toInt() == Qt::Checked);
 
         //                 // Вызываем ваш сигнал обновления настроек в ObjectRegistry
-        //                 emit updateNodeSettingsRequested(id, [checked](Core::VisualSettings& settings) {
+        //                 emit updateNodeSettingsRequested(id, [checked](Visualize::Layers::LayerSettings&
+        //                 settings) {
         //                     settings.isVisible = checked;
         //                 });
         //             }

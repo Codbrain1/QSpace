@@ -5,8 +5,7 @@
 #include "Core/AppCore/ProjectController.h"
 #include "Core/AppCore/VideoController.h"
 #include "Core/AppCore/ViewController.h"
-#include "Enums/RenderEnums.h"
-#include "Interfaces/IView.h"
+#include "Enums/VisualizeBaseEnums.h"
 #include "LayerExplorerWidget.h"
 #include "Models/DataTreeModel/DataTreeModel.h"
 #include "PropertyInspector.h"
@@ -78,10 +77,10 @@ MainWindow::MainWindow(Core::AppCore* app, QWidget* parent)
     m_exportProgressDialog->reset(); // Скрываем по умолчанию
 
     // Привязываем значения перечисления к действиям через Data (удобно для обработки в одном слоте)
-    ui->action_view_top->setData(static_cast<int>(Visualize::CameraViewType::XY_Top));
-    ui->action_view_front->setData(static_cast<int>(Visualize::CameraViewType::XZ_Front));
-    ui->action_view_right->setData(static_cast<int>(Visualize::CameraViewType::YZ_Right));
-    ui->action_view_iso->setData(static_cast<int>(Visualize::CameraViewType::Iso));
+    ui->action_view_top->setData(static_cast<int>(Visualize::Views::View3D::CameraViewType::XY_Top));
+    ui->action_view_front->setData(static_cast<int>(Visualize::Views::View3D::CameraViewType::XZ_Front));
+    ui->action_view_right->setData(static_cast<int>(Visualize::Views::View3D::CameraViewType::YZ_Right));
+    ui->action_view_iso->setData(static_cast<int>(Visualize::Views::View3D::CameraViewType::Iso));
 
     // 2. Превращаем экшен "action_view_top" в выпадающее меню камеры
     if (auto* btn = qobject_cast<QToolButton*>(ui->mainToolBar->widgetForAction(ui->action_view_top))) {
@@ -122,7 +121,7 @@ MainWindow::MainWindow(Core::AppCore* app, QWidget* parent)
     //         &Core::AppCore::setGlobalExposureAllViews);
     // подключаем слоты
     setupSlots();
-    m_app->viewController()->createView(Visualize::ViewType::VTK_3D);
+    m_app->viewController()->createView(Visualize::Views::ViewType::OpenGL3D);
     // Добавьте это в самый конец конструктора
     // Сначала явно перемещаем док
     addDockWidget(Qt::BottomDockWidgetArea, ui->dock_timeSlider);
@@ -136,7 +135,7 @@ MainWindow::MainWindow(Core::AppCore* app, QWidget* parent)
     setCorner(Qt::BottomLeftCorner, Qt::BottomDockWidgetArea);
     setCorner(Qt::BottomRightCorner, Qt::BottomDockWidgetArea);
 }
-void MainWindow::handleViewCreated(const QUuid& viewId, Visualize::ViewType type) {
+void MainWindow::handleViewCreated(const QUuid& viewId, Visualize::Views::ViewType type) {
     if (viewId.isNull()) {
         qCCritical(LogUI) << "Failed to create view!";
         return;
@@ -147,7 +146,7 @@ void MainWindow::handleViewCreated(const QUuid& viewId, Visualize::ViewType type
         qCCritical(LogUI) << "View created but not found in AppCore!";
         return;
     }
-    QString      dockTitle = tr("View - %1").arg(view->getViewName());
+    QString      dockTitle = tr("View - %1").arg(view->viewName());
     QDockWidget* dock      = new QDockWidget(dockTitle, this);
     dock->setObjectName(viewId.toString()); // Устанавливаем имя для поиска при удалении
     // стандартное поведение дока
@@ -249,21 +248,21 @@ void MainWindow::setupSlots() {
     connect(ui->action_open_session, &QAction::triggered, this, &MainWindow::handleProjectOpen);
 
     // --- СОЗДАНИЕ АНИМАЦИИ ---
-    connect(m_exportProgressDialog.get(),
-            &QProgressDialog::canceled,
-            m_app->videoController(),
-            &Core::Controllers::VideoController::cancelVideoExport);
-    connect(m_app->videoController(),
-            &Core::Controllers::VideoController::exportProgressUpdated,
-            this,
-            [this](int current, int total) {
-                m_exportProgressDialog->setMaximum(total);
-                m_exportProgressDialog->setValue(current);
-            });
-    connect(m_app->videoController(),
-            &Core::Controllers::VideoController::exportFinished,
-            this,
-            &MainWindow::handleExportFinished);
+    // connect(m_exportProgressDialog.get(),
+    //         &QProgressDialog::canceled,
+    //         m_app->videoController(),
+    //         &Core::Controllers::VideoController::cancelVideoExport);
+    // connect(m_app->videoController(),
+    //         &Core::Controllers::VideoController::exportProgressUpdated,
+    //         this,
+    //         [this](int current, int total) {
+    //             m_exportProgressDialog->setMaximum(total);
+    //             m_exportProgressDialog->setValue(current);
+    //         });
+    // connect(m_app->videoController(),
+    //         &Core::Controllers::VideoController::exportFinished,
+    //         this,
+    //         &MainWindow::handleExportFinished);
 
     connect(m_layerExplorerWidget.get(),
             &LayerExplorerWidget::selectionChanged,
@@ -376,7 +375,7 @@ void MainWindow::handleVideoExport() {
     m_exportProgressDialog->setValue(0);
     m_exportProgressDialog->show();
 
-    m_app->videoController()->startVideoExport(baseNodeId, files, savePath, stride, fps);
+    // m_app->videoController()->startVideoExport(baseNodeId, files, savePath, stride, fps);
 }
 MainWindow::~MainWindow() {
     delete ui;

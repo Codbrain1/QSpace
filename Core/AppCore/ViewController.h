@@ -1,8 +1,9 @@
 #pragma once
-#include "Common/Enums/RenderEnums.h"
-#include "Interfaces/IView.h"
+#include "Common/Enums/ViewEnums.h"
+#include "Visualize/Views/AbstractView.h"
 #include <QObject>
 #include <quuid.h>
+#include "Enums/ViewEnums.h"
 
 namespace QSpace::Core {
 class ViewManager;
@@ -25,9 +26,9 @@ class ViewController : public QObject {
 
     void initialize();
 
-    QUuid             createView(Visualize::ViewType type = Visualize::ViewType::VTK_3D);
-    void              removeView(const QUuid& viewId);
-    Visualize::IView* getView(const QUuid& viewId);
+    QUuid createView(Visualize::Views::ViewType type = Visualize::Views::ViewType::OpenGL3D);
+    void  removeView(const QUuid& viewId);
+    Visualize::Views::AbstractView* getView(const QUuid& viewId);
 
     void resetCameraInAllViews();
     // void setCameraViewInAllViews(Visualize::CameraViewType viewType);
@@ -47,7 +48,7 @@ class ViewController : public QObject {
     };
 
   signals:
-    void viewCreated(const QUuid& viewId, Visualize::ViewType type);
+    void viewCreated(const QUuid& viewId, Visualize::Views::ViewType type);
     void viewRemoved(const QUuid& viewId);
     void sceneUpdateRequested();
 

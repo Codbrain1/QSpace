@@ -35,7 +35,7 @@ void ViewController::initialize() {
     });
 }
 
-QUuid ViewController::createView(Visualize::ViewType type) {
+QUuid ViewController::createView(Visualize::Views::ViewType type) {
     QUuid viewId = m_viewManager->createView(type);
     if (viewId.isNull())
         return QUuid();
@@ -54,17 +54,19 @@ void ViewController::removeView(const QUuid& viewId) {
     emit viewRemoved(viewId);
 }
 
-Visualize::IView* ViewController::getView(const QUuid& viewId) {
+Visualize::Views::AbstractView* ViewController::getView(const QUuid& viewId) {
     // Реализация (например, поиск в менеджере окон)
     return m_viewManager->getView(viewId).get();
 }
 
 void ViewController::resetCameraInAllViews() {
-    m_viewManager->forEachView([](std::shared_ptr<Visualize::IView> r) { r->resetCamera(); });
+    m_viewManager->forEachView(
+        [](std::shared_ptr<Visualize::Views::AbstractView> r) { r->resetCamera(); });
 }
 
 // void AppCore::setGlobalExposureAllViews(double exposure) {
-//     m_viewManager->forEachView([exposure](Visualize::IView* r) { r->setGlobalExposure(exposure);
+//     m_viewManager->forEachView([exposure](Visualize::Views::AbstractView* r) {
+//     r->setGlobalExposure(exposure);
 //     });
 // }
 
@@ -75,23 +77,27 @@ void ViewController::resetCameraInAllViews() {
 //     }
 // }
 // void AppCore::setCameraViewInAllViews(Visualize::CameraViewType viewType) {
-//     m_viewManager->forEachView([viewType](Visualize::IView* r) { r->setCameraView(viewType); });
+//     m_viewManager->forEachView([viewType](Visualize::Views::AbstractView* r) {
+//     r->setCameraView(viewType); });
 // }
 void ViewController::setBackgroundColorInAllViews(float r, float g, float b) {
-    m_viewManager->forEachView(
-        [r, g, b](std::shared_ptr<Visualize::IView> rw) { rw->setBackgroundColor(r, g, b); });
+    m_viewManager->forEachView([r, g, b](std::shared_ptr<Visualize::Views::AbstractView> rw) {
+        rw->setBackgroundColor(r, g, b);
+    });
     emit sceneUpdateRequested();
 }
 
 void ViewController::setAxesVisibleInAllViews(bool visible) {
-    m_viewManager->forEachView(
-        [visible](std::shared_ptr<Visualize::IView> rw) { rw->setAxesVisible(visible); });
+    // m_viewManager->forEachView([visible](std::shared_ptr<Visualize::Views::AbstractView> rw) {
+    //     rw->setAxesVisible(visible);
+    // });
     emit sceneUpdateRequested();
 }
 
 void ViewController::setGridVisibleInAllViews(bool visible) {
-    m_viewManager->forEachView(
-        [visible](std::shared_ptr<Visualize::IView> rw) { rw->setGridVisible(visible); });
+    m_viewManager->forEachView([visible](std::shared_ptr<Visualize::Views::AbstractView> rw) {
+        rw->setGridVisible(visible);
+    });
     emit sceneUpdateRequested();
 }
 
@@ -118,9 +124,9 @@ void ViewController::setBackgroundColorInView(const QUuid& viewId, float r, floa
 
 void ViewController::setAxesVisibleInView(const QUuid& viewId, bool visible) {
     auto renderer = m_viewManager->getView(viewId);
-    if (renderer) {
-        renderer->setAxesVisible(visible);
-    }
+    // if (renderer) {
+    //     renderer->setAxesVisible(visible);
+    // }
 }
 
 void ViewController::setGridVisibleInView(const QUuid& viewId, bool visible) {

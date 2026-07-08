@@ -1,43 +1,127 @@
 #pragma once
+#include "Common/Interfaces/IRenderLayer.h"
+#include "Common/Structures/ObjectRegistryStructures.h"
+#include "Visualize/Views/AbstractView.h"
+#include "Visualize/Views/View3D/AbstractView3D.h"
+#include <QObject>
+#include <QString>
 #include <QUuid>
+#include "LayerSettings.h"
+#include <memory>
 
-struct Layer {
-    QUuid                                    layerId;
-    QUuid                                    dataNodeId;
-    QString                                  name;
-    std::weak_ptr<DataNode>                  dataNode;
-    std::weak_ptr<Visualize::IView>          view;
-    std::shared_ptr<VisualSettings>          settings;
-    std::shared_ptr<Visualize::IRenderLayer> renderEngine;
-    bool                                     isSyncedWithMaster = true;
+namespace QSpace::Visualize::Layers {
 
-    Layer(std::shared_ptr<DataNode> node, std::shared_ptr<Visualize::IView> targetView)
-        : layerId(QUuid::createUuid()),
-          dataNodeId(node->id),
-          dataNode(node),
-          view(targetView),
-          settings(node->masterSettings) {
+class Layer : public QObject {
+    Q_OBJECT
+    Q_PROPERTY(QUuid layerId READ layerId CONSTANT)
+    Q_PROPERTY(QUuid dataNodeId READ dataNodeId CONSTANT)
+    Q_PROPERTY(QString name READ name WRITE setName NOTIFY nameChanged)
+    Q_PROPERTY(bool isSyncedWithMaster READ IsSyncedWithMaster WRITE setIsSyncedWithMaster NOTIFY
+                   syncStatusChanged)
+
+  public:
+    Layer(std::shared_ptr<Core::DataNode>                 node,
+          std::shared_ptr<Visualize::Views::AbstractView> targetView,
+          QObject*                                        parent = nullptr)
+        : QObject(parent),
+          m_layerId(QUuid::createUuid()),
+          m_dataNodeId(node ? node->id : QUuid()),
+          m_name(node ? node->label : QString()),
+          m_dataNode(node),
+          m_view(targetView),
+          m_settings(node ? node->masterSettings : nullptr) {
+        if (m_settings) {
+            connect(m_settings.get(), &LayerSettings::changed, this, &Layer::update);
+        }
     }
 
-    // Метод для связки после создания renderEngine
+    std::weak_ptr<Views::AbstractView> getView() {
+        return m_view;
+    }
+
+    // Геттеры для Q_PROPERTY
+    QUuid layerId() const {
+        return m_layerId;
+    }
+
+    QUuid dataNodeId() const {
+        return m_dataNodeId;
+    }
+
+    QString name() const {
+        return m_name;
+    }
+
+    bool IsSyncedWithMaster() const {
+        return m_isSyncedWithMaster;
+    }
+
+    // Сеттеры для Q_PROPERTY
+    void setName(const QString& name) {
+        if (m_name != name) {
+            m_name = name;
+            emit nameChanged(m_name);
+        }
+    }
+
+    void setIsSyncedWithMaster(bool synced) {
+        if (m_isSyncedWithMaster != synced) {
+            m_isSyncedWithMaster = synced;
+            emit syncStatusChanged(m_isSyncedWithMaster);
+        }
+    }
+
+    // Доступ к сырым объектам внутри слоя
+    std::shared_ptr<LayerSettings> getSettings() const {
+        return m_settings;
+    }
+
+    std::shared_ptr<Visualize::IRenderLayer> getEngine() {
+        return m_renderEngine;
+    }
+
     void assignEngine(std::shared_ptr<Visualize::IRenderLayer> engine) {
-        renderEngine = engine;
-        if (renderEngine) {
-            renderEngine->setSettings(settings);
-            renderEngine->setData(dataNode);
+        m_renderEngine = engine;
+        if (m_renderEngine) {
+            if (auto view3D = qobject_cast<Views::AbstractView3D*>(m_view.lock().get())) {
+                view3D->attachRenderLayer(m_layerId, engine);
+            }
         }
     }
 
     void setVisible(bool visible) {
-        settings->isVisible = visible;
-        renderEngine->setVisible(visible);
+        if (m_settings)
+            m_settings->setVisible(visible);
+        if (m_renderEngine)
+            m_renderEngine->setVisible(visible);
+        update();
     }
 
     void update() {
-        auto v = view.lock();
-        auto d = dataNode.lock();
-        if (v && d && renderEngine) {
-            renderEngine->update();
+        auto v = m_view.lock();
+        auto d = m_dataNode.lock();
+        if (v && d && m_renderEngine) {
+            m_renderEngine->update();
+            emit updateRequired();
         }
     }
+
+  signals:
+    void nameChanged(const QString& newName);
+    void syncStatusChanged(bool isSynced);
+
+    // Сигнал без аргументов, так как окно извлекается напрямую через m_view.lock()
+    void updateRequired();
+
+  private:
+    QUuid                                         m_layerId;
+    QUuid                                         m_dataNodeId;
+    QString                                       m_name;
+    std::weak_ptr<Core::DataNode>                 m_dataNode;
+    std::weak_ptr<Visualize::Views::AbstractView> m_view;
+    std::shared_ptr<LayerSettings>                m_settings;
+    std::shared_ptr<Visualize::IRenderLayer>      m_renderEngine;
+    bool                                          m_isSyncedWithMaster = true;
 };
+
+} // namespace QSpace::Visualize::Layers

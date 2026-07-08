@@ -3,7 +3,7 @@
 #include "GLViewport.h"
 
 namespace QSpace::Visualize::Views::View3D {
-// Тонкая обёртка над GLViewport, реализующая доменный контракт AbstractView3D/IView.
+// Тонкая обёртка над GLViewport, реализующая доменный контракт AbstractView3D/Views::AbstractView.
 // Сам GL-код и рендер-цикл живут в GLViewport — здесь только делегирование,
 // чтобы доменная логика (LayerManager и т.п.) не зависела от QOpenGLWidget напрямую.
 class OpenGL3DWidget : public AbstractView3D {

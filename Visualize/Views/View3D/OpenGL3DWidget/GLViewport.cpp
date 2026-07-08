@@ -99,6 +99,7 @@ void GLViewport::resetCamera() {
 void GLViewport::setCameraPreset(int presetIndex) {
     // ПРЕДПОЛОЖЕНИЕ: соответствие индексов вашему enum CameraViewType — подставьте
     // реальные значения при интеграции, если порядок отличается.
+    // CRITICAL
     switch (presetIndex) {
         case 1:
             m_yaw   = 0.0f;

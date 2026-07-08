@@ -4,7 +4,6 @@
 #include "Core/ObjectRegistry/ObjectRegistry.h"
 #include "Core/SessionManager/SessionManager.h"
 #include "Core/TaskManager/TaskManager.h"
-#include "Core/VideoExportManager/VideoExportManager.h"
 #include "Core/ViewManager/ViewManager.h"
 #include <QObject>
 #include <qcontainerfwd.h>
@@ -16,10 +15,8 @@
 #include "Models/DataTreeModel/DataTreeModel.h"
 #include "ProjectController.h"
 #include "Structures/SessionStructures.h"
-#include "VideoController.h"
 #include "ViewController.h"
 #include <memory>
-
 
 // Forward declarations для ускорения компиляции
 namespace QSpace::Core {
@@ -29,7 +26,7 @@ class ObjectRegistry;
 class ViewManager;
 class LayerManager;
 class SessionManager;
-class VideoExportManager;
+// class VideoExportManager;
 } // namespace QSpace::Core
 
 namespace QSpace::Models {
@@ -41,7 +38,7 @@ namespace QSpace::Core::Controllers {
 class ViewController;
 class DataController;
 class ProjectController;
-class VideoController;
+// class VideoController;
 } // namespace QSpace::Core::Controllers
 
 namespace QSpace::Core {
@@ -70,24 +67,24 @@ class AppCore : public QObject {
     Controllers::ViewController*    viewController() const;
     Controllers::DataController*    dataController() const;
     Controllers::ProjectController* projectController() const;
-    Controllers::VideoController*   videoController() const;
+    // Controllers::VideoController*   videoController() const;
 
   private:
     // контроллеры управляющие разными областями программы (менеджерами)
     std::unique_ptr<Controllers::ViewController>    m_viewController;
     std::unique_ptr<Controllers::DataController>    m_dataController;
     std::unique_ptr<Controllers::ProjectController> m_projectController;
-    std::unique_ptr<Controllers::VideoController>   m_videoController;
+    // std::unique_ptr<Controllers::VideoController>   m_videoController;
 
     // менеджеры отвечающие за отдельные части системы
-    std::unique_ptr<TaskManager>        m_taskManager;
-    std::shared_ptr<VideoExportManager> m_videoExportManager;
-    std::unique_ptr<ObjectRegistry>     m_objectRegistry;
-    std::unique_ptr<DataManager>        m_dataManager;
-    std::unique_ptr<ViewManager>        m_viewManager;
-    std::unique_ptr<LayerManager>       m_layerManager;
-    std::unique_ptr<SessionManager>     m_sessionManager;
-    QSpace::Session::CurrentSession     m_session_state;
+    std::unique_ptr<TaskManager> m_taskManager;
+    // std::shared_ptr<VideoExportManager> m_videoExportManager;
+    std::unique_ptr<ObjectRegistry> m_objectRegistry;
+    std::unique_ptr<DataManager>    m_dataManager;
+    std::unique_ptr<ViewManager>    m_viewManager;
+    std::unique_ptr<LayerManager>   m_layerManager;
+    std::unique_ptr<SessionManager> m_sessionManager;
+    QSpace::Session::CurrentSession m_session_state;
 
     // модели данных
     std::unique_ptr<Models::DataTreeModel> m_dataTreeModel;

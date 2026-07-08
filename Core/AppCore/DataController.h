@@ -6,6 +6,7 @@
 #include <QStringList>
 #include <quuid.h>
 #include "Enums/CoreEnums.h"
+#include "IO/ReadResult.h"
 #include "Physics/Math/MetaDataCalculating.h"
 #include "Structures/SessionStructures.h"
 
@@ -86,7 +87,8 @@ class DataController : public QObject {
      * @param modifer --- ссылка на функцию изменяющуюю данные записи, обязательно имеет
      * единственный парметор VisualSettings
      */
-    void updateNodeSettings(const QUuid& id, std::function<void(Core::VisualSettings&)> modifier);
+    void updateNodeSettings(const QUuid&                                           id,
+                            std::function<void(Visualize::Layers::LayerSettings&)> modifier);
     // при изменении слайдера
     void handleTimeSliderValueChanged(int index, bool isPreview = false);
     // при выборе ноды в плоском режиме

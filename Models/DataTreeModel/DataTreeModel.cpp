@@ -1,8 +1,9 @@
 #include "DataTreeModel.h"
-#include "Common/Structures/CoreStructures.h"
+#include "Common/Structures/ObjectRegistryStructures.h"
 #include "Core/LayerManager/LayerManager.h"
 #include "Core/ObjectRegistry/ObjectRegistry.h"
-#include "Enums/RenderEnums.h"
+#include "Enums/LayerEnums.h"
+#include "Enums/VisualizeBaseEnums.h"
 
 #include <QColor>
 #include <QCoreApplication>
@@ -224,12 +225,12 @@ void DataTreeModel::handleNodeAdded(std::shared_ptr<Core::DataNode> node, const 
 void DataTreeModel::handleLayerAdded(const QUuid& layerId) {
     auto layer = m_layerManager->getLayer(layerId);
     // Проверяем существование слоя и наличие его родительской ноды в визуальном дереве
-    if (!layer || !m_itemMap.contains(layer->dataNodeId)) {
+    if (!layer || !m_itemMap.contains(layer->dataNodeId())) {
         return;
     }
 
     // 2. Находим родительский узел данных
-    DataTreeItem* parentItem = m_itemMap.value(layer->dataNodeId);
+    DataTreeItem* parentItem = m_itemMap.value(layer->dataNodeId());
 
     // Защита: слой всегда должен добавляться только внутрь узла типа DataNode
     if (parentItem->type() != DataTreeItem::DataNode) {
@@ -246,10 +247,10 @@ void DataTreeModel::handleLayerAdded(const QUuid& layerId) {
     beginInsertRows(parentIndex, newRow, newRow);
 
     // 6. Создаем элемент дерева для слоя и привязываем его
-    auto layerItem = std::make_unique<DataTreeItem>(DataTreeItem::LayerItem, layer->layerId, parentItem);
+    auto layerItem = std::make_unique<DataTreeItem>(DataTreeItem::LayerItem, layer->layerId(), parentItem);
 
     // Сохраняем в кэш для быстрого доступа
-    m_itemMap.insert(layer->layerId, layerItem.get());
+    m_itemMap.insert(layer->layerId(), layerItem.get());
 
     // Передаем владение во внутреннюю иерархию (m_children родителя)
     parentItem->appendChild(std::move(layerItem));
@@ -441,10 +442,10 @@ void DataTreeModel::buildNodeBranch(std::shared_ptr<Core::DataNode> node, DataTr
             continue;
 
         // Используем ID слоя, чтобы потом в методе data() вытащить настройки конкретного окна
-        auto  layerItem    = std::make_unique<DataTreeItem>(DataTreeItem::LayerItem, layer->layerId, nodeItemPtr);
+        auto  layerItem    = std::make_unique<DataTreeItem>(DataTreeItem::LayerItem, layer->layerId(), nodeItemPtr);
         auto* layerItemPtr = layerItem.get();
         nodeItemPtr->appendChild(std::move(layerItem));
-        m_itemMap.insert(layer->layerId, layerItemPtr);
+        m_itemMap.insert(layer->layerId(), layerItemPtr);
     }
 }
 
@@ -537,11 +538,11 @@ QVariant DataTreeModel::data(const QModelIndex& index, int role) const {
         switch (item->type()) {
             case DataTreeItem::Type::LayerItem: {
                 auto layer = m_layerManager->getLayer(item->id());
-                return (layer && layer->settings->isVisible) ? Qt::Checked : Qt::Unchecked;
+                return (layer && layer->getSettings()->isVisible()) ? Qt::Checked : Qt::Unchecked;
             }
             case DataTreeItem::Type::DataNode: {
                 auto node = m_registry->getNode(item->id());
-                return (node && node->masterSettings->isVisible) ? Qt::Checked : Qt::Unchecked;
+                return (node && node->masterSettings->isVisible()) ? Qt::Checked : Qt::Unchecked;
             }
             case DataTreeItem::Type::ComponentGroup: {
                 return calculateComponentGroupCheckState(item);
@@ -570,7 +571,7 @@ QVariant DataTreeModel::data(const QModelIndex& index, int role) const {
 
                 switch (column) {
                     case NameColumn:
-                        return QString("Layer: %1").arg(layer->name);
+                        return QString("Layer: %1").arg(layer->name());
                     // case TypeColumn:
                     //     return "Visualization Layer";
                     default:
@@ -684,7 +685,7 @@ bool DataTreeModel::setData(const QModelIndex& index, const QVariant& value, int
                 DataTreeItem* child = item->child(i);
                 if (child->type() == DataTreeItem::DataNode) {
                     if (auto node = m_registry->getNode(child->id())) {
-                        node->masterSettings->isVisible = visible;
+                        node->masterSettings->setVisible(visible);
                         m_layerManager->setNodeVisibility(node->id, visible);
                     }
                 }
@@ -699,7 +700,7 @@ bool DataTreeModel::setData(const QModelIndex& index, const QVariant& value, int
         }
         case DataTreeItem::DataNode: {
             if (auto node = m_registry->getNode(item->id())) {
-                node->masterSettings->isVisible = visible;
+                node->masterSettings->setVisible(visible);
                 m_layerManager->setNodeVisibility(node->id, visible);
             }
             break;
@@ -707,7 +708,7 @@ bool DataTreeModel::setData(const QModelIndex& index, const QVariant& value, int
         case DataTreeItem::LayerItem: {
             if (auto layer = m_layerManager->getLayer(item->id())) {
                 layer->setVisible(visible);
-                layer->dataNode.lock()->masterSettings->isVisible = visible;
+                // layer->dataNode.lock()->masterSettings->isVisible = visible;
             }
             break;
         }
@@ -798,7 +799,7 @@ Qt::CheckState DataTreeModel::calculateComponentGroupCheckState(DataTreeItem* gr
         DataTreeItem* child = groupItem->child(i);
         if (child->type() == DataTreeItem::DataNode) {
             auto node = m_registry->getNode(child->id());
-            if (node && node->masterSettings->isVisible) {
+            if (node && node->masterSettings->isVisible()) {
                 visibleCount++;
             }
         }
@@ -828,7 +829,7 @@ Qt::CheckState DataTreeModel::calculateExperimentCheckState(std::shared_ptr<Core
             if (!node)
                 continue;
             total++;
-            if (node->masterSettings->isVisible) {
+            if (node->masterSettings->isVisible()) {
                 visibleCount++;
             }
         }
@@ -855,7 +856,7 @@ Qt::CheckState DataTreeModel::calculateSnapshotheckState(std::shared_ptr<Core::S
             continue;
 
         total++;
-        if (node->masterSettings->isVisible) {
+        if (node->masterSettings->isVisible()) {
             visibleCount++;
         }
     }

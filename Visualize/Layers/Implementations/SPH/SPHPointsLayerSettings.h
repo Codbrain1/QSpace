@@ -40,6 +40,22 @@ public:
 
     // clang-format on
 
+    // Внутри SPHPointsLayerSettings
+    QString propertyDisplayName(const QString& propName) const override {
+        static const QMap<QString, QString> sphNames = {
+            {"smoothingRadius", "Радиус сглаживания"},
+            {"autoSmoothingRadius", "Авто-радиус сглаживания"},
+            {"kernelType", "Тип SPH-ядра"},
+            {"accumResolutionScale", "Масштаб разрешения FBO"},
+            {"densityGamma", "Гамма-коррекция плотности"}};
+
+        if (sphNames.contains(propName)) {
+            return sphNames.value(propName);
+        }
+        // Если это базовое свойство (например, opacity), отдаем базовому классу
+        return LayerSettings::propertyDisplayName(propName);
+    }
+
   private:
     float m_smoothingRadius      = 0.05f;
     bool  m_autoSmoothingRadius  = true;

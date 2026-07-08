@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Enums/RenderEnums.h"
-#include "Structures/CoreStructures.h"
+#include "Enums/VisualizeBaseEnums.h"
+#include "Structures/ObjectRegistryStructures.h"
 #include <QAbstractItemModel>
 #include <QMap>
 #include <QSet>

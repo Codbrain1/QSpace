@@ -1,28 +1,29 @@
 #pragma once
 #include "Common/Enums/IOEnums.h"
-#include "Common/Enums/RenderEnums.h"
+#include "Common/Enums/VisualizeBaseEnums.h"
 #include "Common/Structures/FileSchemeStructures.h"
+#include "Visualize/Layers/LayerSettings.h"
 #include <qlist.h>
 #include <quuid.h>
 #include "ObjectRegistryStructures.h"
 
 namespace QSpace::Session {
 struct DataNodeState {
-    Core::VisualSettings     settings;
-    QUuid                    id;
-    QString                  label;
-    QString                  path;
-    Visualize::EntityType    type;
-    Core::DataNode::MetaData stats;
-    IO::FileFormat           format;
-    IO::ReadScheme           scheme;
+    std::shared_ptr<Visualize::Layers::LayerSettings> settings;
+    QUuid                                             id;
+    QString                                           label;
+    QString                                           path;
+    Visualize::EntityType                             type;
+    Core::DataNode::MetaData                          stats;
+    IO::FileFormat                                    format;
+    IO::ReadScheme                                    scheme;
 };
 
 struct LayerState {
-    QUuid                layerId;
-    QUuid                nodeId;   // На какой DataNode ссылается
-    QUuid                viewId;   // В каком окне отрисовывается
-    Core::VisualSettings settings; // Настройки ИМЕННО ЭТОГО слоя
+    QUuid                                             layerId;
+    QUuid                                             nodeId;   // На какой DataNode ссылается
+    QUuid                                             viewId;   // В каком окне отрисовывается
+    std::shared_ptr<Visualize::Layers::LayerSettings> settings; // Настройки ИМЕННО ЭТОГО слоя
 };
 
 class SnapshotState { // TODO:: может оказаться излишним

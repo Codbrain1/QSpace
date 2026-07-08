@@ -21,7 +21,7 @@ class BaseLayer : public IVtkRenderLayer {
 
     void update() override;
     void setData(std::weak_ptr<QSpace::Core::DataNode> node) override;
-    void setSettings(std::shared_ptr<QSpace::Core::VisualSettings> settings) override;
+    void setSettings(std::shared_ptr<QSpace::Visualize::Layers::LayerSettings> settings) override;
     void setVisible(bool visible) override;
     bool isVisible() const override;
 
@@ -33,8 +33,8 @@ class BaseLayer : public IVtkRenderLayer {
     vtkSmartPointer<QSpaceScalarBar>          m_scalarBar;       // для легенды
     vtkSmartPointer<vtkScalarBarWidget> m_scalarBarWidget; // для управления отображением легенды
 
-    std::weak_ptr<Core::DataNode>         m_node; // данные
-    std::shared_ptr<Core::VisualSettings> m_settings;
+    std::weak_ptr<Core::DataNode>                     m_node; // данные
+    std::shared_ptr<Visualize::Layers::LayerSettings> m_settings;
 
     vtkSmartPointer<vtkProp>           m_baseProp;
     vtkSmartPointer<vtkAbstractMapper> m_baseMapper;
@@ -44,11 +44,11 @@ class BaseLayer : public IVtkRenderLayer {
     void setupScalarBar();
     // ----- update -----
     void         applyColorMap(const QUuid& colorMapUuid, double range[2]);
-    void         updateScalarBarVisibility(const Core::VisualSettings& s);
-    virtual void setupDataArrays(Core::VisualSettings& s)               = 0;
-    virtual void applyRenderModeSettings(const Core::VisualSettings& s) = 0;
+    void         updateScalarBarVisibility(const Visualize::Layers::LayerSettings& s);
+    virtual void setupDataArrays(Visualize::Layers::LayerSettings& s)               = 0;
+    virtual void applyRenderModeSettings(const Visualize::Layers::LayerSettings& s) = 0;
 
-    virtual void postUpdate(const Core::VisualSettings& s) {
+    virtual void postUpdate(const Visualize::Layers::LayerSettings& s) {
     }
 };
 } // namespace QSpace::Visualize

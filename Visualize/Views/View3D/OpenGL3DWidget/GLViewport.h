@@ -11,7 +11,6 @@
 #include "GridRenderer.h"
 #include <memory>
 
-
 namespace QSpace::Visualize::Views::View3D {
 
 class GLViewport : public QOpenGLWidget, protected QOpenGLFunctions_3_3_Core {
@@ -64,20 +63,20 @@ class GLViewport : public QOpenGLWidget, protected QOpenGLFunctions_3_3_Core {
     float                    m_axisExtent = 10.0f;
 
     QVector3D m_center{0, 0, 0};
-    float     m_distance = 10.0f;
-    float     m_yaw      = 0.0f;
-    float     m_pitch    = 0.0f;
-    QPoint    m_lastMousePos;
+    float     m_distance = 10.0f; // радиус орбиты (дистанция до объекта).
+    float     m_yaw      = 0.0f;  // поворот мыши по горизонтали
+    float     m_pitch    = 0.0f;  // наклон мыши по вертикали
+    QPoint    m_lastMousePos;     // последняя позиция мыши
     bool      m_dragging = false;
 
     QColor m_backgroundColor{13, 13, 20};
-    bool   m_needsCameraFit = true;
+    bool m_needsCameraFit = true; // триггер для автоматического наведения камеры на объект
 
     // ---- отложенная инвалидация текстур палитр ----
     // GL-контекст не гарантированно активен в слоте, вызванном сигналом
     // ColorMapManager::paleteAdded (тот эмитится из произвольного места UI),
     // поэтому сами ID палитр только накапливаем здесь, а реальный
-    // ColorMapTexture::invalidate() дёргаем внутри paintGL(), где контекст точно current.
+    // ColorMapTexture::invalidate() вызывается внутри paintGL(), где контекст точно активен.
     QSet<QUuid> m_pendingColorMapInvalidations;
 };
 

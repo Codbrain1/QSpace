@@ -52,14 +52,14 @@ bool SessionManager::saveProject(const QSpace::Session::CurrentSession& curSessi
 
     for (const auto& node : m_registry->getAllNodes()) {
         QSpace::Session::DataNodeState ds;
-        ds.id       = node->id;
-        ds.label    = node->label;
-        ds.path     = node->path;
-        ds.settings = *node->masterSettings.get();
-        ds.stats    = node->stats;
-        ds.type     = node->type;
-        ds.format   = node->format;
-        ds.scheme   = node->scheme;
+        ds.id    = node->id;
+        ds.label = node->label;
+        ds.path  = node->path;
+        // ds.settings = *node->masterSettings.get();
+        ds.stats  = node->stats;
+        ds.type   = node->type;
+        ds.format = node->format;
+        ds.scheme = node->scheme;
         state.nodesStates.append(ds);
     }
     // 2. Сохраняем ВИЗУАЛЬНОЕ ПРЕДСТАВЛЕНИЕ (Слои)
@@ -70,7 +70,7 @@ bool SessionManager::saveProject(const QSpace::Session::CurrentSession& curSessi
     //     ls.layerId = layer->layerId;
     //     ls.nodeId  = layer->dataNodeId;
 
-    //     // Предполагаем, что у IView есть метод для получения его ID
+    //     // Предполагаем, что у Views::AbstractView есть метод для получения его ID
     //     if (auto view = layer->view.lock()) {
     //         ls.viewId = view->get();
     //     }

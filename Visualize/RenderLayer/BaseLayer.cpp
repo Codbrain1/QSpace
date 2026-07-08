@@ -49,7 +49,7 @@ void BaseLayer::setData(std::weak_ptr<QSpace::Core::DataNode> node) {
     // Если нужно, здесь можно форсировать обновление маппера
 }
 
-void BaseLayer::setSettings(std::shared_ptr<QSpace::Core::VisualSettings> settings) {
+void BaseLayer::setSettings(std::shared_ptr<QSpace::Visualize::Layers::LayerSettings> settings) {
     m_settings = settings;
 }
 
@@ -228,7 +228,7 @@ void BaseLayer::setupScalarBar() {
     m_scalarBar->GetTitleTextProperty()->SetColor(0, 0, 0);
 }
 
-void BaseLayer::updateScalarBarVisibility(const Core::VisualSettings& s) {
+void BaseLayer::updateScalarBarVisibility(const Visualize::Layers::LayerSettings& s) {
     bool shouldShow = s.showScalarBar && s.isVisible;
     m_scalarBar->SetVisibility(shouldShow);
     m_scalarBarWidget->SetEnabled(shouldShow);

@@ -1,4 +1,3 @@
-// Visualize/Layers/BinningRendererLayer.h
 #pragma once
 #include "Common/Interfaces/IRenderLayer.h"
 #include <QOpenGLBuffer>
@@ -6,7 +5,7 @@
 #include <QOpenGLShaderProgram>
 #include <QOpenGLVertexArrayObject>
 #include <QScopedPointer>
-#include "BinningPointsLayerSettings.h"
+#include "BinningPointsLayerSettings.h" // переименовано из BiningPointsLayerSettings — см. примечание
 
 namespace QSpace::Visualize::Layers {
 
@@ -42,6 +41,7 @@ class BinningRendererLayer : public IOpenGLRenderLayer {
     void      buildShaders();
     void      uploadBuffersIfDirty(QOpenGLFunctions_3_3_Core* gl);
     void      ensureAccumFBO(const QSize& size);
+    void      rebuildGridOverlayIfNeeded(QOpenGLFunctions_3_3_Core* gl);
     QVector3D gridCenter() const;
 
     QOpenGLShaderProgram m_binProgram, m_resolveProgram, m_gridOverlayProgram;
@@ -51,9 +51,16 @@ class BinningRendererLayer : public IOpenGLRenderLayer {
     QOpenGLVertexArrayObject                 m_vaoQuad;
     QScopedPointer<QOpenGLFramebufferObject> m_accumFBO;
 
+    // добавлено — геометрия контура ячеек сетки (debug-оверлей через lineWidth/lineColor)
+    QOpenGLBuffer            m_vboGridLines{QOpenGLBuffer::VertexBuffer};
+    QOpenGLVertexArrayObject m_vaoGridLines;
+    int                      m_gridLineVertexCount = 0;
+    double                   m_cachedGridCellSize  = -1.0;
+
     int       m_particleCount = 0;
     bool      m_dirty         = true;
     bool      m_visible       = true;
+    bool      m_hasBounds     = false;
     QVector3D m_boundsMin, m_boundsMax;
 
     std::weak_ptr<Core::DataNode>               m_dataNode;

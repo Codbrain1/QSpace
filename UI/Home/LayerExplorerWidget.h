@@ -3,7 +3,7 @@
 #include "Core/ObjectRegistry/ObjectRegistry.h"
 #include "Enums/CoreEnums.h"
 #include "SelectExperimentDialog.h"
-#include "Structures/CoreStructures.h"
+#include "Structures/ObjectRegistryStructures.h"
 #include <QListWidget>
 #include <QObject>
 #include <QPersistentModelIndex>
@@ -39,7 +39,8 @@ class LayerExplorerWidget : public QWidget {
     void selectionChanged(const QList<QUuid>& selectedIds);
     void nodeSelectionActivated(const QUuid& id);
     void removalRequested(const QUuid& id);
-    void updateNodeSettingsRequested(const QUuid& id, std::function<void(Core::VisualSettings&)> modifer);
+    void updateNodeSettingsRequested(const QUuid&                                           id,
+                                     std::function<void(Visualize::Layers::LayerSettings&)> modifer);
     void layerStructureChanged(const Models::DataTreeModel::TreeMode mode);
     // сигнал вызывающийся при выборе нового эксперимента для отображения
     void targetVisualiseExperimentChanged(const QUuid& experimentId);

@@ -21,7 +21,7 @@ class ViewManager : public QObject {
     QUuid                                           getMainViewId() const;
     void                                            removeView(const QUuid& id);
 
-    // аргумент принимает указатель на IView
+    // аргумент принимает указатель на Views::AbstractView
     template <typename Function> void forEachView(Function&& action) {
         for (auto& [id, view] : m_views) {
             action(view);

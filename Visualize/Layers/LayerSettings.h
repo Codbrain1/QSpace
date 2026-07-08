@@ -99,6 +99,24 @@ public:
         }
     }
 
+    virtual QString propertyDisplayName(const QString& propName) const {
+        static const QMap<QString, QString> baseNames = {{"isVisible", "Видимость слоя"},
+                                                         {"opacity", "Непрозрачность частиц"},
+                                                         {"colorByField", "Окрашивать по полю"},
+                                                         {"colorMapId", "Цветовая карта"},
+                                                         {"useLogScale", "Логарифмическая шкала"},
+                                                         {"showScalarBar", "Показывать шкалу"},
+                                                         {"rangeMin", "Мин. значение диапазона"},
+                                                         {"rangeMax", "Макс. значение диапазона"},
+                                                         {"baseRangeMin", "Глобальный минимум"},
+                                                         {"baseRangeMax", "Глобальный максимум"},
+                                                         {"autoRange", "Авто-диапазон"},
+                                                         {"zOrder", "Порядок отображения (Z)"},
+                                                         {"blendMode", "Режим смешивания"},
+                                                         {"pickable", "Доступен для выбора"}};
+        return baseNames.value(propName, propName); // Если не нашли, вернем английское имя
+    }
+
   signals:
     void changed();
 

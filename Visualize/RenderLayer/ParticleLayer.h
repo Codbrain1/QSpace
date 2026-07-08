@@ -40,11 +40,11 @@ class ParticleLayer : public BaseLayer {
   private:
     vtkSmartPointer<vtkPointGaussianMapper> m_mapper;
     vtkSmartPointer<vtkActor>               m_actor;
-    void                                    setupDataArrays(Core::VisualSettings& s) override final;
-    void applyRenderModeSettings(const Core::VisualSettings& s) override final;
-    void updateShader(const Core::VisualSettings& s);
+    void setupDataArrays(Visualize::Layers::LayerSettings& s) override final;
+    void applyRenderModeSettings(const Visualize::Layers::LayerSettings& s) override final;
+    void updateShader(const Visualize::Layers::LayerSettings& s);
 
-    void postUpdate(const Core::VisualSettings& s) override final {
+    void postUpdate(const Visualize::Layers::LayerSettings& s) override final {
         if (s.mode == RenderMode::GausianSplat) {
             updateShader(s);
         }

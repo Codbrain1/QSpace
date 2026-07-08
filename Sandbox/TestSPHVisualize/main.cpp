@@ -1,15 +1,114 @@
+#include "Common/Enums/LayerEnums.h"
+#include "Common/Structures/ObjectRegistryStructures.h"
+#include "Visualize/Layers/Implementations/Binning/BinningPointsLayerSettings.h"
+#include "Visualize/Layers/Implementations/Particle/ParticlePointsLayerSettings.h"
+#include "Visualize/Layers/Implementations/SPH/SPHPointsLayerSettings.h"
+#include "Visualize/Layers/LayerFactory.h"
 #include "Visualize/Views/View3D/OpenGL3DWidget/OpenGL3DWidget.h"
 #include "Visualize/Views/ViewFactory.h"
+#include "IO/ReaderFactory.h"
+#include "IO/SchemeFactory.h"
+#include <clocale>
+#include <locale.h>
+
+
 #include <QApplication>
-#include <QWindow>
-#include <qmainwindow.h>
+#include <QElapsedTimer>
+#include <QMainWindow>
+#include <vtkPoints.h>
+#include <vtkPolyData.h>
 
 int main(int argc, char* argv[]) {
+    std::setlocale(LC_ALL, "Rus");
+    QApplication::setAttribute(Qt::AA_ShareOpenGLContexts,
+                               true); // до QApplication — многооконность
     QApplication app(argc, argv);
-    auto         w = QSpace::Visualize::Views::ViewFactory::createView(
+
+    const QString dataPath = "D:/NIR/NIR_6_semestr/QSpace/Sandbox/TEST_DATA/TF250_v2/G_    0.bin";
+
+    // ================ Чтение файла — без изменений от вашего пайплайна ================
+    auto reader = QSpace::IO::createReader(QSpace::IO::FileFormat::BIN);
+    if (!reader) {
+        qCritical() << "Failed to create reader";
+        return 1;
+    }
+    reader->setPolicy(QSpace::IO::FilePolicy::ForceStandart);
+
+    auto scheme = QSpace::IO::SchemeFactory::createScheme_v2(QSpace::Visualize::EntityType::Gas,
+                                                             QSpace::IO::FileFormat::BIN);
+
+    QElapsedTimer readTimer;
+    readTimer.start();
+    auto readResult = reader->read(dataPath, scheme);
+    qDebug().noquote() << QString("Чтение файла заняло %1 мс").arg(readTimer.elapsed());
+
+    if (!readResult.isSuccess()) {
+        qCritical() << "Failed to read data";
+        return 1;
+    }
+
+    vtkPolyData* polyData = vtkPolyData::SafeDownCast(readResult.data);
+    if (!polyData || !polyData->GetPoints() || polyData->GetPoints()->GetNumberOfPoints() <= 0) {
+        qCritical() << "Invalid polyData or empty points";
+        return 1;
+    }
+    qDebug() << "Точек прочитано:" << polyData->GetPoints()->GetNumberOfPoints();
+
+    // ================ Оборачиваем в DataNode — узел модели данных ================
+    auto dataNode = std::make_shared<QSpace::Core::DataNode>(
+        vtkSmartPointer<vtkDataSet>(polyData), // vtkPolyData наследует vtkDataSet
+        "DarkMatter snapshot 0",
+        0.0,
+        QSpace::Visualize::EntityType::Gas);
+
+    // ================ Создаём рендер-слой через LayerFactory ================
+    auto renderLayer = QSpace::Visualize::Layers::LayerFactory::createLayerRenderer(
+        dataNode,
+        QSpace::Visualize::Layers::RenderLayerType::SPH);
+
+    if (!renderLayer) {
+        qCritical() << "Failed to create render layer";
+        return 1;
+    }
+
+    // ---- настройки слоя — конкретно ParticlePointsLayerSettings ----
+    auto layerSettings = std::make_shared<QSpace::Visualize::Layers::SPHPointsLayerSettings>();
+    layerSettings->setColorByField(
+        "Density"); // если поля Mass/Density нет — просто одноцветные точки
+    layerSettings->setUseLogScale(false);
+
+    renderLayer->setData(dataNode);
+    renderLayer->setSettings(layerSettings);
+
+    // ================ Создаём View через ViewFactory ================
+    auto view = QSpace::Visualize::Views::ViewFactory::createView(
         QSpace::Visualize::Views::ViewType::OpenGL3D);
-    std::unique_ptr<QMainWindow> window = std::make_unique<QMainWindow>();
-    window->setCentralWidget(w.get()->getWidget());
-    window->show();
+    if (!view) {
+        qCritical() << "Failed to create view";
+        return 1;
+    }
+
+    auto view3d = std::dynamic_pointer_cast<QSpace::Visualize::Views::AbstractView3D>(view);
+    if (!view3d) {
+        qCritical() << "View is not a 3D view";
+        return 1;
+    }
+
+    // ---- привязка слоя к окну через layerId (см. наше обсуждение LayerManager) ----
+    const QUuid layerId = QUuid::createUuid();
+    view3d->attachRenderLayer(layerId, renderLayer);
+
+    // ---- настройки сцены: включаем сетку/оси, чтобы было видно ориентацию ----
+    view3d->sceneSettings().grid()->setVisible(true);
+    view3d->sceneSettings().axis()->setVisible(true);
+    view3d->sceneSettings().axis()->setUnitLabel("kpc");
+
+    // ================ Отображаем окно ================
+    QMainWindow window;
+    window.setCentralWidget(view->getWidget());
+    window.resize(1024, 768);
+    window.setWindowTitle("SPH Particles Test — Dark Matter");
+    window.show();
+
     return app.exec();
 }

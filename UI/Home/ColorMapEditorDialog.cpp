@@ -1,6 +1,4 @@
 #include "ColorMapEditorDialog.h"
-#include "Structures/RenderStructures.h"
-#include "Visualize/ColorMapManager/ColorMapManager.h"
 #include "ui_ColorMapEditorDialog.h"
 #include <QColorDialog>
 #include <QMessageBox>
@@ -31,30 +29,15 @@ ColorMapEditorDialog::ColorMapEditorDialog(const Visualize::ColorMap& baseMap, Q
             this,
             &ColorMapEditorDialog::on_colorTable_cellDoubleClicked);
 
-    connect(ui->pushButtonAdd,
-            &QPushButton::clicked,
-            this,
-            &ColorMapEditorDialog::on_addButton_clicked);
+    connect(ui->pushButtonAdd, &QPushButton::clicked, this, &ColorMapEditorDialog::on_addButton_clicked);
     connect(ui->pushButtonDelete,
             &QPushButton::clicked,
             this,
             &ColorMapEditorDialog::on_removeButton_clicked);
-    connect(ui->pushButtonLoad,
-            &QPushButton::clicked,
-            this,
-            &ColorMapEditorDialog::on_loadButton_clicked);
-    connect(ui->pushButtonSave,
-            &QPushButton::clicked,
-            this,
-            &ColorMapEditorDialog::on_saveButton_clicked);
-    connect(ui->checkBoxIsInvert,
-            &QCheckBox::clicked,
-            this,
-            &ColorMapEditorDialog::on_invertButton_clicked);
-    connect(ui->spinboxLevels,
-            &QSpinBox::valueChanged,
-            this,
-            &ColorMapEditorDialog::on_spinBoxChanged);
+    connect(ui->pushButtonLoad, &QPushButton::clicked, this, &ColorMapEditorDialog::on_loadButton_clicked);
+    connect(ui->pushButtonSave, &QPushButton::clicked, this, &ColorMapEditorDialog::on_saveButton_clicked);
+    connect(ui->checkBoxIsInvert, &QCheckBox::clicked, this, &ColorMapEditorDialog::on_invertButton_clicked);
+    connect(ui->spinboxLevels, &QSpinBox::valueChanged, this, &ColorMapEditorDialog::on_spinBoxChanged);
 
     populateTable();
 }
@@ -120,8 +103,7 @@ void ColorMapEditorDialog::on_addButton_clicked() {
     ui->spinboxLevels->blockSignals(false);
 }
 void ColorMapEditorDialog::on_loadButton_clicked() {
-    QString colorMapPath =
-        QFileDialog::getOpenFileName(this, "Please variable colormap file", "", "*.json");
+    QString colorMapPath = QFileDialog::getOpenFileName(this, "Please variable colormap file", "", "*.json");
     if (colorMapPath.isEmpty()) {
         return;
     }

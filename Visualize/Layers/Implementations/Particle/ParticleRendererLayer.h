@@ -31,6 +31,7 @@ class ParticleRendererLayer : public IOpenGLRenderLayer {
         return m_visible;
     }
 
+    // 1. первый шаг: подготовка контекста OpenGL, создание буферов и компиляция шейдеров
     void initializeGL(QOpenGLFunctions_3_3_Core* gl) override;
     void render(QOpenGLFunctions_3_3_Core* gl, const Visualize::RenderContext& ctx) override;
     void releaseGL(QOpenGLFunctions_3_3_Core* gl) override;
@@ -41,9 +42,16 @@ class ParticleRendererLayer : public IOpenGLRenderLayer {
     void uploadBuffersIfDirty(QOpenGLFunctions_3_3_Core* gl);
     void autoCalibrateRangeIfNeeded();
 
-    QOpenGLShaderProgram     m_program;
-    QOpenGLBuffer            m_vboPos{QOpenGLBuffer::VertexBuffer};
-    QOpenGLBuffer            m_vboScalar{QOpenGLBuffer::VertexBuffer};
+    QOpenGLShaderProgram m_program; // хранит шейдеры для GPU
+
+    // Это обертка над VBO (Vertex Buffer Object) — областями памяти прямо в видеокарте.
+    QOpenGLBuffer m_vboPosition{QOpenGLBuffer::VertexBuffer};
+    QOpenGLBuffer m_vboScalar{QOpenGLBuffer::VertexBuffer};
+
+    // VAO — это «контейнер состояний». Вместо того чтобы каждый кадр объяснять видеокарте, в каком
+    // буфере лежат координаты, а в каком скаляры, и какой у них шаг (stride), настраиваем это
+    // один раз при привязке (bind) VAO. В момент отрисовки достаточно вызвать m_vao.bind(), и
+    // OpenGL мгновенно вспоминает всю топологию данных.
     QOpenGLVertexArrayObject m_vao;
     int                      m_particleCount = 0;
     bool                     m_dirty         = true;

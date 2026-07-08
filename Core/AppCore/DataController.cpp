@@ -2,23 +2,23 @@
 
 // Подключение внутренних менеджеров ядра
 #include "Common/Interfaces/IRenderLayer.h"
-#include "Common/Structures/CoreStructures.h"
+#include "Common/Structures/ObjectRegistryStructures.h"
 #include "Core/DataManager/DataManager.h"
 #include "Core/LayerManager/LayerManager.h"
 #include "Core/ObjectRegistry/ObjectRegistry.h"
 #include "Core/ViewManager/ViewManager.h"
-
+#include "IO/SchemeFactory.h"
 
 
 // Системные и утилитарные заголовки
 #include "Common/Logger/Logger.h"
-#include "Interfaces/IOFactory.h"
 #include <QDebug>
 #include <QFileInfo>
 #include <QRegularExpression>
 #include <qfileinfo.h>
 #include <qloggingcategory.h>
 #include <qobjectdefs.h>
+#include "IO/ReaderFactory.h"
 #include <optional>
 
 namespace QSpace::Core::Controllers {
@@ -86,9 +86,9 @@ void DataController::importFiles(const QStringList&            paths,
         Visualize::EntityType entityType = IO::Utils::getEntityType(QFileInfo(paths[0]).fileName());
         IO::ReadScheme        scheme;
         if (version == Core::ModelingProgrammVersion::V2_3) {
-            scheme = IO::SchemeFactory::createSheme_v2_3(entityType, format);
+            scheme = IO::SchemeFactory::createScheme_v2_3(entityType, format);
         } else {
-            scheme = IO::SchemeFactory::createSheme_v2(entityType, format);
+            scheme = IO::SchemeFactory::createScheme_v2(entityType, format);
         }
         QUuid taskId                     = m_dataManager->importDataAsync(paths[0], scheme);
         m_activeTasks[taskId].totalFiles = 1;
@@ -103,9 +103,9 @@ void DataController::importFiles(const QStringList&            paths,
             Visualize::EntityType entityType = IO::Utils::getEntityType(QFileInfo(path).fileName());
             IO::ReadScheme        scheme;
             if (version == Core::ModelingProgrammVersion::V2_3) {
-                scheme = IO::SchemeFactory::createSheme_v2_3(entityType, format);
+                scheme = IO::SchemeFactory::createScheme_v2_3(entityType, format);
             } else {
-                scheme = IO::SchemeFactory::createSheme_v2(entityType, format);
+                scheme = IO::SchemeFactory::createScheme_v2(entityType, format);
             }
 
             IO::BatchTask task;
@@ -145,9 +145,9 @@ void DataController::importExperiment(const QString&                experimentPa
     // 3. Рекурсивно собираем все .bin файлы в папке
     QList<IO::BatchTask> tasks;
     QDirIterator         it(experimentPath,
-                    QStringList() << "*.bin",
-                    QDir::Files,
-                    QDirIterator::Subdirectories);
+                            QStringList() << "*.bin",
+                            QDir::Files,
+                            QDirIterator::Subdirectories);
 
     while (it.hasNext()) {
         QString filePath = it.next();
@@ -206,7 +206,7 @@ void DataController::createLayerForNode(const QUuid& nodeId) {
     // (Названия методов в вашем LayerManager могут немного отличаться,
     // например createLayer(), addLayer() или generateLayersForNode())
     if (m_layerManager) {
-        m_viewManager->forEachView([&](std::shared_ptr<Visualize::IView> view) {
+        m_viewManager->forEachView([&](std::shared_ptr<Visualize::Views::AbstractView> view) {
             m_layerManager->createLayer(node, view);
         });
     }
@@ -250,11 +250,12 @@ std::shared_ptr<Core::DataNode> DataController::getNodeById(const QUuid& nodeId)
 
 QUuid DataController::getNodePaletteId(const QUuid& nodeId) {
     auto node = m_objectRegistry->getNode(nodeId);
-    return node ? node->masterSettings->colorMapId : QUuid();
+    return node ? node->masterSettings->colorMapId() : QUuid();
 }
 
-void DataController::updateNodeSettings(const QUuid&                               id,
-                                        std::function<void(Core::VisualSettings&)> modifier) {
+void DataController::updateNodeSettings(
+    const QUuid&                                           id,
+    std::function<void(Visualize::Layers::LayerSettings&)> modifier) {
     auto node = m_objectRegistry->getNode(id);
     if (!node)
         return;
@@ -308,7 +309,7 @@ void DataController::handleTimeSliderValueChanged(int index, bool isPreview) {
 
         for (const auto& node : snap->components) {
             // ФИЛЬТР: Обрабатываем только ту компоненту, которую пользователь хочет видеть
-            if (!node || !node->masterSettings->isVisible)
+            if (!node || !node->masterSettings->isVisible())
                 continue;
 
             if (node->data == nullptr) {
@@ -355,7 +356,7 @@ void DataController::activateSnapshotInternal(const QUuid& snapshotId, bool isPr
             if (!node)
                 continue;
             if (m_objectRegistry->getOrLoadNodeData(node->id)) {
-                node->masterSettings->isVisible = true;
+                node->masterSettings->setVisible(true);
                 m_layerManager->updateNodeMasterSettings(node->id);
             }
         }
@@ -366,7 +367,7 @@ void DataController::activateSnapshotInternal(const QUuid& snapshotId, bool isPr
             if (!node)
                 continue;
             if (node->data != nullptr) { // Проверяем без вызова getOrLoadNodeData!
-                node->masterSettings->isVisible = true;
+                node->masterSettings->setVisible(true);
                 m_layerManager->updateNodeMasterSettings(node->id);
             }
         }
@@ -383,7 +384,7 @@ void DataController::onNodeSelectionActivated(const QUuid& nodeId) {
 
     // Логика идентична таймлайну
     if (m_objectRegistry->getOrLoadNodeData(nodeId)) {
-        node->masterSettings->isVisible = true;
+        node->masterSettings->setVisible(true);
         m_layerManager->updateNodeMasterSettings(nodeId);
         emit sceneUpdateRequested();
     }
@@ -438,7 +439,7 @@ void DataController::handleFileReady(const QUuid& taskId, QSpace::IO::ReadResult
         // Активируем слой и запрашиваем рендер сцены
         auto node = m_objectRegistry->getNode(targetNodeId);
         if (node) {
-            node->masterSettings->isVisible = true;
+            node->masterSettings->setVisible(true);
             if (m_layerManager) {
                 m_layerManager->updateNodeMasterSettings(targetNodeId);
             }
@@ -466,13 +467,13 @@ void DataController::handleFileReady(const QUuid& taskId, QSpace::IO::ReadResult
     if (m_restoringNodes.contains(result.path)) {
         auto restoredState = m_restoringNodes.take(result.path);
 
-        node->id             = restoredState.id;
-        node->label          = restoredState.label;
-        node->masterSettings = restoredState.settings.clone();
-        node->path           = restoredState.path;
-        node->format         = restoredState.format;
-        node->scheme         = restoredState.scheme;
-        node->type           = restoredState.type;
+        node->id    = restoredState.id;
+        node->label = restoredState.label;
+        // node->masterSettings = restoredState.settings.clone();
+        node->path   = restoredState.path;
+        node->format = restoredState.format;
+        node->scheme = restoredState.scheme;
+        node->type   = restoredState.type;
     } else {
         // Обычный новый импорт с диска
         node->path             = result.path;
@@ -484,8 +485,8 @@ void DataController::handleFileReady(const QUuid& taskId, QSpace::IO::ReadResult
 
         // Если файлы идут пачкой (часть эксперимента), скрываем их, чтобы не перегрузить сцену.
         // Одиночные файлы показываем сразу.
-        int totalInThisTask             = m_activeTasks.value(taskId).totalFiles;
-        node->masterSettings->isVisible = (totalInThisTask == 1);
+        int totalInThisTask = m_activeTasks.value(taskId).totalFiles;
+        node->masterSettings->setVisible(totalInThisTask == 1);
 
         emit markSessionDirty();
     }
@@ -513,7 +514,7 @@ void DataController::handleFileReady(const QUuid& taskId, QSpace::IO::ReadResult
     // Для файлов внутри экспериментов слои создаются реактивно (при движении слайдера таймлайна)
     if (!isInsideExperiment) {
         if (m_viewManager && m_layerManager) {
-            m_viewManager->forEachView([&](std::shared_ptr<Visualize::IView> view) {
+            m_viewManager->forEachView([&](std::shared_ptr<Visualize::Views::AbstractView> view) {
                 m_layerManager->createLayer(node, view);
             });
         }

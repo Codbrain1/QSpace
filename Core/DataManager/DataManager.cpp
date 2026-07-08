@@ -1,6 +1,5 @@
 #include "DataManager.h"
 #include "Core/TaskManager/TaskManager.h"
-#include "Interfaces/IOFactory.h"
 #include <qcontainerfwd.h>
 #include <qfileinfo.h>
 #include <qfuturewatcher.h>
@@ -10,6 +9,7 @@
 #include <quuid.h>
 #include <vtkMultiBlockDataSet.h>
 #include <vtkSmartPointer.h>
+#include "IO/ReaderFactory.h"
 #include <memory>
 
 // TODO: добавить возможность отменить чтение через std::function<bool()> isCanceled = []{ return
@@ -45,7 +45,7 @@ QUuid DataManager::importDataAsync(const QString&        path,
         m_taskManager->runIO(priority,
                              [path, scheme, policy = m_global_policy]() -> IO::ReadResult {
                                  auto type   = IO::Utils::getFormat(path);
-                                 auto reader = IO::IOFactory::createReader(type);
+                                 auto reader = IO::createReader(type);
                                  if (!reader) {
                                      return IO::ReadResult{nullptr,
                                                            path,
@@ -88,7 +88,7 @@ QUuid DataManager::importBatchDataAsync(const QList<IO::BatchTask>& tasks, IO::I
     watcher->setFuture(
         m_taskManager->mapIO(tasks, [policy](const IO::BatchTask& t) -> IO::ReadResult {
             auto type   = IO::Utils::getFormat(t.path);
-            auto reader = IO::IOFactory::createReader(type);
+            auto reader = IO::createReader(type);
             if (!reader)
                 return {nullptr,
                         t.path,
@@ -115,7 +115,7 @@ void DataManager::importBatchIdendicalDataAsync(const QStringList&    paths,
         emit errorOccured(QString("Paths list is empty"));
         return;
     }
-    auto reader = IO::IOFactory::createReader(format);
+    auto reader = IO::createReader(format);
     if (!reader) {
         emit errorOccured(QString("Unsupported file format"));
         return;

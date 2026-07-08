@@ -23,6 +23,7 @@ target_sources(Layers PRIVATE
            LayerSettings.h
            LayerFactory.h
            LayerFactory.cpp
+           vtkAdapter.h
             ${BinningLayer}
             ${ParticleLayer}
             ${SPHLayer}
@@ -36,4 +37,5 @@ target_link_libraries(Layers PUBLIC
             Qt6::Core
             Qt6::Widgets
             Qt6::Gui
+            VTK::CommonCore
 )

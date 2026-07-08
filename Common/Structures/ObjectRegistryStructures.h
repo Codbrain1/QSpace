@@ -1,6 +1,6 @@
 #pragma once
 #include "Common/Enums/IOEnums.h"
-#include "Common/Enums/RenderEnums.h"
+#include "Common/Enums/VisualizeBaseEnums.h"
 #include "Visualize/Layers/LayerSettings.h"
 #include <QMap>
 #include <QPair>

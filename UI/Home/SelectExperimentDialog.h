@@ -1,5 +1,5 @@
 #pragma once
-#include "Common/Structures/CoreStructures.h"
+#include "Common/Structures/ObjectRegistryStructures.h"
 #include <QComboBox>
 #include <QDialog>
 #include <QRadioButton>

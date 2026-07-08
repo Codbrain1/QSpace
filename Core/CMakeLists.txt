@@ -5,7 +5,7 @@ add_subdirectory(TaskManager)
 add_subdirectory(ObjectRegistry)
 add_subdirectory(ViewManager)
 add_subdirectory(LayerManager)
-add_subdirectory(VideoExportManager)
+# add_subdirectory(VideoExportManager)
 add_subdirectory(AppCore)
 add_subdirectory(SessionManager)
 add_subdirectory(StyleManager)
@@ -23,7 +23,7 @@ target_link_libraries(Core INTERFACE
             AppCore
             ViewManager
             StyleManager
-            VideoExportManager
+            # VideoExportManager
             SessionManager
             Qt6::Core
 )

@@ -15,33 +15,12 @@ enum class EntityType
   DarkMatter,
   Mixed
 };
-enum class RenderMode
-{
-  Points,
-  GausianSplat,
-  Volume
-};
-// enum class ColorMapType
-// {
-//   Viridis,
-//   Inferno,
-//   Plasma,
-//   Magma,
-//   CoolToWarm,
-//   Rainbow,
-//   Grayscale
-// };
 
 enum class ScalarBarRangeInterpolation
 {
   Sigmoid,
   Asinh,
   Linear
-};
-enum class ShaderType
-{
-  Default,
-  Custom
 };
 enum class InterpolationOpacityFunction
 {
@@ -59,20 +38,11 @@ inline QList<InterpolationOpacityFunction> getAllInterpolationOpacityFunctions()
   return {InterpolationOpacityFunction::Constant, InterpolationOpacityFunction::Linear, InterpolationOpacityFunction::Sqrt, InterpolationOpacityFunction::Quadro, InterpolationOpacityFunction::Qube, InterpolationOpacityFunction::Sigmoid, InterpolationOpacityFunction::Asinh};
 }
 
-inline QList<ShaderType> getAllShaderTypes()
-{
-  return {ShaderType::Default, ShaderType::Custom};
-}
-
 inline QList<ScalarBarRangeInterpolation> getAllScalarBarRangeInterpolationTypes()
 {
   return {ScalarBarRangeInterpolation::Asinh, ScalarBarRangeInterpolation::Sigmoid, ScalarBarRangeInterpolation::Linear};
 }
 
-inline QList<QSpace::Visualize::RenderMode> getAllRenderModes()
-{
-  return {RenderMode::GausianSplat, RenderMode::Points, RenderMode::Volume};
-}
 //=====================To String=========================
 inline QString interpolationOpacityFunctionToString(InterpolationOpacityFunction type)
 {
@@ -96,18 +66,7 @@ inline QString interpolationOpacityFunctionToString(InterpolationOpacityFunction
     return "Unknown";
   }
 }
-inline QString shaderTypeToString(ShaderType type)
-{
-  switch (type)
-  {
-  case ShaderType::Default:
-    return "Default";
-  case ShaderType::Custom:
-    return "Custom";
-  default:
-    return "Unknown";
-  }
-}
+
 inline QString scalarBarRangeInterpolationTypeToString(ScalarBarRangeInterpolation type)
 {
   switch (type)
@@ -138,20 +97,6 @@ inline QString entitytypeToString(EntityType type)
     return "Unknown";
   }
 }
-inline QString rendermodeToString(RenderMode mode)
-{
-  switch (mode)
-  {
-  case QSpace::Visualize::RenderMode::GausianSplat:
-    return "GausianSplat";
-  case QSpace::Visualize::RenderMode::Points:
-    return "Points";
-  case QSpace::Visualize::RenderMode::Volume:
-    return "Volume";
-  default:
-    return "Unknown";
-  }
-}
 
 //=====================From String=========================
 inline EntityType entitytypeFromString(const QString &s)
@@ -166,16 +111,7 @@ inline EntityType entitytypeFromString(const QString &s)
     return EntityType::Mixed;
   return EntityType::Unknown;
 }
-inline std::optional<RenderMode> rendermodeFromString(const QString &s)
-{
-  if (s == "GausianSplat")
-    return QSpace::Visualize::RenderMode::GausianSplat;
-  if (s == "Points")
-    return QSpace::Visualize::RenderMode::Points;
-  if (s == "Volume")
-    return QSpace::Visualize::RenderMode::Volume;
-  return std::nullopt;
-}
+
 inline std::optional<ScalarBarRangeInterpolation> scalarBarRangeInterpolationFromString(const QString &s)
 {
   if (s == "Asinh")
@@ -186,14 +122,7 @@ inline std::optional<ScalarBarRangeInterpolation> scalarBarRangeInterpolationFro
     return QSpace::Visualize::ScalarBarRangeInterpolation::Linear;
   return std::nullopt;
 }
-inline std::optional<ShaderType> shaderTypeFromString(const QString &s)
-{
-  if (s == "Default")
-    return QSpace::Visualize::ShaderType::Default;
-  if (s == "Custom")
-    return QSpace::Visualize::ShaderType::Custom;
-  return std::nullopt;
-}
+
 inline std::optional<InterpolationOpacityFunction> interpolationOpacityFunctionFromString(const QString &s)
 {
   if (s == "Linear")

@@ -1,5 +1,5 @@
 #pragma once
-#include "Common/Enums/RenderEnums.h"
+#include "Common/Enums/VisualizeBaseEnums.h"
 #include <QObject>
 #include <QString>
 #include "Structures/SessionStructures.h"

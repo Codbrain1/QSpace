@@ -1,11 +1,11 @@
 #include "ProjectSerializer.h"
-#include "Enums/IOEnums.h"
-#include "Enums/RenderEnums.h"
-#include "Logger/Logger.h"
-#include "Structures/RenderStructures.h"
+#include "Common/Enums/VisualizeBaseEnums.h"
 #include "Visualize/ColorMapManager/ColorMapManager.h"
 #include <QVariant>
 #include <qloggingcategory.h>
+#include "Enums/IOEnums.h"
+#include "Logger/Logger.h"
+#include <memory>
 
 namespace QSpace::Session {
 
@@ -78,7 +78,9 @@ QJsonObject ProjectSerializer::serializeDataNode(const QSpace::Session::DataNode
     o.insert("id", node_state.id.toString());
     o.insert("label", node_state.label);
     o.insert("path", node_state.path);
-    o.insert("format", IO::fileformatToString(node_state.format)); // Проверь: ...ToString или ...String в твоих енамах
+    o.insert("format",
+             IO::fileformatToString(
+                 node_state.format)); // Проверь: ...ToString или ...String в твоих енамах
     o.insert("entityType", QSpace::Visualize::entitytypeToString(node_state.type));
     // Bounds
     QJsonArray boundsArr;
@@ -107,7 +109,7 @@ QJsonObject ProjectSerializer::serializeDataNode(const QSpace::Session::DataNode
     o.insert("scalarRanges", rangesObj);
 
     // Вложенные структуры
-    o.insert("visualSettings", serializeVisualSettings(node_state.settings));
+    // o.insert("visualSettings", serializeVisualSettings(node_state.settings));
     o.insert("readScheme", serializeReadScheme(node_state.scheme));
 
     return o;
@@ -142,9 +144,9 @@ DataNodeState ProjectSerializer::deserializeDataNode(const QJsonObject& json) {
         node.stats.scalarRanges.insert(it.key(), {r["min"].toDouble(), r["max"].toDouble()});
     }
 
-    if (json.contains("visualSettings")) {
-        node.settings = deserializeVisualSettings(json["visualSettings"].toObject());
-    }
+    // if (json.contains("visualSettings")) {
+    //     node.settings = deserializeVisualSettings(json["visualSettings"].toObject());
+    // }
     if (json.contains("readScheme")) {
         node.scheme = deserializeReadScheme(json["readScheme"].toObject());
     }
@@ -156,78 +158,81 @@ DataNodeState ProjectSerializer::deserializeDataNode(const QJsonObject& json) {
 // ВИЗУАЛЬНЫЕ НАСТРОЙКИ
 // =========================================================================
 
-QJsonObject ProjectSerializer::serializeVisualSettings(const QSpace::Core::VisualSettings& settings) {
+QJsonObject ProjectSerializer::serializeVisualSettings(
+    const QSpace::Visualize::Layers::LayerSettings& settings) {
     QJsonObject obj;
-    obj.insert("mode", QSpace::Visualize::rendermodeToString(settings.mode));
-    obj.insert("colorMapId", settings.colorMapId.toString());
-    obj.insert("isVisible", settings.isVisible);
-    obj.insert("useLogScale", settings.useLogScale);
-    obj.insert("showScalarBar", settings.showScalarBar);
-    obj.insert("autoRange", settings.autoRange);
-    obj.insert("pointSize", settings.PointSize);
-    obj.insert("opacity", settings.opacity);
-    obj.insert("interpolationRangeType", settings.interpolationRangeType);
-    obj.insert("shaderType", settings.ShaderType);
-    obj.insert("interpolationOpacityFunction", settings.interpolationOpacityFunction);
-    obj.insert("gaussianSharpness", settings.gaussianSharpness);
-    obj.insert("sigmoidGammaOpacity", settings.sigmoidGammaOpacity);
-    obj.insert("sigmoidShiftOpacity", settings.sigmoidShiftOpacity);
-    obj.insert("sigmoidGammaColor", settings.sigmoidGammaColor);
-    obj.insert("sigmoidShiftColor", settings.sigmoidShiftColor);
-    obj.insert("alpha", settings.alpha);
-    // obj.insert("beta", settings.beta);
-    obj.insert("rangeMin", settings.rangeMin);
-    obj.insert("rangeMax", settings.rangeMax);
-    obj.insert("colorByField", settings.colorByField);
-    obj.insert("isEmisive", settings.isEmmisive);
-    obj.insert("exposureClamp", settings.exposureClamp);
-    obj.insert("baseRangeMin", settings.baseRangeMin);
-    obj.insert("baseRangeMax", settings.baseRangeMax);
-    obj.insert("hideOutOfRange", settings.hideOutOfRange);
+    // obj.insert("mode", QSpace::Visualize::rendermodeToString(settings.mode));
+    // obj.insert("colorMapId", settings.colorMapId.toString());
+    // obj.insert("isVisible", settings.isVisible);
+    // obj.insert("useLogScale", settings.useLogScale);
+    // obj.insert("showScalarBar", settings.showScalarBar);
+    // obj.insert("autoRange", settings.autoRange);
+    // obj.insert("pointSize", settings.PointSize);
+    // obj.insert("opacity", settings.opacity);
+    // obj.insert("interpolationRangeType", settings.interpolationRangeType);
+    // obj.insert("shaderType", settings.ShaderType);
+    // obj.insert("interpolationOpacityFunction", settings.interpolationOpacityFunction);
+    // obj.insert("gaussianSharpness", settings.gaussianSharpness);
+    // obj.insert("sigmoidGammaOpacity", settings.sigmoidGammaOpacity);
+    // obj.insert("sigmoidShiftOpacity", settings.sigmoidShiftOpacity);
+    // obj.insert("sigmoidGammaColor", settings.sigmoidGammaColor);
+    // obj.insert("sigmoidShiftColor", settings.sigmoidShiftColor);
+    // obj.insert("alpha", settings.alpha);
+    // // obj.insert("beta", settings.beta);
+    // obj.insert("rangeMin", settings.rangeMin);
+    // obj.insert("rangeMax", settings.rangeMax);
+    // obj.insert("colorByField", settings.colorByField);
+    // obj.insert("isEmisive", settings.isEmmisive);
+    // obj.insert("exposureClamp", settings.exposureClamp);
+    // obj.insert("baseRangeMin", settings.baseRangeMin);
+    // obj.insert("baseRangeMax", settings.baseRangeMax);
+    // obj.insert("hideOutOfRange", settings.hideOutOfRange);
     return obj;
 }
 
-QSpace::Core::VisualSettings ProjectSerializer::deserializeVisualSettings(const QJsonObject& json) {
-    QSpace::Core::VisualSettings vs;
-    vs.mode = Visualize::rendermodeFromString(json["mode"].toString()).value_or(Visualize::RenderMode::Points);
+std::shared_ptr<QSpace::Visualize::Layers::LayerSettings>
+ProjectSerializer::deserializeVisualSettings(const QJsonObject& json) {
+    std::shared_ptr<QSpace::Visualize::Layers::LayerSettings> vs;
+    // vs.mode = Visualize::rendermodeFromString(json["mode"].toString())
+    //               .value_or(Visualize::RenderMode::Points);
 
-    if (json.contains("colorMapId")) {
-        QUuid id = QUuid::fromString(json["colorMapId"].toString());
-        // Ищем в менеджере (туда уже загрузились кастомные палитры из корня проекта)
-        if (!Visualize::ColorMapManager::instance().contains(id)) {
-            qCWarning(LogSession) << "don't exist colorMap:" << id.toString();
-            id = Visualize::ColorMapPresets::getStandardPresets().first().id;
-        }
-    } else if (json.contains("colorMap")) { // Легаси поддержка старых сохранений
-        QString name  = json["colorMap"].toString();
-        vs.colorMapId = Visualize::ColorMapPresets::getPresetByName(name).id;
-    } else {
-        vs.colorMapId = Visualize::ColorMapPresets::getStandardPresets().first().id;
-    }
+    // if (json.contains("colorMapId")) {
+    //     QUuid id = QUuid::fromString(json["colorMapId"].toString());
+    //     // Ищем в менеджере (туда уже загрузились кастомные палитры из корня проекта)
+    //     if (!Visualize::ColorMapManager::instance().contains(id)) {
+    //         qCWarning(LogSession) << "don't exist colorMap:" << id.toString();
+    //         id = Visualize::ColorMapPresets::getStandardPresets().first().id;
+    //     }
+    // } else if (json.contains("colorMap")) { // Легаси поддержка старых сохранений
+    //     QString name  = json["colorMap"].toString();
+    //     vs.colorMapId = Visualize::ColorMapPresets::getPresetByName(name).id;
+    // } else {
+    //     vs.colorMapId = Visualize::ColorMapPresets::getStandardPresets().first().id;
+    // }
 
-    vs.isVisible                    = json["isVisible"].toBool(true);
-    vs.PointSize                    = json["pointSize"].toDouble(0.005);
-    vs.opacity                      = json["opacity"].toDouble(1.0);
-    vs.colorByField                 = json["colorByField"].toString();
-    vs.useLogScale                  = json["useLogScale"].toBool(false);
-    vs.showScalarBar                = json["showScalarBar"].toBool(true);
-    vs.autoRange                    = json["autoRange"].toBool(true);
-    vs.rangeMin                     = json["rangeMin"].toDouble(0.0);
-    vs.rangeMax                     = json["rangeMax"].toDouble(100.0);
-    vs.isEmmisive                   = json["isEmisive"].toBool(false);
-    vs.interpolationRangeType       = json["interpolationRangeType"].toString();
-    vs.ShaderType                   = json["shaderType"].toString();
-    vs.interpolationOpacityFunction = json["interpolationOpacityFunction"].toString();
-    vs.gaussianSharpness            = json["gaussianSharpness"].toDouble(4.5);
-    vs.sigmoidGammaOpacity          = json["sigmoidGammaOpacity"].toDouble(6.0);
-    vs.sigmoidShiftOpacity          = json["sigmoidShiftOpacity"].toDouble(0.2);
-    vs.sigmoidGammaColor            = json["sigmoidGammaColor"].toDouble(6.0);
-    vs.sigmoidShiftColor            = json["sigmoidShiftColor"].toDouble(0.2);
-    vs.alpha                        = json["alpha"].toDouble(3.0);
-    vs.baseRangeMin                 = json["baseRangeMin"].toDouble(0.0);
-    vs.baseRangeMax                 = json["baseRangeMax"].toDouble(100.0);
-    vs.hideOutOfRange               = json["hideOutOfRange"].toBool(true);
-    vs.exposureClamp                = json["exposureClamp"].toDouble(1.0);
+    // vs.isVisible                    = json["isVisible"].toBool(true);
+    // vs.PointSize                    = json["pointSize"].toDouble(0.005);
+    // vs.opacity                      = json["opacity"].toDouble(1.0);
+    // vs.colorByField                 = json["colorByField"].toString();
+    // vs.useLogScale                  = json["useLogScale"].toBool(false);
+    // vs.showScalarBar                = json["showScalarBar"].toBool(true);
+    // vs.autoRange                    = json["autoRange"].toBool(true);
+    // vs.rangeMin                     = json["rangeMin"].toDouble(0.0);
+    // vs.rangeMax                     = json["rangeMax"].toDouble(100.0);
+    // vs.isEmmisive                   = json["isEmisive"].toBool(false);
+    // vs.interpolationRangeType       = json["interpolationRangeType"].toString();
+    // vs.ShaderType                   = json["shaderType"].toString();
+    // vs.interpolationOpacityFunction = json["interpolationOpacityFunction"].toString();
+    // vs.gaussianSharpness            = json["gaussianSharpness"].toDouble(4.5);
+    // vs.sigmoidGammaOpacity          = json["sigmoidGammaOpacity"].toDouble(6.0);
+    // vs.sigmoidShiftOpacity          = json["sigmoidShiftOpacity"].toDouble(0.2);
+    // vs.sigmoidGammaColor            = json["sigmoidGammaColor"].toDouble(6.0);
+    // vs.sigmoidShiftColor            = json["sigmoidShiftColor"].toDouble(0.2);
+    // vs.alpha                        = json["alpha"].toDouble(3.0);
+    // vs.baseRangeMin                 = json["baseRangeMin"].toDouble(0.0);
+    // vs.baseRangeMax                 = json["baseRangeMax"].toDouble(100.0);
+    // vs.hideOutOfRange               = json["hideOutOfRange"].toBool(true);
+    // vs.exposureClamp                = json["exposureClamp"].toDouble(1.0);
     return vs;
 }
 
@@ -315,6 +320,7 @@ IO::ColumnScheme ProjectSerializer::deserializeColumnScheme(const QJsonObject& j
     }
     return cs;
 }
+
 QJsonObject ProjectSerializer::serializeColorMap(const QSpace::Visualize::ColorMap& map) {
     QJsonObject obj;
     obj.insert("id", map.id.toString());
@@ -334,6 +340,7 @@ QJsonObject ProjectSerializer::serializeColorMap(const QSpace::Visualize::ColorM
     obj.insert("points", ptsArr);
     return obj;
 }
+
 QSpace::Visualize::ColorMap ProjectSerializer::deserializeColorMap(const QJsonObject& json) {
     QSpace::Visualize::ColorMap map;
     map.id       = QUuid::fromString(json["id"].toString());
@@ -344,7 +351,8 @@ QSpace::Visualize::ColorMap ProjectSerializer::deserializeColorMap(const QJsonOb
     QJsonArray ptsArr = json["points"].toArray();
     for (auto v : ptsArr) {
         QJsonObject p = v.toObject();
-        map.points.append({p["x"].toDouble(), p["r"].toDouble(), p["g"].toDouble(), p["b"].toDouble()});
+        map.points.append(
+            {p["x"].toDouble(), p["r"].toDouble(), p["g"].toDouble(), p["b"].toDouble()});
     }
     return map;
 }

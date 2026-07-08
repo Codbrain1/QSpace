@@ -1,9 +1,9 @@
 #pragma once
-#include "Common/Interfaces/IView.h"
 #include "Core/AppCore/AppCore.h"
 #include "LayerExplorerWidget.h"
 #include "PropertyInspector.h"
 #include "TimeLineWidget.h"
+#include "Visualize/Views/AbstractView.h"
 #include <QMainWindow>
 #include <QObject>
 #include <QProgressDialog>
@@ -42,7 +42,7 @@ class MainWindow : public QMainWindow {
     void handleSessionStateChange(const QSpace::Session::CurrentSession& session);
     void handleExportFinished(bool success);
     void handleLayerSelectionChange(const QList<QUuid>& ids);
-    void handleViewCreated(const QUuid& viewId, Visualize::ViewType type);
+    void handleViewCreated(const QUuid& viewId, Visualize::Views::ViewType type);
     void handleViewRemoved(const QUuid& viewId); // TODO: реализовать удаление доков для удаленных окон
 
   private:

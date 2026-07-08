@@ -1,4 +1,4 @@
-add_subdirectory(Testing)
+# add_subdirectory(Testing)
 add_library(ObjectRegistry STATIC)
 target_sources(ObjectRegistry PRIVATE
             ObjectRegistry.h

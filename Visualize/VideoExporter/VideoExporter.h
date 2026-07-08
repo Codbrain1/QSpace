@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Visualize/VtkView.h"
 #include <QObject>
 #include <QString>
 #include <vtkOggTheoraWriter.h>
