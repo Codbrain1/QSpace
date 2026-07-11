@@ -32,6 +32,7 @@ class LayerManager : public QObject {
     std::shared_ptr<Visualize::Layers::Layer>        getLayer(const QUuid& layerId) const;
     QList<std::shared_ptr<Visualize::Layers::Layer>> getLayersForNode(const QUuid& nodeId) const;
 
+    [[deprecated]]
     void updateNodeMasterSettings(const QUuid& nodeId);
 
     void createLayersForContainer(std::shared_ptr<Snapshot>                       container,
@@ -39,6 +40,7 @@ class LayerManager : public QObject {
     void setSnapshotVisibility(std::shared_ptr<Snapshot> container, bool visible);
 
     void setNodeVisibility(const QUuid& nodeId, bool visible);
+    bool isNodeVisible(const QUuid& nodeId);
 
     QList<std::shared_ptr<Visualize::Layers::Layer>> getAllLayers() const {
         return m_layers.values();

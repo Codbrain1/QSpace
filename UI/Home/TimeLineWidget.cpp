@@ -1,6 +1,7 @@
 #include "TimeLineWidget.h"
 #include "Common/Logger/Logger.h"
 #include "Core/AppCore/DataController.h"
+#include "Core/AppCore/VideoController.h"
 #include "ui_TimeLineWidget.h"
 #include <qloggingcategory.h>
 #include <qtoolbutton.h>
@@ -11,14 +12,14 @@ TimeLineWidget::TimeLineWidget(Core::AppCore* app, QWidget* parent)
     : QWidget(parent), ui(new Ui::TimeLineWidget), m_app(app) {
     ui->setupUi(this);
 
-    connect(m_app->dataController(),
-            &QSpace::Core::Controllers::DataController::snapshotsListSizeChanged,
+    connect(m_app->videoController(),
+            &QSpace::Core::Controllers::VideoController::snapshotsListSizeChanged,
             this,
             &TimeLineWidget::handleSnapshotsListChangeSize);
     connect(this,
             &TimeLineWidget::currentTimeStampValueChanged,
-            m_app->dataController(),
-            &QSpace::Core::Controllers::DataController::handleTimeSliderValueChanged);
+            m_app->videoController(),
+            &QSpace::Core::Controllers::VideoController::handleActivateVisualizeSnapshot);
     // 1. Обработка изменения значения (перетаскивание или программный ввод)
     connect(ui->TimeSlider,
             &QSlider::valueChanged,
@@ -28,6 +29,10 @@ TimeLineWidget::TimeLineWidget(Core::AppCore* app, QWidget* parent)
 
     connect(ui->toolButtonPrev, &QToolButton::clicked, this, &TimeLineWidget::handleToolButtonPrev_clicked);
     connect(ui->toolButtonNext, &QToolButton::clicked, this, &TimeLineWidget::handleToolButtonNext_clicked);
+    // connect(ui->toolButtonEditLayerSettings,
+    //         &QToolButton::clicked,
+    //         this,
+    //         &TimeLineWidget::handleToolButtonEditLayerSettings);
 }
 
 // =========== Кнопки смены кадров ===========
@@ -47,7 +52,13 @@ void TimeLineWidget::handleToolButtonNext_clicked() {
 
 // =========== Изменение значения слайдера (перетаскивание) ===========
 void TimeLineWidget::handleTimeSliderChangeValue(int value) {
-    // TODO реализовать покадровое переключение
+    setTextTimeLabelTextInternal();
+    emit currentTimeStampValueChanged(value);
+}
+void TimeLineWidget::handleSetMainLayer(const QUuid& layerId) {
+    if (m_layerId != layerId) {
+        m_layerId = layerId;
+    }
 }
 
 // =========== Изменение диапазона слайдера ===========
@@ -68,7 +79,9 @@ void TimeLineWidget::handleSnapshotsListChangeSize(int size) {
     ui->TimeSlider->setValue(1);
     setTextTimeLabelTextInternal();
 }
-
+void TimeLineWidget::handleToolButtonEditLayerSettings() {
+    emit editLayerProperty(m_layerId);
+}
 // =========== Внутренние методы ===========
 void TimeLineWidget::setTextTimeLabelTextInternal() {
     // ЗАЩИТА ОТ ВЫЛЕТОВ (Обязательно!)
@@ -76,7 +89,7 @@ void TimeLineWidget::setTextTimeLabelTextInternal() {
         return;
 
     int    value     = ui->TimeSlider->value();
-    double timestamp = m_app->dataController()->getSnapshotTimeByIndex(value - 1);
+    double timestamp = m_app->videoController()->getSnapshotTimeByIndex(value - 1);
 
     QString snapshotString = QString("Снимок: %1/%2 (T=%3 миллионов лет)")
                                  .arg(value)

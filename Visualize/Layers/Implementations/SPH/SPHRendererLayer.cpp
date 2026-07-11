@@ -112,7 +112,7 @@ void SPHRendererLayer::uploadBuffersIfDirty(QOpenGLFunctions_3_3_Core* gl) {
     if (!m_dirty)
         return;
     auto node = m_dataNode.lock();
-    if (!node)
+    if (!node || !m_settings)
         return;
 
     QVector<QVector3D> positions = Visualize::vtkAdapter::extractPositions(node);
@@ -127,7 +127,7 @@ void SPHRendererLayer::uploadBuffersIfDirty(QOpenGLFunctions_3_3_Core* gl) {
     m_particleCount = positions.size();
     if (m_particleCount == 0) {
         qWarning() << "SPHRendererLayer: DataNode contains no points";
-        m_dirty     = false;
+        // m_dirty     = false;
         m_hasBounds = false;
         return;
     }
@@ -153,7 +153,7 @@ void SPHRendererLayer::uploadBuffersIfDirty(QOpenGLFunctions_3_3_Core* gl) {
     if (!masses.isEmpty()) {
         m_vboMass.allocate(masses.constData(), masses.size() * int(sizeof(float)));
     } else {
-        QVector<float> ones(positions.size(), 1.0f);
+        QVector<float> ones(positions.size(), 0.0f);
         m_vboMass.allocate(ones.constData(), ones.size() * int(sizeof(float)));
     }
     gl->glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, sizeof(float), nullptr);
@@ -235,7 +235,9 @@ void SPHRendererLayer::render(QOpenGLFunctions_3_3_Core* gl, const Visualize::Re
     m_splatProgram.setUniformValue("uPointScale", ctx.pixelsPerWorldUnit);
     m_splatProgram.setUniformValue("uWorldRadius", h);
     m_splatProgram.setUniformValue("uKernelNorm", kernelNorm);
-    m_splatProgram.setUniformValue("uKernelType", m_settings->kernelType());
+    m_splatProgram.setUniformValue(
+        "uKernelType",
+        static_cast<int>(m_settings->kernelType())); // TODO небезопасное приведение типов
 
     m_vaoParticles.bind();
     gl->glDrawArrays(GL_POINTS, 0, m_particleCount);

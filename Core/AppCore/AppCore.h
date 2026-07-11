@@ -15,6 +15,7 @@
 #include "Models/DataTreeModel/DataTreeModel.h"
 #include "ProjectController.h"
 #include "Structures/SessionStructures.h"
+#include "VideoController.h"
 #include "ViewController.h"
 #include <memory>
 
@@ -38,7 +39,7 @@ namespace QSpace::Core::Controllers {
 class ViewController;
 class DataController;
 class ProjectController;
-// class VideoController;
+class VideoController;
 } // namespace QSpace::Core::Controllers
 
 namespace QSpace::Core {
@@ -67,14 +68,14 @@ class AppCore : public QObject {
     Controllers::ViewController*    viewController() const;
     Controllers::DataController*    dataController() const;
     Controllers::ProjectController* projectController() const;
-    // Controllers::VideoController*   videoController() const;
+    Controllers::VideoController*   videoController() const;
 
   private:
     // контроллеры управляющие разными областями программы (менеджерами)
     std::unique_ptr<Controllers::ViewController>    m_viewController;
     std::unique_ptr<Controllers::DataController>    m_dataController;
     std::unique_ptr<Controllers::ProjectController> m_projectController;
-    // std::unique_ptr<Controllers::VideoController>   m_videoController;
+    std::unique_ptr<Controllers::VideoController>   m_videoController;
 
     // менеджеры отвечающие за отдельные части системы
     std::unique_ptr<TaskManager> m_taskManager;

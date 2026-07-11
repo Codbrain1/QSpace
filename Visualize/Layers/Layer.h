@@ -29,10 +29,7 @@ class Layer : public QObject {
           m_name(node ? node->label : QString()),
           m_dataNode(node),
           m_view(targetView),
-          m_settings(node ? node->masterSettings : nullptr) {
-        if (m_settings) {
-            connect(m_settings.get(), &LayerSettings::changed, this, &Layer::update);
-        }
+          m_settings(nullptr) {
     }
 
     std::weak_ptr<Views::AbstractView> getView() {
@@ -64,6 +61,7 @@ class Layer : public QObject {
         }
     }
 
+    // TODO метод не используется при добавлении многооконности может понадобится
     void setIsSyncedWithMaster(bool synced) {
         if (m_isSyncedWithMaster != synced) {
             m_isSyncedWithMaster = synced;
@@ -82,6 +80,10 @@ class Layer : public QObject {
 
     void assignEngine(std::shared_ptr<Visualize::IRenderLayer> engine) {
         m_renderEngine = engine;
+        m_settings     = engine->getSettings();
+        if (m_settings) {
+            connect(m_settings.get(), &LayerSettings::changed, this, &Layer::update);
+        }
         if (m_renderEngine) {
             if (auto view3D = qobject_cast<Views::AbstractView3D*>(m_view.lock().get())) {
                 view3D->attachRenderLayer(m_layerId, engine);
@@ -97,13 +99,59 @@ class Layer : public QObject {
         update();
     }
 
+    void setData(std::shared_ptr<Core::DataNode> node) {
+        m_dataNode   = node;
+        m_dataNodeId = node->id;
+        m_renderEngine->setData(node);
+        m_renderEngine->update();
+    }
+
     void update() {
         auto v = m_view.lock();
         auto d = m_dataNode.lock();
         if (v && d && m_renderEngine) {
             m_renderEngine->update();
+            v->render(); // TODO из за этого может тормозить рендеринг
             emit updateRequired();
         }
+    }
+
+    std::shared_ptr<Layer> deepCopy() const {
+        // 1. Поверхностно копируем weak_ptr, временно превращая их в shared_ptr для конструктора
+        auto sharedNode = m_dataNode.lock();
+        auto sharedView = m_view.lock();
+
+        // 2. Создаем новый экземпляр слоя.
+        // Конструктор автоматически сгенерирует новый уникальный m_layerId через
+        // QUuid::createUuid()
+        auto copyLayer = std::make_shared<Layer>(sharedNode, sharedView);
+
+        // 3. Копируем простые члены, сохраняя текущее состояние (на случай, если имя меняли через
+        // setName)
+        copyLayer->m_name               = m_name;
+        copyLayer->m_isSyncedWithMaster = m_isSyncedWithMaster;
+        copyLayer->m_dataNodeId         = m_dataNodeId;
+
+        // 4. Глубокое копирование движка рендеринга и его настроек
+        if (m_renderEngine) {
+            // Вызываем виртуальный клон движка (см. Шаг 2)
+            auto clonedEngine = m_renderEngine->clone();
+
+            if (clonedEngine) {
+                // assignEngine внутри себя привяжет сигналы нового слоя к настройкам движка
+                // и примонтирует движок к view3D, используя НАСТОЯЩИЙ (новый) copyLayer->m_layerId!
+                copyLayer->assignEngine(clonedEngine);
+
+                // Магия: глубоко копируем настройки через ваши QVariantMap.
+                // Нам не нужно знать, SPH это настройки или какие-то другие — метасистема Qt всё
+                // сделает за нас.
+                if (m_settings && copyLayer->m_settings) {
+                    copyLayer->m_settings->fromVariantMap(this->m_settings->toVariantMap());
+                }
+            }
+        }
+
+        return copyLayer;
     }
 
   signals:

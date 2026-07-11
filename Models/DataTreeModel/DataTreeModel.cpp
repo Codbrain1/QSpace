@@ -531,6 +531,10 @@ QVariant DataTreeModel::data(const QModelIndex& index, int role) const {
         }
         return 0; // Для не-снапшотов (или если времени нет) возвращаем 0
     }
+    // Добавляем возврат типа:
+    if (role == CustomRoles::TypeRole) {
+        return static_cast<int>(item->type()); // возвращаем как int
+    }
     // =========================================================================
     // 1. РОЛЬ: Состояние чекбокса видимости (Только для первой колонки NameColumn)
     // =========================================================================
@@ -541,8 +545,9 @@ QVariant DataTreeModel::data(const QModelIndex& index, int role) const {
                 return (layer && layer->getSettings()->isVisible()) ? Qt::Checked : Qt::Unchecked;
             }
             case DataTreeItem::Type::DataNode: {
-                auto node = m_registry->getNode(item->id());
-                return (node && node->masterSettings->isVisible()) ? Qt::Checked : Qt::Unchecked;
+                auto node      = m_registry->getNode(item->id());
+                bool isVisible = m_layerManager->isNodeVisible(node->id);
+                return (isVisible) ? Qt::Checked : Qt::Unchecked;
             }
             case DataTreeItem::Type::ComponentGroup: {
                 return calculateComponentGroupCheckState(item);
@@ -659,8 +664,6 @@ QVariant DataTreeModel::data(const QModelIndex& index, int role) const {
 
 // --- Обработка клика по чекбоксу (Изменение видимости) ---
 bool DataTreeModel::setData(const QModelIndex& index, const QVariant& value, int role) {
-    QElapsedTimer timer;
-    timer.start();
     if (!index.isValid() || role != Qt::CheckStateRole || index.column() != NameColumn)
         return false;
 
@@ -674,8 +677,6 @@ bool DataTreeModel::setData(const QModelIndex& index, const QVariant& value, int
                 for (const auto& snap : exp->snapshots) {
                     m_layerManager->setSnapshotVisibility(snap, visible);
                 }
-                auto t = timer.elapsed();
-                qCritical() << "setData execution Experiment: " << t << " miliseconds";
             }
             break;
         }
@@ -685,7 +686,6 @@ bool DataTreeModel::setData(const QModelIndex& index, const QVariant& value, int
                 DataTreeItem* child = item->child(i);
                 if (child->type() == DataTreeItem::DataNode) {
                     if (auto node = m_registry->getNode(child->id())) {
-                        node->masterSettings->setVisible(visible);
                         m_layerManager->setNodeVisibility(node->id, visible);
                     }
                 }
@@ -700,7 +700,6 @@ bool DataTreeModel::setData(const QModelIndex& index, const QVariant& value, int
         }
         case DataTreeItem::DataNode: {
             if (auto node = m_registry->getNode(item->id())) {
-                node->masterSettings->setVisible(visible);
                 m_layerManager->setNodeVisibility(node->id, visible);
             }
             break;
@@ -708,7 +707,6 @@ bool DataTreeModel::setData(const QModelIndex& index, const QVariant& value, int
         case DataTreeItem::LayerItem: {
             if (auto layer = m_layerManager->getLayer(item->id())) {
                 layer->setVisible(visible);
-                // layer->dataNode.lock()->masterSettings->isVisible = visible;
             }
             break;
         }
@@ -799,8 +797,10 @@ Qt::CheckState DataTreeModel::calculateComponentGroupCheckState(DataTreeItem* gr
         DataTreeItem* child = groupItem->child(i);
         if (child->type() == DataTreeItem::DataNode) {
             auto node = m_registry->getNode(child->id());
-            if (node && node->masterSettings->isVisible()) {
-                visibleCount++;
+            if (node) {
+                if (m_layerManager->isNodeVisible(node->id)) {
+                    visibleCount++;
+                }
             }
         }
         // calculateComponentGroupCheckState(child);
@@ -829,7 +829,7 @@ Qt::CheckState DataTreeModel::calculateExperimentCheckState(std::shared_ptr<Core
             if (!node)
                 continue;
             total++;
-            if (node->masterSettings->isVisible()) {
+            if (m_layerManager->isNodeVisible(node->id)) {
                 visibleCount++;
             }
         }
@@ -856,7 +856,7 @@ Qt::CheckState DataTreeModel::calculateSnapshotheckState(std::shared_ptr<Core::S
             continue;
 
         total++;
-        if (node->masterSettings->isVisible()) {
+        if (m_layerManager->isNodeVisible(node->id)) {
             visibleCount++;
         }
     }

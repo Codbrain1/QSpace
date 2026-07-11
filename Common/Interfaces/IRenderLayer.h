@@ -16,9 +16,11 @@ public:
   virtual ~IRenderLayer() = default;
   virtual void update() = 0;
   virtual void setData(std::weak_ptr<Core::DataNode> node) = 0;
+  virtual std::shared_ptr<Layers::LayerSettings> getSettings() const = 0;
   virtual void setSettings(std::shared_ptr<Layers::LayerSettings> settings) = 0;
   virtual void setVisible(bool visible) = 0;
   virtual bool isVisible() const = 0;
+  virtual std::shared_ptr<IRenderLayer> clone() const = 0;
 };
 
 // Интерфейс исключительно для VTK

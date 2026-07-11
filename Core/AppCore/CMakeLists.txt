@@ -8,8 +8,8 @@ target_sources(AppCore PRIVATE
             DataController.cpp
             ProjectController.h
             ProjectController.cpp
-            # VideoController.h
-            # VideoController.cpp
+            VideoController.h
+            VideoController.cpp
 )
 target_include_directories(AppCore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 target_link_libraries(AppCore PUBLIC 

@@ -1,6 +1,8 @@
 #include "LayerExplorerWidget.h"
 #include "Common/Logger/Logger.h"
 #include "Core/AppCore/AppCore.h"
+#include "Core/AppCore/VideoController.h"
+#include "Core/AppCore/ViewController.h"
 #include "Core/ObjectRegistry/ObjectRegistry.h"
 #include "Enums/CoreEnums.h"
 #include "Models/DataTreeModel/DataTreeModel.h"
@@ -114,20 +116,22 @@ LayerExplorerWidget::~LayerExplorerWidget() {
     delete ui;
 }
 
-QList<QUuid> LayerExplorerWidget::getSelectedIds() const {
-    QList<QUuid> ids;
-    // Забираем выделенные индексы первой колонки
-    auto indexes = ui->treeView_Layers->selectionModel()->selectedRows(0);
+QList<LayerExplorerWidget::SelectedItem> LayerExplorerWidget::getSelectedIds() const {
+    QList<LayerExplorerWidget::SelectedItem> ids;
+    auto                                     indexes = ui->treeView_Layers->selectionModel()->selectedRows(0);
 
     for (const QModelIndex& index : indexes) {
         QUuid id = index.data(Models::DataTreeModel::CustomRoles::IdRole).toUuid();
         if (!id.isNull()) {
-            ids.append(id);
+            // Безопасно достаем тип через механизм ролей Qt (прокси обработает это сам)
+            int  typeInt = index.data(Models::DataTreeModel::CustomRoles::TypeRole).toInt();
+            auto type    = static_cast<Models::DataTreeItem::Type>(typeInt);
+
+            ids.append({id, type});
         }
     }
     return ids;
 }
-
 void LayerExplorerWidget::setupSlots() {
     // --------- Менеджер Файлов ---------
     // изменение корневой директории для проводника файлов
@@ -213,9 +217,14 @@ void LayerExplorerWidget::setupSlots() {
         //             }
         //         });
         connect(this,
-                &LayerExplorerWidget::removalRequested,
+                &LayerExplorerWidget::removalNodeObjectRequested,
                 m_app->dataController(),
                 &Core::Controllers::DataController::removeNodeObject,
+                Qt::QueuedConnection);
+        connect(this,
+                &LayerExplorerWidget::removalLayerRequested,
+                m_app->dataController(),
+                &Core::Controllers::DataController::removeLayer,
                 Qt::QueuedConnection);
     }
     connect(ui->toolButton_CollapseAll, &QToolButton::clicked, this, &LayerExplorerWidget::handleCollapseAll);
@@ -226,8 +235,12 @@ void LayerExplorerWidget::setupSlots() {
     // изменение отображаемого эксперимента
     connect(this,
             &LayerExplorerWidget::targetVisualiseExperimentChanged,
-            m_app->dataController(),
-            &QSpace::Core::Controllers::DataController::handleTargetExperimentVisualizeChanged);
+            m_app->videoController(),
+            &QSpace::Core::Controllers::VideoController::handleTargetExperimentChange);
+    connect(this,
+            &LayerExplorerWidget::snapshotCompleteForTimeSlider,
+            m_app->videoController(),
+            &QSpace::Core::Controllers::VideoController::handleFixedEtalonSnapshot);
 }
 
 void LayerExplorerWidget::setupToolButtons() {
@@ -645,6 +658,13 @@ void LayerExplorerWidget::showCustomContextMenuForExperimentInternal(QMenu* menu
     }
 }
 void LayerExplorerWidget::showCustomContextMenuForSnapshotInternal(QMenu* menu, const QModelIndex& index) {
+    QUuid snapshotId = index.data(Models::DataTreeModel::CustomRoles::IdRole).toUuid();
+
+    QAction* completeForTimeSliderAction = menu->addAction(tr("Применить для плеера кадров"));
+
+    connect(completeForTimeSliderAction, &QAction::triggered, this, [this, snapshotId] {
+        emit snapshotCompleteForTimeSlider(snapshotId);
+    });
 }
 void LayerExplorerWidget::showCustomContextMenuForDataNodeInternal(QMenu* menu, const QModelIndex& index) {
     QUuid    dataNodeId     = index.data(Models::DataTreeModel::CustomRoles::IdRole).toUuid();
@@ -692,12 +712,11 @@ void LayerExplorerWidget::showCustomContextMenuForLayerInternal(QMenu* menu, con
 
     // Создаем Action
     QAction* deleteAction = menu->addAction(tr("Удалить слой"));
-    // deleteAction->setIcon(QIcon(":/icons/delete.png")); // Если есть иконка
 
     // Подключаем логику удаления
     connect(deleteAction, &QAction::triggered, this, [this, layerId]() {
         // Здесь обращаемся к вашему LayerManager для удаления
-        emit removalRequested(layerId);
+        emit removalLayerRequested(layerId);
     });
 }
 
@@ -737,17 +756,32 @@ void LayerExplorerWidget::handleAddLayer() {
 
 void LayerExplorerWidget::handleImportFilesRequestFromLayerEditor() {
     auto result = selectExperimentDialogInternal();
-    if (result.has_value()) {
-        QStringList filePaths =
-            QFileDialog::getOpenFileNames(this,
-                                          tr("Выберите файлы с данными"),
-                                          m_root_path,
-                                          tr("Файлы симуляции (*.bin *.hdf5 *.csv);;Все файлы (*.*)"));
-        if (filePaths.isEmpty())
-            return;
-
-        selectAndImportFilesInternal(result.value(), filePaths);
+    if (!result.has_value()) {
+        return;
     }
+
+    // 1. Создаем объект диалога вместо вызова статического метода
+    QFileDialog dialog(this,
+                       tr("Выберите файлы с данными"),
+                       m_root_path,
+                       tr("Файлы симуляции (*.bin *.hdf5 *.csv);;Все файлы (*.*)"));
+
+    // 2. Настраиваем режим выбора нескольких существующих файлов
+    dialog.setFileMode(QFileDialog::ExistingFiles);
+
+    // 3. Запускаем диалог в модальном режиме
+    if (dialog.exec() == QDialog::Accepted) {
+        // Пользователь нажал "Открыть" и выбрал файлы
+        QStringList filePaths = dialog.selectedFiles();
+        if (!filePaths.isEmpty()) {
+            selectAndImportFilesInternal(result.value(), filePaths);
+        }
+    }
+    // Пользователь закрыл окно или нажал "Отмена"
+    // Получаем путь к папке, в которой он находился в этот момент:
+    QString lastDirectory = dialog.directory().absolutePath();
+    qCDebug(LogUI) << "Пользователь отменил выбор, но находился в папке:" << lastDirectory;
+    m_root_path = lastDirectory;
 }
 
 void LayerExplorerWidget::handleImportFileRequestFromFileExplorer() {
@@ -855,15 +889,15 @@ void LayerExplorerWidget::handleAddExperiment() {
 }
 
 void LayerExplorerWidget::handleRemoveElement() {
-    QList<QUuid> ids = getSelectedIds();
-    for (const QUuid& id : ids) {
+    QList<SelectedItem> ids = getSelectedIds();
+    for (auto item : ids) {
         // Делегируем удаление через сигналы, удалит ноду из ObjectRegistry
-        emit removalRequested(id);
+        emit removalNodeObjectRequested(item.id); // TODO не удалит несколько выделенных слоев
     }
 }
 
 void LayerExplorerWidget::handleNodeSelected() {
-    QList<QUuid> selectedIds = getSelectedIds();
+    QList<SelectedItem> selectedIds = getSelectedIds();
     // Оповещаем мир о массовом изменении
     emit selectionChanged(selectedIds);
 }

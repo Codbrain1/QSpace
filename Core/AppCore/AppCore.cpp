@@ -15,10 +15,12 @@
 #include <QRegularExpression>
 #include <qfileinfo.h>
 #include <qloggingcategory.h>
+#include <qnamespace.h>
 #include <quuid.h>
 #include "DataController.h"
 #include "Models/DataTreeModel/DataTreeModel.h"
 #include "ProjectController.h"
+#include "VideoController.h"
 #include "ViewController.h"
 
 namespace QSpace::Core {
@@ -50,10 +52,10 @@ AppCore::AppCore(QObject* parent) : QObject(parent) {
                                                                            m_dataController.get(),
                                                                            this);
 
-    // m_videoController = std::make_unique<Controllers::VideoController>(m_dataManager.get(),
-    //                                                                    m_viewManager.get(),
-    //                                                                    m_layerManager.get(),
-    //                                                                    this);
+    m_videoController = std::make_unique<Controllers::VideoController>(m_objectRegistry.get(),
+                                                                       m_viewManager.get(),
+                                                                       m_layerManager.get(),
+                                                                       this);
     // 3. Инициализация моделей данных
     m_dataTreeModel = std::make_unique<QSpace::Models::DataTreeModel>(m_objectRegistry.get(),
                                                                       m_layerManager.get(),
@@ -64,6 +66,12 @@ void AppCore::initialize() {
     m_viewController->initialize();
     m_dataController->initialize();
     m_projectController->initialize();
+    m_videoController->initialize();
+    connect(m_videoController.get(),
+            &Controllers::VideoController::requestNodeLoad,
+            m_dataController.get(),
+            &Controllers::DataController::onRequestDataLoad,
+            Qt::QueuedConnection);
 }
 
 Controllers::ViewController* AppCore::viewController() const {
@@ -78,9 +86,9 @@ Controllers::ProjectController* AppCore::projectController() const {
     return m_projectController.get();
 }
 
-// Controllers::VideoController* AppCore::videoController() const {
-//     return m_videoController.get();
-// }
+Controllers::VideoController* AppCore::videoController() const {
+    return m_videoController.get();
+}
 
 Models::DataTreeModel* AppCore::dataTreeModel() const {
     return m_dataTreeModel.get();

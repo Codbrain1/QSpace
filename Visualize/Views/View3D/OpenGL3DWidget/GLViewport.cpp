@@ -5,6 +5,7 @@
 #include <QPainter>
 #include <QWheelEvent>
 #include <QtMath>
+#include <qelapsedtimer.h>
 #include <algorithm>
 #include <cmath>
 
@@ -227,7 +228,6 @@ void GLViewport::processPendingColorMapInvalidations() {
 
 void GLViewport::paintGL() {
     processPendingColorMapInvalidations();
-
     if (m_needsCameraFit) {
         fitCameraToLayers();
         m_needsCameraFit = false;
@@ -256,7 +256,6 @@ void GLViewport::paintGL() {
         // colorbar сам решает, нужно ли ему перечитать rangeMin/rangeMax/colorMapId
         emit layerVisualsChanged(it.key());
     }
-
     m_axisRenderer.render(this, ctx, m_settings->axis(), m_axisExtent);
 }
 

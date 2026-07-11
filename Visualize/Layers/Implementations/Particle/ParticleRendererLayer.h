@@ -23,12 +23,36 @@ class ParticleRendererLayer : public IOpenGLRenderLayer {
         m_settings = std::dynamic_pointer_cast<ParticlePointsLayerSettings>(settings);
     }
 
+    std::shared_ptr<LayerSettings> getSettings() const override {
+        return m_settings;
+    }
+
     void setVisible(bool visible) override {
         m_visible = visible;
     }
 
     bool isVisible() const override {
         return m_visible;
+    }
+
+    std::shared_ptr<Visualize::IRenderLayer> clone() const override {
+        // Создаем абсолютно чистый новый движок SPH
+        auto copy = std::make_shared<ParticleRendererLayer>();
+
+        // Поверхностно копируем weak_ptr на данные, как просили
+        copy->m_dataNode = m_dataNode;
+
+        // Сбрасываем флаги в исходное состояние, чтобы новый движок
+        // честно проинициализировал свои VBO/VAO в новом контексте OpenGL
+        copy->m_dirty         = true;
+        copy->m_particleCount = 0;
+        auto settings         = std::make_shared<ParticlePointsLayerSettings>();
+        copy->setSettings(settings);
+        // Важно: если в конструкторе SPHRenderLayer по умолчанию создается
+        // дефолтный m_settings = std::make_shared<SPHPointsLayerSettings>(),
+        // то больше ничего делать не нужно — класс Layer сам заполнит его данными через VariantMap.
+
+        return copy;
     }
 
     // 1. первый шаг: подготовка контекста OpenGL, создание буферов и компиляция шейдеров

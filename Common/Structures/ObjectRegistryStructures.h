@@ -31,7 +31,6 @@ struct DataNode {
     vtkSmartPointer<vtkDataSet> data;   // непосредственно данные
     QSpace::IO::FileFormat      format; // формать файла (бинарный, текстовый и т.д.)
     QSpace::IO::ReadScheme      scheme; // схема для чтения данных, нужна для их восстановления)
-    std::shared_ptr<Visualize::Layers::LayerSettings> masterSettings;
 
     struct MetaData { // перенести вычисление метаданных в отдельный модуль physics
         double                               timestamp;
@@ -48,7 +47,6 @@ struct DataNode {
              double                      timestamp = 0.0,
              Visualize::EntityType       t         = Visualize::EntityType::Unknown)
         : id(QUuid::createUuid()), label(name), type(t), data(dataSet) {
-        masterSettings  = std::make_shared<Visualize::Layers::LayerSettings>();
         stats.timestamp = timestamp;
     }
 };

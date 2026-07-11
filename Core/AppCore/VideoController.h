@@ -1,15 +1,25 @@
 #pragma once
+#include "Common/Enums/VisualizeBaseEnums.h"
+#include "Visualize/Views/AbstractView.h"
 #include <QObject>
 #include <QStringList>
 #include <quuid.h>
 #include <memory>
 
 namespace QSpace::Core {
-class DataManager;
 class ViewManager;
 class LayerManager;
-class VideoExportManager;
+class ObjectRegistry;
+// class VideoExportManager;
 } // namespace QSpace::Core
+
+namespace QSpace::Visualize::Layers {
+class Layer;
+}
+
+namespace QSpace::Visualize::Views {
+class AbstractView;
+}
 
 namespace QSpace::Core::Controllers {
 // ---------------------------------------------------------
@@ -18,48 +28,62 @@ namespace QSpace::Core::Controllers {
 class VideoController : public QObject {
     Q_OBJECT
   public:
-    explicit VideoController(Core::DataManager*  dataManager,
-                             Core::ViewManager*  viewManager,
-                             Core::LayerManager* layerManager,
-                             QObject*            parent = nullptr);
-    /**
-     * @brief  startVideoExport() --- инициализирует VideoExportManager для создания видео анимации
-     * @param baseNodeId --- уникальный идентификатор слоя настройки которого исползуются для
-     * анимации
-     * @param files --- список путей к файлам для анимирования (все файла должны быть семантически
-     * совместимы)
-     * @param outputPath --- путь к выходному файлу с видео
-     * @param stride --- шаг для пропуска файлов
-     */
-    void startVideoExport(const QUuid&       baseNodeId,
-                          const QStringList& files,
-                          const QString&     outputPath,
-                          int                stride = 1,
-                          int                fps    = 30);
-    /**
-     * @brief отменяет рендеринг видео
-     */
-    void cancelVideoExport();
+    explicit VideoController(Core::ObjectRegistry* objectRegistry,
+                             Core::ViewManager*    viewManager,
+                             Core::LayerManager*   layerManager,
+                             QObject*              parent = nullptr);
+
+    double getSnapshotTimeByIndex(int index) {
+        if (index > 0 && index < static_cast<int>(m_timeSliderSnapshots.size()))
+            return m_timeSliderSnapshots[index].timestamp;
+        else
+            return 0;
+    };
+
+    QUuid getCurrentSnapshotId() const {
+        return m_currentVisualizeSnapshotId;
+    }
+
+    void initialize();
 
   signals:
-    /**
-     * @brief сообщает об обновлении процесса создания видео
-     * @param  currentFrame --- номер читаемого файла
-     * @param  totalFrames --- общее число файлов
-     */
-    void exportProgressUpdated(int currentFrame, int totalFrames);
-    /**
-     * @brief сигнал об окончании создания видео
-     */
-    void exportFinished(bool success);
+    void snapshotsListSizeChanged(const int size);
+    void requestNodeLoad(const QUuid& id);
+
+  public slots:
+    // применяем эксперимент для отображения
+    void handleTargetExperimentChange(const QUuid& experimentId);
+    // активируем отображаемый снимок
+    void handleActivateVisualizeSnapshot(int index);
+
+    // зафиксировать ТЕКУЩИЙ кадр как новый эталон
+    void handleFixedEtalonSnapshot(const QUuid& referenceSnapshotId);
 
   private:
-    Core::DataManager*  m_dataManager;
-    Core::ViewManager*  m_viewManager;
-    Core::LayerManager* m_layerManager;
+    struct SnapshotToTimestamp {
+        QUuid  targetSnapshot;
+        double timestamp;
 
-    // Хранится прямо в контроллере на время экспорта
-    std::shared_ptr<Core::VideoExportManager> m_videoExportManager;
+        bool operator<(const SnapshotToTimestamp& other) const {
+            return timestamp < other.timestamp;
+        }
+    };
+
+    void requestLoadFloatWindow(int index);
+
+    const int floatWindow = 10;
+    QMap<QSpace::Visualize::EntityType,
+         QList<std::shared_ptr<QSpace::Visualize::Layers::Layer>>>
+          m_snapshotPlayerSate;         // слои для текущего snapshot
+    QUuid m_currentVisualizeSnapshotId; // текущий отображаемый кадр
+    // QUuid m_referenceSnapshotId; // "эталонный" снимок, на который зафиксирован диапазон окраски
+    QUuid m_targetExperimentId; // эксперимент отображаемый с помощью плеера кадров
+    std::vector<SnapshotToTimestamp> m_timeSliderSnapshots;
+
+
+    Core::ObjectRegistry* m_objectRegistry;
+    Core::ViewManager*    m_viewManager;
+    Core::LayerManager*   m_layerManager;
 };
 
 } // namespace QSpace::Core::Controllers

@@ -267,6 +267,10 @@ void MainWindow::setupSlots() {
     connect(m_layerExplorerWidget.get(),
             &LayerExplorerWidget::selectionChanged,
             this,
+            &MainWindow::handleLayerSelectionsChange);
+    connect(m_timeSliderWidget.get(),
+            &TimeLineWidget::editLayerProperty,
+            this,
             &MainWindow::handleLayerSelectionChange);
 
     connect(ui->menu_camera, &QMenu::triggered, this, &MainWindow::handleCameraViewChange);
@@ -309,13 +313,16 @@ void MainWindow::setupSlots() {
         },
         Qt::ConnectionType::QueuedConnection);
 }
-void MainWindow::handleLayerSelectionChange(const QList<QUuid>& ids) {
+void MainWindow::handleLayerSelectionsChange(const QList<LayerExplorerWidget::SelectedItem>& ids) {
     if (ids.isEmpty()) {
-        m_propertyInspector->setCurrentNode(QUuid());
+        m_propertyInspector->setCurrentElement(QUuid(), Models::DataTreeItem::Type::Root);
     } else {
         // Берем первый выбранный элемент и передаем в инспектор
-        m_propertyInspector->setCurrentNode(ids.first());
+        m_propertyInspector->setCurrentElement(ids.first().id, ids.first().type);
     }
+}
+void MainWindow::handleLayerSelectionChange(const QUuid& layerId) {
+    m_propertyInspector->setCurrentElement(layerId, Models::DataTreeItem::Type::LayerItem);
 }
 void MainWindow::handleExportFinished(bool success) {
     m_exportProgressDialog->reset(); // Прячем окно
@@ -351,7 +358,7 @@ void MainWindow::handleVideoExport() {
         return;
     }
     QUuid baseNodeId =
-        selectedItems.first(); // Для простоты берем первый выбранный слой. Можно расширить логику позже.
+        selectedItems.first().id; // Для простоты берем первый выбранный слой. Можно расширить логику позже.
 
     // 2. Выбираем файлы для анимации
     QStringList files = QFileDialog::getOpenFileNames(this,

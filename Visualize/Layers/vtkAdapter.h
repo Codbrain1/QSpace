@@ -41,14 +41,45 @@ inline QVector<float> extractScalarField(const std::shared_ptr<Core::DataNode>& 
     if (!node || !node->data || fieldName.isEmpty())
         return result;
 
-    vtkDataArray* array = node->data->GetPointData()->GetArray(fieldName.toUtf8().constData());
+    vtkPointData* pointData = node->data->GetPointData();
+    if (!pointData->HasArray(fieldName.toUtf8().constData()))
+        return result;
+
+    vtkDataArray* array = pointData->GetArray(fieldName.toUtf8().constData());
     if (!array)
         return result;
 
-    const vtkIdType n = array->GetNumberOfTuples();
+    const vtkIdType n       = array->GetNumberOfTuples();
+    const int       numComp = array->GetNumberOfComponents(); // Смотрим, сколько компонент в поле
+
     result.reserve(int(n));
-    for (vtkIdType i = 0; i < n; ++i)
-        result.append(float(array->GetTuple1(i)));
+
+    if (numComp == 1) {
+        // 1. Обычный скаляр (Масса, Плотность, Давление)
+        for (vtkIdType i = 0; i < n; ++i) {
+            result.append(static_cast<float>(array->GetTuple1(i)));
+        }
+    } else if (numComp == 3) {
+        // 2. Векторное поле (Скорость / Velocity, Сила, Ускорение)
+        // Выделяем на стеке небольшой буфер под 3 координаты
+        double v[3] = {0.0, 0.0, 0.0};
+
+        for (vtkIdType i = 0; i < n; ++i) {
+            // Быстро вытаскиваем сразу весь вектор (Vx, Vy, Vz)
+            array->GetTuple(i, v);
+
+            // Вычисляем модуль скорости: sqrt(Vx^2 + Vy^2 + Vz^2)
+            float speedMagnitude = std::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+
+            result.append(speedMagnitude);
+        }
+    } else {
+        // 3. Резервный вариант (если компонент 2, 4 или больше)
+        // Берем только первую компоненту, чтобы избежать паники VTK
+        for (vtkIdType i = 0; i < n; ++i) {
+            result.append(static_cast<float>(array->GetComponent(i, 0)));
+        }
+    }
 
     return result;
 }

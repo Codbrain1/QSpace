@@ -2,6 +2,7 @@
 #include "Core/AppCore/AppCore.h"
 #include "Core/ObjectRegistry/ObjectRegistry.h"
 #include "Enums/CoreEnums.h"
+#include "Models/DataTreeModel/DataTreeModel.h"
 #include "SelectExperimentDialog.h"
 #include "Structures/ObjectRegistryStructures.h"
 #include <QListWidget>
@@ -31,17 +32,23 @@ namespace QSpace::UI {
 class LayerExplorerWidget : public QWidget {
     Q_OBJECT
   public:
+    struct SelectedItem {
+        QUuid                      id;
+        Models::DataTreeItem::Type type;
+    };
     explicit LayerExplorerWidget(Core::AppCore* app, QWidget* parent = nullptr);
     ~LayerExplorerWidget();
-    QList<QUuid> getSelectedIds() const;
+    QList<SelectedItem> getSelectedIds() const;
 
   signals:
-    void selectionChanged(const QList<QUuid>& selectedIds);
+    void selectionChanged(const QList<SelectedItem>& selectedIds);
     void nodeSelectionActivated(const QUuid& id);
-    void removalRequested(const QUuid& id);
+    void removalNodeObjectRequested(const QUuid& id);
+    void removalLayerRequested(const QUuid& id);
     void updateNodeSettingsRequested(const QUuid&                                           id,
                                      std::function<void(Visualize::Layers::LayerSettings&)> modifer);
     void layerStructureChanged(const Models::DataTreeModel::TreeMode mode);
+    void snapshotCompleteForTimeSlider(const QUuid& snapshotId);
     // сигнал вызывающийся при выборе нового эксперимента для отображения
     void targetVisualiseExperimentChanged(const QUuid& experimentId);
 

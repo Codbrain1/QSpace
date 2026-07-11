@@ -32,7 +32,6 @@ QUuid LayerManager::createLayer(std::shared_ptr<DataNode>                       
     // 3. Инициализируем движок данными и настройками
     layer->assignEngine(renderEngine);
     layer->update();
-    layer->getSettings()->setColorByField("Mass");
     // 5. Регистрация в индексах
     m_layers.insert(layer->layerId(), layer);
     m_nodeToLayers[node->id].append(layer->layerId());
@@ -106,12 +105,12 @@ LayerManager::getLayersForNode(const QUuid& nodeId) const {
 }
 
 void LayerManager::updateNodeMasterSettings(const QUuid& nodeId) {
-    auto layers = getLayersForNode(nodeId);
-    for (auto& layer : layers) {
-        if (layer->IsSyncedWithMaster()) {
-            layer->update();
-        }
-    }
+    // auto layers = getLayersForNode(nodeId);
+    // for (auto& layer : layers) {
+    //     if (layer->IsSyncedWithMaster()) {
+    //         layer->update();
+    //     }
+    // }
 }
 
 // 1. Создание слоев — оставляем как есть, это надежно
@@ -150,5 +149,15 @@ void LayerManager::setNodeVisibility(const QUuid& nodeId, bool visible) {
             layer->setVisible(visible);
         }
     }
+}
+
+bool LayerManager::isNodeVisible(const QUuid& nodeId) {
+    auto layers = getLayersForNode(nodeId);
+    for (auto& layer : layers) {
+        if (layer->getSettings()->isVisible()) {
+            return true;
+        }
+    }
+    return false;
 }
 } // namespace QSpace::Core

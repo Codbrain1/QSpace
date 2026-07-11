@@ -41,9 +41,10 @@ class MainWindow : public QMainWindow {
     void handleSavePathSelection();
     void handleSessionStateChange(const QSpace::Session::CurrentSession& session);
     void handleExportFinished(bool success);
-    void handleLayerSelectionChange(const QList<QUuid>& ids);
+    void handleLayerSelectionsChange(const QList<LayerExplorerWidget::SelectedItem>& ids);
     void handleViewCreated(const QUuid& viewId, Visualize::Views::ViewType type);
     void handleViewRemoved(const QUuid& viewId); // TODO: реализовать удаление доков для удаленных окон
+    void handleLayerSelectionChange(const QUuid& layerId);
 
   private:
     QSpace::Core::AppCore*               m_app;

@@ -1,5 +1,6 @@
 #pragma once
 #include "Common/Enums/IOEnums.h"
+#include "Visualize/Layers/Layer.h"
 #include <QMap>
 #include <QObject>
 #include <QSet>
@@ -60,59 +61,46 @@ class DataController : public QObject {
     // --- Управление узлами данных (Nodes) ---
     void                                    createLayerForNode(const QUuid& nodeId);
     std::shared_ptr<QSpace::Core::DataNode> getNodeById(const QUuid& nodeId);
-    QUuid                                   getNodePaletteId(const QUuid& nodeId);
-
+    [[deprecated("use direct layer requasted")]]
+    QUuid                                     getNodePaletteId(const QUuid& nodeId);
+    std::shared_ptr<Visualize::Layers::Layer> getLayerById(const QUuid& layerId);
     // Метод, который вызовет ProjectController при открытии проекта
     void prepareNodesForRestoration(const QMap<QString, Session::DataNodeState>& restoringNodes);
 
     QList<std::shared_ptr<QSpace::Core::Experiment>> getExperiments() const;
 
-    double getSnapshotTimeByIndex(int index) {
-        if (index > 0 && index < m_timeSliderSnapshots.size())
-            return m_timeSliderSnapshots[index].timestamp;
-        else
-            return 0;
-    };
 
   signals:
     void sceneUpdateRequested();
     void markSessionDirty(); // Сигнал для ProjectController
-    void snapshotsListSizeChanged(const int size);
+    void nodeDataLoaded(const QUuid& nodeId);
 
   public slots:
     void removeNodeObject(const QUuid& id);
+    void removeLayer(const QUuid& id);
     /**
      * @brief updateNodeSettings() --- обновляет данные записи в ObjectRegister
      * @param id --- уникальный идентификатор записи
      * @param modifer --- ссылка на функцию изменяющуюю данные записи, обязательно имеет
      * единственный парметор VisualSettings
      */
+    [[deprecated("use direct layer requasted")]]
     void updateNodeSettings(const QUuid&                                           id,
                             std::function<void(Visualize::Layers::LayerSettings&)> modifier);
-    // при изменении слайдера
-    void handleTimeSliderValueChanged(int index, bool isPreview = false);
+
     // при выборе ноды в плоском режиме
     void onNodeSelectionActivated(const QUuid& nodeId);
-    void handleTargetExperimentVisualizeChanged(const QUuid& experimentId);
+
+    void onRequestDataLoad(const QUuid& nodeId);
 
 
   private slots:
     void handleFileReady(const QUuid& taskId, IO::ReadResult result);
-    void onRequestDataLoad(const QUuid& nodeId);
 
   private:
     struct TaskInfo {
         QUuid targetNodeId;   // Будет пустым для первичного импорта пакета
         int   totalFiles = 1; // Количество файлов в задаче
-    };
-
-    struct SnapshotToTimestamp {
-        QUuid  targetSnapshot;
-        double timestamp;
-
-        bool operator<(const SnapshotToTimestamp& other) const {
-            return timestamp < other.timestamp;
-        }
     };
 
     Core::DataManager* m_dataManager;
@@ -127,12 +115,6 @@ class DataController : public QObject {
     QMap<QString, Session::DataNodeState> m_restoringNodes;
 
     bool m_autoGrouping = true;
-
-    // ------- Обработка переключения кадров -------
-    QUuid                            m_currentVisualizeExperimentId;
-    QUuid                            m_currentActiveSnapshotId;
-    std::vector<SnapshotToTimestamp> m_timeSliderSnapshots;
-    // ---------------------------------------------
 
     QString                         extractGroupName(const QString& filename);
     std::shared_ptr<Core::Snapshot> findOrCreateSnapshot(const QString& groupName);

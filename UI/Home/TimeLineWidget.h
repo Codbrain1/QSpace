@@ -15,18 +15,22 @@ class TimeLineWidget : public QWidget {
     ~TimeLineWidget();
 
   signals:
-    void currentTimeStampValueChanged(int valueTimestamp, bool isPreview);
-
+    void currentTimeStampValueChanged(int valueTimestamp);
+    void editLayerProperty(const QUuid& layerId);
+  public slots:
+    void handleSetMainLayer(const QUuid& layerId);
   private slots:
     void handleToolButtonPrev_clicked();
     void handleToolButtonNext_clicked();
+    void handleToolButtonEditLayerSettings();
     void handleTimeSliderChangeValue(int value);
 
-    void handleSnapshotsListChangeSize(int size);
+    void handleSnapshotsListChangeSize(const int size);
 
   private:
     Ui::TimeLineWidget* ui;
     Core::AppCore*      m_app;
+    QUuid               m_layerId;
     void                setTextTimeLabelTextInternal();
 };
 } // namespace QSpace::UI

@@ -70,7 +70,8 @@ class DataTreeModel : public QAbstractItemModel {
     enum CustomRoles {
         IdRole = Qt::UserRole + 1, // Для хранения QUuid ноды
         TimestampRole,             // Для хранения времени (qint64 или QDateTime)
-        DefaultOrderRole           // Для хранения порядкового номера добавления (int)
+        DefaultOrderRole,          // Для хранения порядкового номера добавления (int)
+        TypeRole
     };
     explicit DataTreeModel(Core::ObjectRegistry* registry, Core::LayerManager* layerManager, QObject* parent = nullptr);
     ~DataTreeModel() override = default;

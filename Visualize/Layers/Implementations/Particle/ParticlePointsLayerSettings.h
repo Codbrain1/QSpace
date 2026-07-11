@@ -34,6 +34,19 @@ public:
     bool shadeAsSphere() const { return m_shadeAsSphere; }
     void setShadeAsSphere(bool v) { if (m_shadeAsSphere != v) { m_shadeAsSphere = v; emit changed(); } }
 
+    // Внутри ParticlePointsLayerSettings
+    QString propertyDisplayName(const QString& propName) const override {
+    static const QMap<QString, QString> particleNames = {
+        {"pointSizePx",     "Размер точки (px)"},
+        {"sizeByField",     "Масштаб от поля"},
+        {"minPointSizePx",  "Мин. размер точки"},
+        {"maxPointSizePx",  "Макс. размер точки"},
+        {"shadeAsSphere",   "Сферическое затенение"}
+    };
+    if (particleNames.contains(propName)) return particleNames.value(propName);
+    return LayerSettings::propertyDisplayName(propName);
+}
+
     // clang-format on
   private:
     float m_pointSizePx    = 4.0f;

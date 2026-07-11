@@ -20,6 +20,8 @@ target_sources(UI PRIVATE
     Home/TimeLineWidget.ui
     Home/SelectExperimentDialog.h
     Home/SelectExperimentDialog.cpp
+    Home/SettingsEditorWidget.h
+    Home/SettingsEditorWidget.cpp
 
 )
 target_include_directories(UI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
