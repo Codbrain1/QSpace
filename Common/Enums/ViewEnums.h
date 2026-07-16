@@ -1,9 +1,10 @@
 #pragma once
-
+#include <QObject>
 namespace QSpace::Visualize::Views
 {
 namespace View3D
 {
+
 enum class CameraViewType
 {
   XY_Top,   // Сверху
@@ -12,7 +13,7 @@ enum class CameraViewType
   Iso       // Изометрия
   // MINOR:: добавить стандратные позиции
 };
-}
+} // namespace View3D
 namespace View2D
 {
 

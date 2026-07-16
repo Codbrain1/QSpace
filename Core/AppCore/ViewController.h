@@ -31,7 +31,7 @@ class ViewController : public QObject {
     Visualize::Views::AbstractView* getView(const QUuid& viewId);
 
     void resetCameraInAllViews();
-    // void setCameraViewInAllViews(Visualize::CameraViewType viewType);
+    void setCameraViewInAllViews(Visualize::Views::View3D::CameraViewType viewType);
     void setBackgroundColorInAllViews(float r, float g, float b);
     void setAxesVisibleInAllViews(bool visible);
     void setGridVisibleInAllViews(bool visible);

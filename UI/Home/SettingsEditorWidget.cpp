@@ -10,6 +10,7 @@
 #include <QPushButton>
 #include <QSignalBlocker>
 #include <QSpinBox>
+#include <qcustomplot.h>
 
 namespace QSpace::UI {
 SettingsEditorWidget::SettingsEditorWidget(QWidget* parent)

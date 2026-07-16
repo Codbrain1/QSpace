@@ -49,6 +49,10 @@ struct DataNode {
         : id(QUuid::createUuid()), label(name), type(t), data(dataSet) {
         stats.timestamp = timestamp;
     }
+
+    inline bool isLoaded() {
+        return data ? true : false;
+    }
 };
 
 class Snapshot {
@@ -66,6 +70,14 @@ class Snapshot {
         if (node) {
             components.append(node);
         }
+    }
+
+    bool isLoaded() {
+        for (const auto& node : components) {
+            if (node->isLoaded())
+                return true;
+        }
+        return false;
     }
 
     vtkSmartPointer<vtkMultiBlockDataSet> asVtkMultiBlockDataSet() const {

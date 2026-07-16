@@ -2,7 +2,10 @@
 #include "Common/Logger/Logger.h"
 #include "Core/LayerManager/LayerManager.h"
 #include "Core/ObjectRegistry/ObjectRegistry.h"
+#include "Visualize/Layers/Layer.h"
+#include "Visualize/Views/View3D/AbstractView3D.h"
 #include <quuid.h>
+#include <memory>
 
 namespace QSpace::Core::Controllers {
 
@@ -54,14 +57,25 @@ void VideoController::handleTargetExperimentChange(const QUuid& experimentId) {
 
 void VideoController::handleFixedEtalonSnapshot(const QUuid& referenceSnapshotId) {
     auto snapshot = m_objectRegistry->getSnapshot(referenceSnapshotId);
-    if (!snapshot) {
+    if (!snapshot || !snapshot->isLoaded()) {
         qCWarning(LogCore) << "VideoController: reference snapshot not found:"
                            << referenceSnapshotId;
         return;
     }
+    for (const auto& [key, list] : m_snapshotPlayerSate.asKeyValueRange()) {
+        for (const auto& layer : list) {
+            if (layer) {
+                auto view = layer->getView();
+                if (auto view3D =
+                        std::dynamic_pointer_cast<QSpace::Visualize::Views::AbstractView3D>(
+                            view.lock())) {
+                    view3D->detachRenderLayer(layer->layerId());
+                }
+            }
+        }
+    }
 
     m_snapshotPlayerSate.clear();
-
     // копируем настройки сника для последующего повторения
     for (const auto& node : snapshot->components) {
         if (!node)

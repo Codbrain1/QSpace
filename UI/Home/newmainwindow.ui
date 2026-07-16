@@ -50,15 +50,6 @@
     <addaction name="separator"/>
     <addaction name="action_exit"/>
    </widget>
-   <widget class="QMenu" name="menu_camera">
-    <property name="title">
-     <string>Камера</string>
-    </property>
-    <addaction name="action_view_top"/>
-    <addaction name="action_view_front"/>
-    <addaction name="action_view_right"/>
-    <addaction name="action_view_iso"/>
-   </widget>
    <widget class="QMenu" name="menu_bg">
     <property name="title">
      <string>Фон</string>
@@ -67,7 +58,6 @@
     <addaction name="action_bg_white"/>
    </widget>
    <addaction name="menu_file"/>
-   <addaction name="menu_camera"/>
    <addaction name="menu_bg"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
@@ -87,7 +77,6 @@
    <addaction name="action_save_session"/>
    <addaction name="separator"/>
    <addaction name="action_reset_camera"/>
-   <addaction name="action_view_top"/>
    <addaction name="action_bg_settings"/>
    <addaction name="separator"/>
    <addaction name="action_toggle_axes"/>
@@ -140,26 +129,6 @@
     <string>Сброс камеры</string>
    </property>
   </action>
-  <action name="action_view_top">
-   <property name="text">
-    <string>Вид сверху</string>
-   </property>
-  </action>
-  <action name="action_view_front">
-   <property name="text">
-    <string>Вид спереди</string>
-   </property>
-  </action>
-  <action name="action_view_right">
-   <property name="text">
-    <string>Вид справа</string>
-   </property>
-  </action>
-  <action name="action_view_iso">
-   <property name="text">
-    <string>Изометрия</string>
-   </property>
-  </action>
   <action name="action_bg_settings">
    <property name="text">
     <string>Настройки фона</string>
@@ -177,6 +146,9 @@
   </action>
   <action name="action_toggle_axes">
    <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
     <bool>true</bool>
    </property>
    <property name="text">

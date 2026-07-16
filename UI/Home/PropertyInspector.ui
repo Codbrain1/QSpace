@@ -35,23 +35,33 @@
           <string>Визуализация</string>
          </property>
          <layout class="QGridLayout" name="gridLayout">
-          <item row="1" column="1" colspan="2">
+          <item row="2" column="1" colspan="2">
            <widget class="QComboBox" name="combo_current_column"/>
           </item>
-          <item row="0" column="0">
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_current_column">
+            <property name="text">
+             <string>Раскрасить по</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1" colspan="2">
+           <widget class="QSpace::UI::ColorMapComboBox" name="combo_colormap"/>
+          </item>
+          <item row="1" column="0">
            <widget class="QLabel" name="label_cmap">
             <property name="text">
              <string>Палитра</string>
             </property>
            </widget>
           </item>
-          <item row="0" column="1" colspan="2">
-           <widget class="QSpace::UI::ColorMapComboBox" name="combo_colormap"/>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="label_current_column">
-            <property name="text">
-             <string>Раскрасить по</string>
+          <item row="0" column="0" colspan="3">
+           <widget class="ColorBarWidget" name="colorbarWidget" native="true">
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>16777215</height>
+             </size>
             </property>
            </widget>
           </item>
@@ -69,7 +79,7 @@
             <x>0</x>
             <y>0</y>
             <width>442</width>
-            <height>525</height>
+            <height>507</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_3"/>
@@ -87,6 +97,12 @@
    <class>QSpace::UI::ColorMapComboBox</class>
    <extends>QComboBox</extends>
    <header>UI/Home/ColorMapComboBox.h</header>
+  </customwidget>
+  <customwidget>
+   <class>ColorBarWidget</class>
+   <extends>QWidget</extends>
+   <header>UI/Home/ColorbarWidget.h</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>

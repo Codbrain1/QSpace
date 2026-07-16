@@ -3,9 +3,13 @@
 #include "Visualize/ColorMapManager/ColorMapTexture.h"
 #include <QMouseEvent>
 #include <QPainter>
+#include <QQuaternion>
 #include <QWheelEvent>
 #include <QtMath>
 #include <qelapsedtimer.h>
+#include <qnamespace.h>
+#include "Enums/ViewEnums.h"
+#include "Physics/DimensionConverter/PhysicalUnits.h"
 #include <algorithm>
 #include <cmath>
 
@@ -97,20 +101,17 @@ void GLViewport::resetCamera() {
     update();
 }
 
-void GLViewport::setCameraPreset(int presetIndex) {
-    // ПРЕДПОЛОЖЕНИЕ: соответствие индексов вашему enum CameraViewType — подставьте
-    // реальные значения при интеграции, если порядок отличается.
-    // CRITICAL
+void GLViewport::setCameraPreset(CameraViewType presetIndex) {
     switch (presetIndex) {
-        case 1:
+        case CameraViewType::XY_Top:
             m_yaw   = 0.0f;
             m_pitch = qDegreesToRadians(89.9f);
             break; // Top
-        case 2:
+        case CameraViewType::XZ_Front:
             m_yaw   = 0.0f;
             m_pitch = 0.0f;
             break; // Front
-        case 3:
+        case CameraViewType::YZ_Right:
             m_yaw   = qDegreesToRadians(90.0f);
             m_pitch = 0.0f;
             break; // Side
@@ -179,12 +180,16 @@ void GLViewport::fitCameraToLayers() {
 
 Visualize::RenderContext GLViewport::buildRenderContext() {
     Visualize::RenderContext ctx;
-    ctx.viewportPx   = size();
+    ctx.viewportPx   = size(); // получаем размер окна (для виджета отрисовки непосредственно)
     ctx.orthographic = m_settings->viewport()->orthographic();
 
-    const float aspect = width() > 0 ? float(width()) / float(std::max(1, height())) : 1.0f;
+    const float aspect = width() > 0 ? float(width()) / float(std::max(1, height()))
+                                     : 1.0f; // вычисляем соотношение сторон чтобы при растягивании
+                                             // окна не искажалась геометрия объектов
 
-    if (ctx.orthographic) {
+
+    if (ctx.orthographic) { // все частицы проецируются на экран путем параллельных лучей
+                            // (оргогональная проеция)
         const float halfH = std::max(m_distance, 0.001f);
         const float halfW = halfH * aspect;
         ctx.projMatrix.ortho(-halfW,
@@ -194,7 +199,7 @@ Visualize::RenderContext GLViewport::buildRenderContext() {
                              m_settings->viewport()->nearClip(),
                              m_settings->viewport()->farClip());
         ctx.pixelsPerWorldUnit = float(height()) / (2.0f * halfH);
-    } else {
+    } else { // все частицы проецируются на экран
         ctx.projMatrix.perspective(m_settings->viewport()->fovYDegrees(),
                                    aspect,
                                    m_settings->viewport()->nearClip(),
@@ -207,7 +212,17 @@ Visualize::RenderContext GLViewport::buildRenderContext() {
                               m_center.y() + m_distance * std::sin(m_pitch),
                               m_center.z() + m_distance * std::cos(m_pitch) * std::cos(m_yaw));
 
-    ctx.viewMatrix.lookAt(ctx.cameraPos, m_center, QVector3D(0, 1, 0));
+    QVector3D forward      = (m_center - ctx.cameraPos).normalized();
+    bool      isUpsideDown = std::cos(m_pitch) < 0.0f;
+    QVector3D baseUp       = isUpsideDown ? QVector3D(0, -1, 0) : QVector3D(0, 1, 0);
+
+    // Используем m_roll (в радианах)
+    QQuaternion rotation = QQuaternion::fromAxisAndAngle(forward, qRadiansToDegrees(m_roll));
+    QVector3D   rolledUp = rotation.rotatedVector(baseUp);
+
+    ctx.viewMatrix.lookAt(ctx.cameraPos, m_center, rolledUp);
+
+
     ctx.mvp = ctx.projMatrix * ctx.viewMatrix;
 
     return ctx;
@@ -292,10 +307,39 @@ void GLViewport::mousePressEvent(QMouseEvent* event) {
 void GLViewport::mouseMoveEvent(QMouseEvent* event) {
     if (!m_dragging)
         return;
+
     const QPoint delta = event->pos() - m_lastMousePos;
     m_lastMousePos     = event->pos();
-    m_yaw += delta.x() * 0.01f;
-    m_pitch = std::clamp(m_pitch + delta.y() * 0.01f, -1.5f, 1.5f);
+    QVector3D right    = m_lastContext.viewMatrix.row(0).toVector3D();
+    QVector3D up       = m_lastContext.viewMatrix.row(1).toVector3D();
+
+    if (event->modifiers() & Qt::ShiftModifier) {
+        // --- ПАНОРАМИРОВАНИЕ (PAN) ---
+        float scale = (m_lastContext.pixelsPerWorldUnit > 0.0f)
+                          ? (1.0f / m_lastContext.pixelsPerWorldUnit)
+                          : 0.01f;
+
+
+        m_center += (-right * delta.x() + up * delta.y()) * scale;
+
+    } else if (event->modifiers() & Qt::ControlModifier) {
+        // --- ВРАЩЕНИЕ (ROLL) ---
+        m_roll = normalizeAngle(m_roll + delta.x() * 0.01f);
+    } else {
+        // --- ОРБИТА (ORBIT) ---
+        float yawDelta = delta.x() * 0.01f;
+
+        // Если локальный вектор "вверх" (up) камеры смотрит вниз относительно
+        // мировой оси Y (up.y() < 0), значит камера перевернута.
+        // Неважно, произошло это из-за pitch или roll — просто инвертируем yaw.
+        if (up.y() < 0.0f) {
+            yawDelta = -yawDelta;
+        }
+
+        m_yaw   = normalizeAngle(m_yaw - yawDelta);
+        m_pitch = normalizeAngle(m_pitch + delta.y() * 0.01f);
+    }
+
     update();
 }
 

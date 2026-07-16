@@ -5,7 +5,7 @@
 #include <QOpenGLShaderProgram>
 #include <QOpenGLVertexArrayObject>
 #include <QScopedPointer>
-#include "BinningPointsLayerSettings.h" // переименовано из BiningPointsLayerSettings — см. примечание
+#include "BinningPointsLayerSettings.h"
 
 namespace QSpace::Visualize::Layers {
 
@@ -69,7 +69,7 @@ class BinningRendererLayer : public IOpenGLRenderLayer {
   private:
     void      buildShaders();
     void      uploadBuffersIfDirty(QOpenGLFunctions_3_3_Core* gl);
-    void      ensureAccumFBO(const QSize& size);
+    void      ensureAccumFBO(const QSize& size, QOpenGLFunctions_3_3_Core* gl);
     void      rebuildGridOverlayIfNeeded(QOpenGLFunctions_3_3_Core* gl);
     QVector3D gridCenter() const;
 

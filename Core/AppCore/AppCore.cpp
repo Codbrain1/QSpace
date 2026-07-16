@@ -32,34 +32,29 @@ AppCore::AppCore(QObject* parent) : QObject(parent) {
     m_viewManager    = std::make_unique<ViewManager>();
     m_layerManager   = std::make_unique<LayerManager>();
     m_sessionManager =
-        std::make_unique<SessionManager>(m_objectRegistry.get(), m_layerManager.get(), this);
+        std::make_unique<SessionManager>(m_objectRegistry.get(), m_layerManager.get());
 
     // 2. Инициализация контроллеров (Внедрение зависимостей)
     m_viewController = std::make_unique<Controllers::ViewController>(m_viewManager.get(),
                                                                      m_layerManager.get(),
-                                                                     m_objectRegistry.get(),
-                                                                     this);
+                                                                     m_objectRegistry.get());
 
     m_dataController = std::make_unique<Controllers::DataController>(m_dataManager.get(),
                                                                      m_objectRegistry.get(),
                                                                      m_layerManager.get(),
-                                                                     m_viewManager.get(),
-                                                                     this);
+                                                                     m_viewManager.get());
 
     m_projectController = std::make_unique<Controllers::ProjectController>(m_sessionManager.get(),
                                                                            m_objectRegistry.get(),
                                                                            m_dataManager.get(),
-                                                                           m_dataController.get(),
-                                                                           this);
+                                                                           m_dataController.get());
 
     m_videoController = std::make_unique<Controllers::VideoController>(m_objectRegistry.get(),
                                                                        m_viewManager.get(),
-                                                                       m_layerManager.get(),
-                                                                       this);
+                                                                       m_layerManager.get());
     // 3. Инициализация моделей данных
     m_dataTreeModel = std::make_unique<QSpace::Models::DataTreeModel>(m_objectRegistry.get(),
-                                                                      m_layerManager.get(),
-                                                                      this);
+                                                                      m_layerManager.get());
 }
 
 void AppCore::initialize() {

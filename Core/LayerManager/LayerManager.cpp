@@ -2,7 +2,9 @@
 #include "Common/Logger/Logger.h"
 #include "Core/StyleManager/StyleManager.h"
 #include "Visualize/Layers/LayerFactory.h"
+#include "Visualize/Views/View3D/AbstractView3D.h"
 #include "Enums/LayerEnums.h"
+#include <memory>
 
 namespace QSpace::Core {
 
@@ -24,14 +26,16 @@ QUuid LayerManager::createLayer(std::shared_ptr<DataNode>                       
     // 2. Создаем движок через фабрику
     auto renderEngine = Visualize::Layers::LayerFactory::createLayerRenderer(
         node,
-        Visualize::Layers::RenderLayerType::SPH); // CRITICAL добавить возможность создания разных
-                                                  // типов слоев
+        Visualize::Layers::RenderLayerType::SPH); // CRITICAL добавить возможность создания
+                                                  // разных типов слоев
     if (!renderEngine)
         return QUuid();
 
     // 3. Инициализируем движок данными и настройками
     layer->assignEngine(renderEngine);
     layer->update();
+    layer->getSettings()->setColorByField("Mass");
+
     // 5. Регистрация в индексах
     m_layers.insert(layer->layerId(), layer);
     m_nodeToLayers[node->id].append(layer->layerId());
@@ -56,8 +60,10 @@ void LayerManager::removeLayer(const QUuid& layerId) {
             if (m_viewToLayers[rawViewPtr].isEmpty())
                 m_viewToLayers.remove(rawViewPtr);
         }
+        if (auto view3D = dynamic_cast<QSpace::Visualize::Views::AbstractView3D*>(rawViewPtr)) {
+            view3D->detachRenderLayer(layerId);
+        }
     }
-
     // Удаляем из остальных индексов
     m_nodeToLayers[layer->dataNodeId()].removeOne(layerId);
     m_layers.remove(layerId);

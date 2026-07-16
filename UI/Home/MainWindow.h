@@ -31,7 +31,7 @@ class MainWindow : public QMainWindow {
   private slots:
     void handleRenderUpdate(); // запрос на обновление сцены
     void resetCamera();
-    void handleCameraViewChange(QAction* action); // TODO
+    void handleCameraViewChange(int index); // TODO
     void handleBackgroundChange(QAction* action);
     void axesVisibleToggled(bool visible);
     void gridVisibleToggled(bool visible);
@@ -53,6 +53,8 @@ class MainWindow : public QMainWindow {
     std::unique_ptr<LayerExplorerWidget> m_layerExplorerWidget; //
     std::unique_ptr<PropertyInspector>   m_propertyInspector;   // TODO: изменить название widget
     std::unique_ptr<TimeLineWidget>      m_timeSliderWidget;
+    QComboBox*                           cameraComboBox;
+
     QMap<QUuid, QDockWidget*> m_viewDockWidgets; // для хранения соответствия между viewId и их доками
     void                      setupSlots();
 };

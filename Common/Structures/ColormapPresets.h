@@ -20,20 +20,22 @@ struct ColorMap {
     QVector<ColorPoint> points;
     bool                isPreset = false;
 };
+
 class ColorMapPresets {
   public:
     static QList<ColorMap> getStandardPresets() {
         QList<ColorMap> presets;
 
         // Лямбда теперь принимает фиксированный UUID в виде строки
-        auto addPreset = [&](const QString& idStr, const QString& name, const QVector<ColorPoint>& pts) {
-            ColorMap map;
-            map.id       = QUuid::fromString(idStr); // ФИКСИРОВАННЫЙ ID
-            map.name     = name;
-            map.isPreset = true;
-            map.points   = pts;
-            presets.append(map);
-        };
+        auto addPreset =
+            [&](const QString& idStr, const QString& name, const QVector<ColorPoint>& pts) {
+                ColorMap map;
+                map.id       = QUuid::fromString(idStr); // ФИКСИРОВАННЫЙ ID
+                map.name     = name;
+                map.isPreset = true;
+                map.points   = pts;
+                presets.append(map);
+            };
 
         // Сгенерированные один раз статичные UUID для пресетов
         addPreset("{1b4d0001-0000-0000-0000-000000000001}",
@@ -66,7 +68,9 @@ class ColorMapPresets {
                    {1.00, 0.980, 0.920, 0.700}});
         addPreset("{1b4d0005-0000-0000-0000-000000000005}",
                   "CoolToWarm",
-                  {{0.00, 0.230, 0.290, 0.750}, {0.50, 0.860, 0.860, 0.860}, {1.00, 0.700, 0.010, 0.140}});
+                  {{0.00, 0.230, 0.290, 0.750},
+                   {0.50, 0.860, 0.860, 0.860},
+                   {1.00, 0.700, 0.010, 0.140}});
         addPreset("{1b4d0006-0000-0000-0000-000000000006}",
                   "Rainbow",
                   {{0.00, 0.0, 0.0, 1.0},
@@ -77,7 +81,15 @@ class ColorMapPresets {
         addPreset("{1b4d0007-0000-0000-0000-000000000007}",
                   "Grayscale",
                   {{0.00, 0.0, 0.0, 0.0}, {1.00, 1.0, 1.0, 1.0}});
-
+        addPreset("{1b4d0008-0000-0000-0000-000000000008}",
+                  "bwr modify",
+                  {{0.00, 0.000, 0.000, 0.050},   // Глубокий черный/синий на самом минимуме
+                   {0.15, 0.000, 0.000, 0.850},   // Насыщенный синий
+                   {0.35, 0.450, 0.000, 0.650},   // Переходный фиолетовый/пурпурный
+                   {0.55, 0.900, 0.000, 0.000},   // Яркий красный
+                   {0.75, 1.000, 0.450, 0.000},   // Оранжевый
+                   {0.90, 1.000, 0.900, 0.000},   // Насыщенный желтый
+                   {1.00, 1.000, 1.000, 1.000}}); // Белое горячее ядро в центре
         return presets;
     }
 

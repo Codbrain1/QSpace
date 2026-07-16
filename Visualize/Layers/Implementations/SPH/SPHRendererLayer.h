@@ -19,6 +19,7 @@ class SPHRendererLayer : public IOpenGLRenderLayer {
     void setData(std::weak_ptr<Core::DataNode> node) override {
         m_dataNode = node;
         m_dirty    = true;
+        computeBounds();
     }
 
     void setSettings(std::shared_ptr<LayerSettings> settings) override {
@@ -74,16 +75,18 @@ class SPHRendererLayer : public IOpenGLRenderLayer {
 
   private:
     void buildShaders();
-    void uploadBuffersIfDirty(QOpenGLFunctions_3_3_Core* gl);
+    void uploadBuffers(QOpenGLFunctions_3_3_Core* gl);
     void ensureAccumFBO(const QSize& size);
-    void calibrateIfNeeded(QOpenGLFunctions_3_3_Core* gl);
+    void computeRange(QOpenGLFunctions_3_3_Core* gl);
+    void computeBounds();
 
-    QOpenGLShaderProgram m_splatProgram, m_resolveProgram;
-    QOpenGLBuffer m_vboPos{QOpenGLBuffer::VertexBuffer}, m_vboMass{QOpenGLBuffer::VertexBuffer};
+
+    QOpenGLShaderProgram m_splatProgram, m_physicalResolveProgram, m_resolveProgram;
+    QOpenGLBuffer m_vboPos{QOpenGLBuffer::VertexBuffer}, m_vboScalar{QOpenGLBuffer::VertexBuffer};
     QOpenGLVertexArrayObject                 m_vaoParticles;
     QOpenGLBuffer                            m_vboQuad{QOpenGLBuffer::VertexBuffer};
     QOpenGLVertexArrayObject                 m_vaoQuad;
-    QScopedPointer<QOpenGLFramebufferObject> m_accumFBO;
+    QScopedPointer<QOpenGLFramebufferObject> m_accumFBO, m_physicalFBO;
 
     int  m_particleCount    = 0;
     bool m_dirty            = true;

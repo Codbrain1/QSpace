@@ -8,6 +8,7 @@
 #include <QUuid>
 #include "../View3DSettings.h"
 #include "AxisRenderer.h"
+#include "Enums/ViewEnums.h"
 #include "GridRenderer.h"
 #include <memory>
 
@@ -25,7 +26,7 @@ class GLViewport : public QOpenGLWidget, protected QOpenGLFunctions_3_3_Core {
 
     void setBackgroundColor(double r, double g, double b);
     void resetCamera();
-    void setCameraPreset(int presetIndex);
+    void setCameraPreset(View3D::CameraViewType presetIndex);
     void forceFullRedraw();
 
   signals:
@@ -52,6 +53,14 @@ class GLViewport : public QOpenGLWidget, protected QOpenGLFunctions_3_3_Core {
     void                     fitCameraToLayers();
     void                     processPendingColorMapInvalidations();
 
+    float normalizeAngle(float angle) {
+        while (angle > M_PI)
+            angle -= 2.0f * M_PI;
+        while (angle < -M_PI)
+            angle += 2.0f * M_PI;
+        return angle;
+    }
+
     View3DSettings* m_settings; // не владеем
 
     QMap<QUuid, std::shared_ptr<Visualize::IOpenGLRenderLayer>> m_layers;
@@ -66,11 +75,12 @@ class GLViewport : public QOpenGLWidget, protected QOpenGLFunctions_3_3_Core {
     float     m_distance = 10.0f; // радиус орбиты (дистанция до объекта).
     float     m_yaw      = 0.0f;  // поворот мыши по горизонтали
     float     m_pitch    = 0.0f;  // наклон мыши по вертикали
-    QPoint    m_lastMousePos;     // последняя позиция мыши
+    float     m_roll     = 0.0f;
+    QPoint    m_lastMousePos; // последняя позиция мыши
     bool      m_dragging = false;
 
     QColor m_backgroundColor{13, 13, 20};
-    bool m_needsCameraFit = true; // триггер для автоматического наведения камеры на объект
+    bool   m_needsCameraFit = true; // триггер для автоматического наведения камеры на объект
 
     // ---- отложенная инвалидация текстур палитр ----
     // GL-контекст не гарантированно активен в слоте, вызванном сигналом

@@ -41,11 +41,11 @@ class GridSettings : public QObject {
     void changed();
 
   private:
-    bool   m_visible   = true;                // видимость сетки
+    bool   m_visible   = false;               // видимость сетки
     QColor m_color     = QColor(90, 90, 100); // цвет сетки
     float  m_spacing   = 1.0f;                // расстояние между линиями (в мировых единицах)
     float  m_extent    = 10.0f;               // половина от общего размера сетки
-    int    m_lineCount = 10;                  // число линий на сетке
+    int    m_lineCount = 16;                  // число линий на сетке
 };
 
 // ============================================================
@@ -119,16 +119,16 @@ class AxisSettings : public QObject {
     bool    m_visible         = true;                 // видимость осей
     bool    m_showLabels      = true;                 // видимость меток
     bool    m_showTicks       = true;                 // видимость засечек
-    int     m_tickCount       = 5;                    // число зачечек
+    int     m_tickCount       = 8;                    // число зачечек
     QColor  m_colorX          = QColor(220, 60, 60);  // цвет оси X
     QColor  m_colorY          = QColor(60, 200, 90);  // цвет оси Y
     QColor  m_colorZ          = QColor(60, 120, 220); // цвет оси Z
-    QString m_labelX          = "";                   // подпись оси X
-    QString m_labelY          = "";                   // подпись оси Y
-    QString m_labelZ          = "";                   // подпись оси Z
+    QString m_labelX          = "X";                  // подпись оси X
+    QString m_labelY          = "Y";                  // подпись оси Y
+    QString m_labelZ          = "Z";                  // подпись оси Z
     QString m_unitLabel       = "kpc";                // подпись размерности
     QString m_labelFontFamily = "Segoe UI";           // тип шрифта
-    int     m_labelFontSize   = 9;                    // размер шрифта
+    int     m_labelFontSize   = 10;                   // размер шрифта
 };
 
 // ============================================================
@@ -173,15 +173,22 @@ public:
     void changed();
 
   private:
+    // материалы для изучения
+    // https://vuzdoc.ru/76377/tehnika/proektsii
+
     QColor m_backgroundColor = QColor(13, 13, 20); // фон отображаемого окна
-    bool m_orthographic = true; // Переключатель между двумя типами проекции: Перспективная проекция
-                                // и Ортографическая (параллельная) проекция
-    float m_fovYDegrees = 45.0f; // по вертикали (угол обзора камеры), в градусах. Используется
+    bool   m_orthographic    = false; // Переключатель между двумя типами проекции: Перспективная
+                                      // проекция и Ортографическая (параллельная) проекция
+    float m_fovYDegrees = 45.0f;      // по вертикали (угол обзора камеры), в градусах. Используется
     // только когда включена перспективная проекция
 
     // Границы отсечения по глубине (near/far clipping planes). Определяют диапазон
     // расстояний от камеры, в котором объекты вообще видны и участвуют в рендеринге:
-    float m_nearClip = 0.001f;
+    // Параметры left и right задают координаты левой и правой вертикальной плоскости отсечения.
+    // Параметры bottom и top определяют координаты верхней и нижней плоскости отсечения. Параметры
+    // zNear и zFar задают расстояние от точки (0, 0, 0) до ближней и дальней плоскостей отсечения и
+    // могут быть положительными и отрицательными.
+    float m_nearClip = -0.0001f;
     float m_farClip  = 1000.0f;
 
     // Показывать ли координатный гизмо — маленький 3D-компас (обычно в углу экрана)

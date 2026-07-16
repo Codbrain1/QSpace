@@ -525,7 +525,6 @@ QVariant DataTreeModel::data(const QModelIndex& index, int role) const {
         if (item->type() == DataTreeItem::Snapshot) {
             auto snapshot = m_registry->getSnapshot(item->id());
             if (snapshot) {
-                // ВНИМАНИЕ: Замените 'timestamp' на реальное имя поля времени в вашей структуре Snapshot
                 return snapshot->timestamp;
             }
         }
@@ -653,7 +652,12 @@ QVariant DataTreeModel::data(const QModelIndex& index, int role) const {
     if (role == Qt::ForegroundRole && item->type() == DataTreeItem::DataNode) {
         auto node = m_registry->getNode(item->id());
         // Если данные выгружены LRU-кэшем — приглушаем текст серым цветом
-        if (node && node->data == nullptr) {
+        if (node && !node->isLoaded()) {
+            return QColor(Qt::gray);
+        }
+    } else if (role == Qt::ForegroundRole && item->type() == DataTreeItem::Snapshot) {
+        auto snapshot = m_registry->getSnapshot(item->id());
+        if (snapshot && !snapshot->isLoaded()) {
             return QColor(Qt::gray);
         }
     }

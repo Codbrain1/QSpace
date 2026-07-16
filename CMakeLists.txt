@@ -105,8 +105,9 @@ add_subdirectory(Physics)
 add_subdirectory(Visualize)
 add_subdirectory(Session)
 add_subdirectory(UI)
-# add_subdirectory(Charting)
+# add_subdirectory(Charting) [[deprecated]]
 add_subdirectory(Sandbox)
+add_subdirectory(extern/QCustomPlot)
 
 include(GNUInstallDirs)
 set(CPACK_PACKAGE_NAME "QSpace")

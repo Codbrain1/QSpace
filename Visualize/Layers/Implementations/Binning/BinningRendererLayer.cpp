@@ -12,12 +12,10 @@ void BinningRendererLayer::buildShaders() {
         layout(location = 0) in vec3 aPos;
         layout(location = 1) in float aScalar;
         uniform mat4 uMVP;
-        uniform float uPointScale;
-        uniform float uCellSize;
         out float vScalar;
         void main() {
             gl_Position = uMVP * vec4(aPos, 1.0);
-            gl_PointSize = uPointScale * uCellSize;
+            gl_PointSize = 1.0; // Строго 1 пиксель (ячейка) в FBO-сетке
             vScalar = aScalar;
         }
     )";
@@ -38,7 +36,7 @@ void BinningRendererLayer::buildShaders() {
         #version 330 core
         layout(location = 0) in vec2 aPos;
         out vec2 vUV;
-        void main() { vUV = aPos*0.5+0.5; gl_Position = vec4(aPos,0.0,1.0); }
+        void main() { vUV = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }
     )";
     static const char* resolveFs = R"(
         #version 330 core
@@ -55,12 +53,14 @@ void BinningRendererLayer::buildShaders() {
         void main() {
             vec4 acc = texture(uAccumTex, vUV);
             float count = acc.g;
-            if (count < 0.5) discard;
+            if (count < 0.5) discard; // Ячейка пуста
 
             float avgValue = acc.r / count;
+            float rMin = uUseLogScale ? log(max(abs(uRangeMin), 1e-30)) / log(10.0) : uRangeMin;
+            float rMax = uUseLogScale ? log(max(abs(uRangeMax), 1e-30)) / log(10.0) : uRangeMax;
             float value = uUseLogScale ? log(max(abs(avgValue), 1e-30)) / log(10.0) : avgValue;
-            float t = clamp((value - uRangeMin) / max(1e-6, uRangeMax - uRangeMin), 0.0, 1.0);
-
+            
+            float t = clamp((value - rMin) / max(1e-6, rMax - rMin), 0.0, 1.0);
             float alpha = uOpacity;
             if (uFadeByLength) {
                 float distFromCenter = length(vUV - vec2(0.5)) * 2.0;
@@ -127,14 +127,13 @@ void BinningRendererLayer::uploadBuffersIfDirty(QOpenGLFunctions_3_3_Core* gl) {
 
     QVector<QVector3D> positions = Visualize::vtkAdapter::extractPositions(node);
 
-    // значение, которое биннится и усредняется по числу частиц в ячейке
     QVector<float> scalars;
-    if (m_settings && !m_settings->colorByField().isEmpty())
+    if (m_settings && !m_settings->colorByField().isEmpty()) {
         scalars = Visualize::vtkAdapter::extractScalarField(node, m_settings->colorByField());
+    }
 
     m_particleCount = positions.size();
     if (m_particleCount == 0) {
-        qWarning() << "BinningRendererLayer: DataNode contains no points";
         m_dirty     = false;
         m_hasBounds = false;
         return;
@@ -161,7 +160,7 @@ void BinningRendererLayer::uploadBuffersIfDirty(QOpenGLFunctions_3_3_Core* gl) {
     if (!scalars.isEmpty()) {
         m_vboScalar.allocate(scalars.constData(), scalars.size() * int(sizeof(float)));
     } else {
-        QVector<float> ones(positions.size(), 1.0f); // числовая плотность частиц
+        QVector<float> ones(positions.size(), 1.0f);
         m_vboScalar.allocate(ones.constData(), ones.size() * int(sizeof(float)));
     }
     gl->glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, sizeof(float), nullptr);
@@ -169,16 +168,22 @@ void BinningRendererLayer::uploadBuffersIfDirty(QOpenGLFunctions_3_3_Core* gl) {
     m_vaoParticles.release();
 
     m_dirty              = false;
-    m_cachedGridCellSize = -1.0; // форсируем перестройку оверлея сетки под новые bounds
+    m_cachedGridCellSize = -1.0;
 }
 
-void BinningRendererLayer::ensureAccumFBO(const QSize& size) {
+void BinningRendererLayer::ensureAccumFBO(const QSize& size, QOpenGLFunctions_3_3_Core* gl) {
     if (m_accumFBO && m_accumFBO->size() == size)
         return;
     QOpenGLFramebufferObjectFormat fmt;
     fmt.setInternalTextureFormat(GL_RGBA32F);
     fmt.setAttachment(QOpenGLFramebufferObject::NoAttachment);
     m_accumFBO.reset(new QOpenGLFramebufferObject(size, fmt));
+
+    // Важно: отключаем интерполяцию для четких границ ячеек биннинга
+    gl->glBindTexture(GL_TEXTURE_2D, m_accumFBO->texture());
+    gl->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    gl->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    gl->glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 QVector3D BinningRendererLayer::gridCenter() const {
@@ -191,11 +196,8 @@ void BinningRendererLayer::rebuildGridOverlayIfNeeded(QOpenGLFunctions_3_3_Core*
 
     const double cellSize = m_settings->cellSize();
     if (qFuzzyCompare(cellSize, m_cachedGridCellSize))
-        return; // геометрия уже актуальна — не пересобираем каждый кадр
+        return;
 
-    // строим контур ячеек на плоскости XZ, накрывающей bounding box данных —
-    // тот же принцип, что и View3D::GridRenderer, но самодостаточно внутри слоя,
-    // чтобы Layers не зависел от Views (нет обратной зависимости модулей)
     QVector<float> verts;
     const float    minX = m_boundsMin.x(), maxX = m_boundsMax.x();
     const float    minZ = m_boundsMin.z(), maxZ = m_boundsMax.z();
@@ -230,8 +232,16 @@ void BinningRendererLayer::render(QOpenGLFunctions_3_3_Core*      gl,
     uploadBuffersIfDirty(gl);
     if (m_particleCount == 0)
         return;
-    ensureAccumFBO(ctx.viewportPx);
 
+    int   cSize = std::max(1, static_cast<int>(m_settings->cellSize()));
+    QSize gridPx(std::max(1, ctx.viewportPx.width() / cSize),
+                 std::max(1, ctx.viewportPx.height() / cSize));
+
+    ensureAccumFBO(gridPx, gl);
+
+    // ========================================================
+    // Этап 1: Биннинг частиц в уменьшенную FBO-сетку
+    // ========================================================
     m_accumFBO->bind();
     gl->glViewport(0, 0, m_accumFBO->width(), m_accumFBO->height());
     gl->glClearColor(0, 0, 0, 0);
@@ -242,16 +252,54 @@ void BinningRendererLayer::render(QOpenGLFunctions_3_3_Core*      gl,
 
     m_binProgram.bind();
     m_binProgram.setUniformValue("uMVP", ctx.mvp);
-    m_binProgram.setUniformValue("uPointScale", ctx.pixelsPerWorldUnit);
-    m_binProgram.setUniformValue("uCellSize", float(m_settings->cellSize()));
 
     m_vaoParticles.bind();
     gl->glDrawArrays(GL_POINTS, 0, m_particleCount);
     m_vaoParticles.release();
     m_binProgram.release();
-    gl->glDisable(GL_BLEND);
-    m_accumFBO->release();
 
+    // ========================================================
+    // Этап 1.5: Расчет диапазона скаляра (Readback из FBO)
+    // ========================================================
+    int                fboW = m_accumFBO->width();
+    int                fboH = m_accumFBO->height();
+    std::vector<float> accumPixels(fboW * fboH * 4); // FBO имеет формат GL_RGBA32F
+
+    // Читаем данные пока FBO еще привязан
+    gl->glReadPixels(0, 0, fboW, fboH, GL_RGBA, GL_FLOAT, accumPixels.data());
+    m_accumFBO->release(); // Теперь можно отвязать
+
+    float calcMin       = std::numeric_limits<float>::max();
+    float calcMax       = std::numeric_limits<float>::lowest();
+    bool  hasValidCells = false;
+
+    for (size_t i = 0; i < accumPixels.size(); i += 4) {
+        float sum   = accumPixels[i];     // acc.r (сумма скаляров)
+        float count = accumPixels[i + 1]; // acc.g (количество частиц)
+
+        if (count >= 0.5f) { // Ячейка не пуста
+            // ВАЖНО: Эта формула должна в точности зеркалить логику resolveFs!
+            float normalizedValue = sum / count;
+
+            // Если вы перейдете на поверхностную плотность, логика будет такой:
+            // float normalizedValue = sum / (cSize * cSize);
+
+            calcMin = std::min(calcMin, normalizedValue);
+            calcMax = std::max(calcMax, normalizedValue);
+            // m_settings->setRangeMin(calcMin);
+            // m_settings->setRangeMax(calcMax);
+            hasValidCells = true;
+        }
+    }
+
+    if (!hasValidCells) {
+        calcMin = 0.0f;
+        calcMax = 1.0f; // Заглушка, если все частицы вне экрана
+    }
+
+    // ========================================================
+    // Этап 2: Рендер результата на полный экран
+    // ========================================================
     gl->glViewport(0, 0, ctx.viewportPx.width(), ctx.viewportPx.height());
     gl->glEnable(GL_BLEND);
     gl->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -264,8 +312,11 @@ void BinningRendererLayer::render(QOpenGLFunctions_3_3_Core*      gl,
     m_resolveProgram.bind();
     m_resolveProgram.setUniformValue("uAccumTex", 0);
     m_resolveProgram.setUniformValue("uColorMap", 1);
-    m_resolveProgram.setUniformValue("uRangeMin", float(m_settings->rangeMin()));
-    m_resolveProgram.setUniformValue("uRangeMax", float(m_settings->rangeMax()));
+
+    // Передаем динамически рассчитанные значения напрямую!
+    m_resolveProgram.setUniformValue("uRangeMin", calcMin);
+    m_resolveProgram.setUniformValue("uRangeMax", calcMax);
+
     m_resolveProgram.setUniformValue("uUseLogScale", m_settings->useLogScale());
     m_resolveProgram.setUniformValue("uOpacity", float(m_settings->opacity()));
     m_resolveProgram.setUniformValue("uFadeByLength", m_settings->fadeByLength());
@@ -276,17 +327,11 @@ void BinningRendererLayer::render(QOpenGLFunctions_3_3_Core*      gl,
     m_vaoQuad.release();
     m_resolveProgram.release();
 
-    gl->glBindTexture(GL_TEXTURE_2D, 0);
-    gl->glActiveTexture(GL_TEXTURE0);
-    gl->glBindTexture(GL_TEXTURE_1D, 0);
-
-    // ---- контур ячеек сетки (debug-оверлей), рисуется поверх, если lineWidth > 0 ----
+    // Этап 3: Оверлей мировой сетки (опционально)
     if (m_settings->lineWidth() > 0.0f) {
         rebuildGridOverlayIfNeeded(gl);
-
         if (m_gridLineVertexCount > 0) {
             gl->glLineWidth(m_settings->lineWidth());
-
             m_gridOverlayProgram.bind();
             m_gridOverlayProgram.setUniformValue("uMVP", ctx.mvp);
             const QColor c = m_settings->lineColor();
@@ -298,7 +343,6 @@ void BinningRendererLayer::render(QOpenGLFunctions_3_3_Core*      gl,
             gl->glDrawArrays(GL_LINES, 0, m_gridLineVertexCount);
             m_vaoGridLines.release();
             m_gridOverlayProgram.release();
-
             gl->glLineWidth(1.0f);
         }
     }

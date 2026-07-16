@@ -26,6 +26,6 @@ class AbstractView3D : public AbstractView {
   protected:
     // защищённый доступ, чтобы обычный код View3D мог итерироваться при рендере,
     // но снаружи (кроме LayerManager) никто не модифицирует список напрямую
-    QList<std::shared_ptr<Visualize::IRenderLayer>> m_renderLayers;
+    // QList<std::shared_ptr<Visualize::IRenderLayer>> m_renderLayers;
 };
 } // namespace QSpace::Visualize::Views

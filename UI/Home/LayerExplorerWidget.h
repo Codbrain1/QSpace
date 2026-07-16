@@ -43,7 +43,7 @@ class LayerExplorerWidget : public QWidget {
   signals:
     void selectionChanged(const QList<SelectedItem>& selectedIds);
     void nodeSelectionActivated(const QUuid& id);
-    void removalNodeObjectRequested(const QUuid& id);
+    void removalObjectRequested(const QUuid& id);
     void removalLayerRequested(const QUuid& id);
     void updateNodeSettingsRequested(const QUuid&                                           id,
                                      std::function<void(Visualize::Layers::LayerSettings&)> modifer);

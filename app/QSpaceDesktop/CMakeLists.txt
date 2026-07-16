@@ -16,6 +16,7 @@ qt_add_executable(QSpace
     main.cpp
     ${PROJECT_SOURCE_DIR}/app/resources/icons.qrc
     ${PROJECT_SOURCE_DIR}/app/resources/styles.qrc
+    ${PROJECT_SOURCE_DIR}/app/resources/shaders.qrc
     ${QM_FILES}
 )
 
@@ -31,6 +32,7 @@ target_link_libraries(QSpace PRIVATE
             # Physics
             # Remote
             # QSpace::Session
+            qcustomplot
             QSpace::UI
             Qt6::Core
             Qt6::Widgets

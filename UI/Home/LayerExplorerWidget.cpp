@@ -217,7 +217,7 @@ void LayerExplorerWidget::setupSlots() {
         //             }
         //         });
         connect(this,
-                &LayerExplorerWidget::removalNodeObjectRequested,
+                &LayerExplorerWidget::removalObjectRequested,
                 m_app->dataController(),
                 &Core::Controllers::DataController::removeNodeObject,
                 Qt::QueuedConnection);
@@ -648,8 +648,14 @@ void LayerExplorerWidget::handleShowCustomContexMenuForTreeViewElement(const QPo
 }
 
 void LayerExplorerWidget::showCustomContextMenuForExperimentInternal(QMenu* menu, const QModelIndex& index) {
-    QUuid experimentId = index.data(Models::DataTreeModel::CustomRoles::IdRole).toUuid();
-    auto  mode = static_cast<Models::DataTreeModel::TreeMode>(ui->comboBox_structureView->currentIndex());
+    QUuid    experimentId = index.data(Models::DataTreeModel::CustomRoles::IdRole).toUuid();
+    QAction* deleteAction = menu->addAction(tr("Удалить эксперимент"));
+
+    connect(deleteAction, &QAction::triggered, this, [this, experimentId]() {
+        emit removalObjectRequested(experimentId);
+    });
+
+    auto mode = static_cast<Models::DataTreeModel::TreeMode>(ui->comboBox_structureView->currentIndex());
     if (mode == Models::DataTreeModel::TreeMode::SnapShotView) {
         QAction* selectForVisualizeAction = menu->addAction(tr("Выбрать для исследования"));
         connect(selectForVisualizeAction, &QAction::triggered, this, [this, experimentId]() {
@@ -660,8 +666,12 @@ void LayerExplorerWidget::showCustomContextMenuForExperimentInternal(QMenu* menu
 void LayerExplorerWidget::showCustomContextMenuForSnapshotInternal(QMenu* menu, const QModelIndex& index) {
     QUuid snapshotId = index.data(Models::DataTreeModel::CustomRoles::IdRole).toUuid();
 
+    QAction* deleteAction                = menu->addAction(tr("Удалить снимок"));
     QAction* completeForTimeSliderAction = menu->addAction(tr("Применить для плеера кадров"));
 
+    connect(deleteAction, &QAction::triggered, this, [this, snapshotId]() {
+        emit removalObjectRequested(snapshotId);
+    });
     connect(completeForTimeSliderAction, &QAction::triggered, this, [this, snapshotId] {
         emit snapshotCompleteForTimeSlider(snapshotId);
     });
@@ -670,6 +680,11 @@ void LayerExplorerWidget::showCustomContextMenuForDataNodeInternal(QMenu* menu, 
     QUuid    dataNodeId     = index.data(Models::DataTreeModel::CustomRoles::IdRole).toUuid();
     QAction* addLayerAction = menu->addAction(tr("Добавить слой"));
     QAction* loadDataAction = menu->addAction(tr("Загрузить данные"));
+    QAction* deleteAction   = menu->addAction(tr("Удалить компоненту"));
+
+    connect(deleteAction, &QAction::triggered, this, [this, dataNodeId]() {
+        emit removalObjectRequested(dataNodeId);
+    });
     connect(loadDataAction, &QAction::triggered, this, [this, dataNodeId]() {
         emit nodeSelectionActivated(dataNodeId);
     });
@@ -678,34 +693,13 @@ void LayerExplorerWidget::showCustomContextMenuForDataNodeInternal(QMenu* menu, 
         if (dataController) {
             dataController->createLayerForNode(dataNodeId);
         }
-        //         const auto dataController = m_app->dataController();
-        //         if (dataController) {
-        // #include <QElapsedTimer>
-        // #include <QMessageBox>
-        //             QElapsedTimer timer;
-        //             timer.start(); // Запускаем секундомер
-
-        //             // Выполнение целевого метода
-        //             dataController->createLayerForNode(dataNodeId);
-
-        //             qint64 elapsedMs = timer.elapsed(); // Получаем время в миллисекундах
-
-        //             // Формируем текст для сообщения
-        //             QString message = QString("Создание слоя для ноды завершено.\n\n"
-        //                                       "Время выполнения метода:\n"
-        //                                       "• Миллисекунды: %1 мс\n"
-        //                                       "• Секунды: %2 сек")
-        //                                   .arg(elapsedMs)
-        //                                   .arg(elapsedMs / 1000.0, 0, 'f', 3); // 3 знака после запятой
-
-        //             // Показываем MessageBox поверх текущего окна
-        //             QMessageBox::information(this, "Замер производительности", message);
-        //         }
     });
 }
 void LayerExplorerWidget::showCustomContextMenuForComponentGroupInternal(QMenu*             menu,
                                                                          const QModelIndex& index) {
+    QUuid componentId = index.data(Models::DataTreeModel::CustomRoles::IdRole).toUuid();
 }
+
 void LayerExplorerWidget::showCustomContextMenuForLayerInternal(QMenu* menu, const QModelIndex& index) {
     // Получаем UUID конкретного слоя
     QUuid layerId = index.data(Models::DataTreeModel::CustomRoles::IdRole).toUuid();
@@ -837,46 +831,7 @@ void LayerExplorerWidget::selectAndImportFilesInternal(const SelectExperimentDia
         m_app->dataController()->importFiles(filePaths, m_currentVersion, result.exisitingExperimentId);
     }
 }
-// void LayerExplorerWidget::on_actionAddSnapshot_clicked() {
-//     QMessageBox::information(this, tr("Внимание"), tr("Функция добавления снапшота пока не
-//     реализована"));
-//     // if (ui->comboBox_structureView->currentIndex() == 0)
-//     //     return;
-//     // // 1. UI-логика: Запрашиваем у пользователя файл(ы) снапшота
-//     // // Используем m_root_path как стартовую директорию для удобства
-//     // QStringList filePaths =
-//     //     QFileDialog::getOpenFileNames(this,
-//     //                                   tr("Выберите файлы снапшота (таймстепа)"),
-//     //                                   m_root_path,
-//     //                                   tr("Файлы симуляции (*.bin *.hdf5 *.csv *.dat);;Все файлы
-//     (*.*)"));
 
-//     // // Если пользователь отменил выбор, просто выходим
-//     // if (filePaths.isEmpty()) {
-//     //     return;
-//     // }
-
-//     // // Обновляем m_root_path путем последнего выбранного файла, чтобы при следующем открытии
-//     // // диалог распахивался в этой же папке
-//     // m_root_path = QFileInfo(filePaths.first()).absolutePath();
-
-//     // // 2. Извлекаем базовое имя файла для названия узла в дереве
-//     // // Например, если файл "snapshot_001.bin", имя будет "snapshot_001"
-//     // QString snapshotName = QFileInfo(filePaths.first()).baseName();
-
-//     // // 3. Бизнес-логика: Передаем задачу импорта в Ядро системы
-//     // if (!m_app) {
-//     //     return;
-//     // }
-
-//     // const auto dataController = m_app->dataController();
-//     // if (dataController) {
-//     //     // Используем метод импорта эксперимента.
-//     //     // Если у вас один файл — ядро создаст для него узел (DataNode) внутри структуры,
-//     //     // используя snapshotName как метку, и применит выбранную в комбобоксе версию формата.
-//     //     dataController->importExperiment(snapshotName, filePaths, m_currentVersion);
-//     // }
-// }
 void LayerExplorerWidget::handleAddExperiment() {
     // Запрашиваем директорию эксперимента
     QString dirPath = QFileDialog::getExistingDirectory(this, tr("Выберите папку эксперимента"), m_root_path);
@@ -892,7 +847,7 @@ void LayerExplorerWidget::handleRemoveElement() {
     QList<SelectedItem> ids = getSelectedIds();
     for (auto item : ids) {
         // Делегируем удаление через сигналы, удалит ноду из ObjectRegistry
-        emit removalNodeObjectRequested(item.id); // TODO не удалит несколько выделенных слоев
+        emit removalObjectRequested(item.id); // TODO не удалит несколько выделенных слоев
     }
 }
 

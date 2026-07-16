@@ -42,7 +42,7 @@ public:
 
   private:
     float  m_lineWidth    = 1.0f;
-    double m_cellSize     = 1.0;
+    double m_cellSize     = 5.0;
     float  m_maxDistance  = 1.0f;
     bool   m_fadeByLength = true;
     QColor m_lineColor    = QColor(200, 200, 200, 120);

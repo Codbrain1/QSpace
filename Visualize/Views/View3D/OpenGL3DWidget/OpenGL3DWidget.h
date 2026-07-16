@@ -1,4 +1,5 @@
 #pragma once
+#include <QPointer>
 #include "../AbstractView3D.h"
 #include "GLViewport.h"
 
@@ -30,6 +31,6 @@ class OpenGL3DWidget : public AbstractView3D {
 
   private:
     std::unique_ptr<View3DSettings> m_settings;
-    std::unique_ptr<GLViewport>     m_viewport;
+    QPointer<GLViewport>            m_viewport;
 };
 } // namespace QSpace::Visualize::Views::View3D

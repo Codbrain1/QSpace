@@ -1,5 +1,6 @@
 
 #include "AxisRenderer.h"
+#include "Physics/DimensionConverter/PhysicalUnits.h"
 
 namespace QSpace::Visualize::Views::View3D {
 
@@ -48,23 +49,53 @@ void AxisRenderer::releaseGL(QOpenGLFunctions_3_3_Core* gl) {
     m_glInitialized = false;
 }
 
-void AxisRenderer::rebuildGeometry(QOpenGLFunctions_3_3_Core* gl, float extent) {
-    // pos(3) + color(3) на вершину; цвета берутся из settings в render(),
-    // поэтому геометрию перестраиваем только при смене extent, а цвет — uniform-подобно
-    // через сам атрибут (проще перестроить, чем городить отдельный uniform на ось)
+void AxisRenderer::rebuildGeometry(QOpenGLFunctions_3_3_Core* gl,
+                                   float                      extent,
+                                   AxisSettings*              settings) {
     struct V {
         float x, y, z, r, g, b;
     };
 
     // цвета здесь placeholder — реальные берутся из AxisSettings в render() через rebuild
-    QVector<V> verts = {
-        {0, 0, 0, 1, 0, 0},
-        {extent, 0, 0, 1, 0, 0}, // X
-        {0, 0, 0, 0, 1, 0},
-        {0, extent, 0, 0, 1, 0}, // Y
-        {0, 0, 0, 0, 0, 1},
-        {0, 0, extent, 0, 0, 1}, // Z
-    };
+    QVector<V>   verts;
+    const QColor cx = settings->colorX();
+    const QColor cy = settings->colorY();
+    const QColor cz = settings->colorZ();
+    // 1. Основные линии осей
+    verts.append({0, 0, 0, float(cx.redF()), float(cx.greenF()), float(cx.blueF())});
+    verts.append({extent, 0, 0, float(cx.redF()), float(cx.greenF()), float(cx.blueF())});
+
+    verts.append({0, 0, 0, float(cy.redF()), float(cy.greenF()), float(cy.blueF())});
+    verts.append({0, extent, 0, float(cy.redF()), float(cy.greenF()), float(cy.blueF())});
+
+    verts.append({0, 0, 0, float(cz.redF()), float(cz.greenF()), float(cz.blueF())});
+    verts.append({0, 0, extent, float(cz.redF()), float(cz.greenF()), float(cz.blueF())});
+
+    if (settings->showTicks()) {
+        const int   n    = std::max(1, settings->tickCount());
+        const float step = extent / float(n);
+        const float tickSize =
+            extent * 0.02f; // Длина засечки — 2% от длины оси (можно настроить под себя)
+
+        for (int i = 1; i <= n; ++i) {
+            float v = i * step;
+
+            // Засечки на оси X
+            verts.append(
+                {v, -tickSize, 0, float(cx.redF()), float(cx.greenF()), float(cx.blueF())});
+            verts.append({v, tickSize, 0, float(cx.redF()), float(cx.greenF()), float(cx.blueF())});
+
+            // Засечки на оси Y
+            verts.append(
+                {-tickSize, v, 0, float(cy.redF()), float(cy.greenF()), float(cy.blueF())});
+            verts.append({tickSize, v, 0, float(cy.redF()), float(cy.greenF()), float(cy.blueF())});
+
+            // Засечки на оси Z
+            verts.append(
+                {0, -tickSize, v, float(cz.redF()), float(cz.greenF()), float(cz.blueF())});
+            verts.append({0, tickSize, v, float(cz.redF()), float(cz.greenF()), float(cz.blueF())});
+        }
+    }
 
     m_vertexCount = verts.size();
 
@@ -82,7 +113,11 @@ void AxisRenderer::rebuildGeometry(QOpenGLFunctions_3_3_Core* gl, float extent) 
     gl->glEnableVertexAttribArray(1);
     m_vao.release();
 
-    m_cachedExtent = extent;
+    m_cachedExtent    = extent;
+    m_cachedTickCount = settings->tickCount();
+    m_cachedColorX    = cx;
+    m_cachedColorY    = cy;
+    m_cachedColorZ    = cz;
 }
 
 void AxisRenderer::render(QOpenGLFunctions_3_3_Core*      gl,
@@ -91,28 +126,15 @@ void AxisRenderer::render(QOpenGLFunctions_3_3_Core*      gl,
                           float                           extent) {
     if (!settings->visible() || !m_glInitialized)
         return;
+    bool needsRebuild =
+        !qFuzzyCompare(m_cachedExtent, extent) || m_cachedTickCount != settings->tickCount() ||
+        m_cachedColorX != settings->colorX() || m_cachedColorY != settings->colorY() ||
+        m_cachedColorZ != settings->colorZ();
 
-    if (!qFuzzyCompare(m_cachedExtent, extent)) {
-        rebuildGeometry(gl, extent);
-
-        // после rebuild подставляем актуальные цвета из settings —
-        // проще перезалить буфер с нужными цветами, чем держать три отдельных draw call
-        struct V {
-            float x, y, z, r, g, b;
-        };
-
-        const QColor cx = settings->colorX(), cy = settings->colorY(), cz = settings->colorZ();
-        QVector<V>   verts = {
-            {0, 0, 0, float(cx.redF()), float(cx.greenF()), float(cx.blueF())},
-            {extent, 0, 0, float(cx.redF()), float(cx.greenF()), float(cx.blueF())},
-            {0, 0, 0, float(cy.redF()), float(cy.greenF()), float(cy.blueF())},
-            {0, extent, 0, float(cy.redF()), float(cy.greenF()), float(cy.blueF())},
-            {0, 0, 0, float(cz.redF()), float(cz.greenF()), float(cz.blueF())},
-            {0, 0, extent, float(cz.redF()), float(cz.greenF()), float(cz.blueF())},
-        };
-        m_vbo.bind();
-        m_vbo.write(0, verts.constData(), verts.size() * int(sizeof(V)));
+    if (needsRebuild) {
+        rebuildGeometry(gl, extent, settings);
     }
+
 
     m_program.bind();
     m_program.setUniformValue("uMVP", ctx.mvp);
@@ -131,17 +153,24 @@ QVector<AxisTick> AxisRenderer::buildTicks(AxisSettings* settings, float extent)
     if (!settings->showTicks())
         return ticks;
 
-    const int   n    = std::max(1, settings->tickCount());
-    const float step = extent / float(n);
+    const int   n           = std::max(1, settings->tickCount());
+    const float step        = extent / float(n);
+    auto        pu          = QSpace::Physics::PhysicalUnits::fromSimParams(3.72, 0.9);
+    float       lengthScale = static_cast<float>(pu.lengthScale);
 
     for (int i = 1; i <= n; ++i) {
-        const float   v     = i * step;
-        const QString label = QString::number(v, 'g', 3) + " " + settings->unitLabel();
+        const float   v = i * step;
+        const QString label =
+            QString::number(v * lengthScale, 'g', 3) + " " + settings->unitLabel();
 
         ticks.append({QVector3D(v, 0, 0), label, settings->colorX()});
         ticks.append({QVector3D(0, v, 0), label, settings->colorY()});
         ticks.append({QVector3D(0, 0, v), label, settings->colorZ()});
     }
+
+    ticks.append({QVector3D(extent + step, 0, 0), "X", settings->colorX()});
+    ticks.append({QVector3D(0, extent + step, 0), "Y", settings->colorY()});
+    ticks.append({QVector3D(0, 0, extent + step), "Z", settings->colorZ()});
     return ticks;
 }
 

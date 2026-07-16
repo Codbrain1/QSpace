@@ -95,7 +95,7 @@ class ObjectRegistry : public QObject {
     dataLoadRequested(const QUuid& id, const QString& path, const QSpace::IO::ReadScheme& scheme);
 
   private:
-    size_t                                  m_cacheCapacity = 15;
+    size_t                                  m_cacheCapacity = 30;
     std::list<QUuid>                        m_lruList;
     QMap<QUuid, std::list<QUuid>::iterator> m_lruMap;
 

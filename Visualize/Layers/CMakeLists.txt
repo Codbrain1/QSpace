@@ -32,6 +32,7 @@ target_include_directories(Layers PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 target_link_libraries(Layers PUBLIC
             project_config
             QSpace::Common
+            QSpace::Physics
             Qt6::Core
             Qt6::OpenGL
             Qt6::Core

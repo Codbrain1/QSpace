@@ -43,15 +43,17 @@ class AxisRenderer : public QObject {
     QVector<AxisTick> buildTicks(AxisSettings* settings, float extent) const;
 
   private:
-    void rebuildGeometry(QOpenGLFunctions_3_3_Core* gl, float extent);
+    void rebuildGeometry(QOpenGLFunctions_3_3_Core* gl, float extent, AxisSettings* settings);
     void buildShader();
 
     QOpenGLShaderProgram     m_program;
     QOpenGLBuffer            m_vbo{QOpenGLBuffer::VertexBuffer};
     QOpenGLVertexArrayObject m_vao;
-    int                      m_vertexCount   = 0;
-    bool                     m_glInitialized = false;
-    float                    m_cachedExtent  = -1.0f;
+    int                      m_vertexCount     = 0;
+    bool                     m_glInitialized   = false;
+    float                    m_cachedExtent    = -1.0f;
+    int                      m_cachedTickCount = -1;
+    QColor                   m_cachedColorX, m_cachedColorY, m_cachedColorZ;
 };
 
 } // namespace QSpace::Visualize::Views::View3D

@@ -5,6 +5,7 @@
 #include "Core/AppCore/ProjectController.h"
 #include "Core/AppCore/VideoController.h"
 #include "Core/AppCore/ViewController.h"
+#include "Enums/ViewEnums.h"
 #include "Enums/VisualizeBaseEnums.h"
 #include "LayerExplorerWidget.h"
 #include "Models/DataTreeModel/DataTreeModel.h"
@@ -22,6 +23,7 @@
 #include <QWidgetAction>
 #include <memory>
 #include <qaction.h>
+#include <qcombobox.h>
 #include <qcontainerfwd.h>
 #include <qdockwidget.h>
 #include <qfiledialog.h>
@@ -76,49 +78,23 @@ MainWindow::MainWindow(Core::AppCore* app, QWidget* parent)
     m_exportProgressDialog->setAutoReset(true);
     m_exportProgressDialog->reset(); // Скрываем по умолчанию
 
-    // Привязываем значения перечисления к действиям через Data (удобно для обработки в одном слоте)
-    ui->action_view_top->setData(static_cast<int>(Visualize::Views::View3D::CameraViewType::XY_Top));
-    ui->action_view_front->setData(static_cast<int>(Visualize::Views::View3D::CameraViewType::XZ_Front));
-    ui->action_view_right->setData(static_cast<int>(Visualize::Views::View3D::CameraViewType::YZ_Right));
-    ui->action_view_iso->setData(static_cast<int>(Visualize::Views::View3D::CameraViewType::Iso));
+    {
+        using namespace QSpace::Visualize::Views::View3D;
+        cameraComboBox = new QComboBox(this);
+        cameraComboBox->addItem("Сверху", QVariant::fromValue(CameraViewType::XY_Top));
+        cameraComboBox->addItem("Спереди", QVariant::fromValue(CameraViewType::XZ_Front));
+        cameraComboBox->addItem("Справа", QVariant::fromValue(CameraViewType::YZ_Right));
+        cameraComboBox->addItem("Изометрия", QVariant::fromValue(CameraViewType::Iso));
+        ui->mainToolBar->insertWidget(ui->action_bg_settings, cameraComboBox);
 
-    // 2. Превращаем экшен "action_view_top" в выпадающее меню камеры
-    if (auto* btn = qobject_cast<QToolButton*>(ui->mainToolBar->widgetForAction(ui->action_view_top))) {
-        btn->setMenu(ui->menu_camera); // Берем уже готовое меню из UI
-        btn->setPopupMode(QToolButton::InstantPopup);
+        // 4. Добавляем небольшой визуальный отступ (чтобы не слипалось с соседней кнопкой)
+        ui->mainToolBar->insertSeparator(ui->action_bg_settings);
     }
     if (auto* btn = qobject_cast<QToolButton*>(ui->mainToolBar->widgetForAction(ui->action_bg_settings))) {
         btn->setMenu(ui->menu_bg); // Берем уже готовое меню из UI
         btn->setPopupMode(QToolButton::InstantPopup);
     }
-    QToolButton* viewButton =
-        qobject_cast<QToolButton*>(ui->mainToolBar->widgetForAction(ui->action_view_top));
-    if (viewButton) {
-        // viewButton->setMenu(viewMenu);
-        viewButton->setPopupMode(QToolButton::InstantPopup); // Меню открывается сразу при клике
-    }
-    QDoubleSpinBox* spinBox = new QDoubleSpinBox(this);
-    spinBox->setRange(0.0, 100.0);
-    spinBox->setSingleStep(0.1);
-    spinBox->setValue(1.0); // Установим начальное значение
 
-    // 2. Создаем контейнер для группировки метки и спинбокса
-    QWidget*     container = new QWidget(this);
-    QHBoxLayout* layout    = new QHBoxLayout(container);
-    layout->setContentsMargins(5, 0, 5, 0); // Небольшие отступы
-    layout->setSpacing(5);
-    layout->addWidget(new QLabel(tr("Яркость:"), container));
-    layout->addWidget(spinBox);
-
-    // 3. Добавляем напрямую в ToolBar (это надежнее, чем QWidgetAction в меню)
-    ui->mainToolBar->addSeparator(); // Отделим от остальных кнопок
-    ui->mainToolBar->addWidget(container);
-
-    // // 4. Подключаем сигнал
-    // connect(spinBox,
-    //         QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-    //         m_app,
-    //         &Core::AppCore::setGlobalExposureAllViews);
     // подключаем слоты
     setupSlots();
     m_app->viewController()->createView(Visualize::Views::ViewType::OpenGL3D);
@@ -273,7 +249,10 @@ void MainWindow::setupSlots() {
             this,
             &MainWindow::handleLayerSelectionChange);
 
-    connect(ui->menu_camera, &QMenu::triggered, this, &MainWindow::handleCameraViewChange);
+    connect(cameraComboBox,
+            QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this,
+            &MainWindow::handleCameraViewChange);
     connect(ui->menu_bg, &QMenu::triggered, this, &MainWindow::handleBackgroundChange);
 
     connect(m_app->projectController(),
@@ -390,16 +369,10 @@ MainWindow::~MainWindow() {
 void MainWindow::resetCamera() {
     m_app->viewController()->resetCameraInAllViews();
 }
-void MainWindow::handleCameraViewChange(QAction* action) {
-    if (!action)
-        return;
-
+void MainWindow::handleCameraViewChange(int index) {
     // Меняем камеру
-    // auto type = static_cast<Visualize::CameraViewType>(action->data().toInt());
-    // m_app->setCameraViewInAllViews(type);
-
-    ui->action_view_top->setText(action->text());
-    ui->action_view_top->setIcon(action->icon());
+    auto viewType = cameraComboBox->itemData(index).value<Visualize::Views::View3D::CameraViewType>();
+    m_app->viewController()->setCameraViewInAllViews(viewType);
 }
 void MainWindow::handleBackgroundChange(QAction* action) {
     if (!action)

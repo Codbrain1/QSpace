@@ -45,8 +45,10 @@ class ParticleRendererLayer : public IOpenGLRenderLayer {
         // Сбрасываем флаги в исходное состояние, чтобы новый движок
         // честно проинициализировал свои VBO/VAO в новом контексте OpenGL
         copy->m_dirty         = true;
-        copy->m_particleCount = 0;
-        auto settings         = std::make_shared<ParticlePointsLayerSettings>();
+        copy->m_particleCount = m_particleCount;
+        copy->m_visible       = m_visible;
+
+        auto settings = std::make_shared<ParticlePointsLayerSettings>();
         copy->setSettings(settings);
         // Важно: если в конструкторе SPHRenderLayer по умолчанию создается
         // дефолтный m_settings = std::make_shared<SPHPointsLayerSettings>(),
@@ -64,7 +66,7 @@ class ParticleRendererLayer : public IOpenGLRenderLayer {
   private:
     void buildShader();
     void uploadBuffersIfDirty(QOpenGLFunctions_3_3_Core* gl);
-    void autoCalibrateRangeIfNeeded();
+    void computeScalarBoundsIfNeeded(const QVector<float>& scalars);
 
     QOpenGLShaderProgram m_program; // хранит шейдеры для GPU
 

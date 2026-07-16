@@ -13,30 +13,72 @@ void ParticleRendererLayer::buildShader() {
         #version 330 core
         layout(location = 0) in vec3 aPos;
         layout(location = 1) in float aScalar;
+        
         uniform mat4 uMVP;
+
+        // оперделяем общий размер частицы или варируем в диапазоно в зависимости от aScalar
+        uniform bool uAutoSizePoint;
         uniform float uPointSize;
-        uniform float uMinSize;
-        uniform float uMaxSize;
-        uniform bool uSizeByField;
+        uniform float uMinPointSize;
+        uniform float uMaxPointSize;
+
+        // диапазон значений aScalar и показывать ли частицы вне него
+        uniform bool uShowOutRangeParticles;
         uniform float uRangeMin;
         uniform float uRangeMax;
         uniform bool uUseLogScale;
+
         out float vNorm;
-        void main() {
+
+       void main() {
+        // 1. Фильтрация (с исправленными знаками для допуска)
+        float eps = 1e-12;
+        bool inRange = (aScalar >= uRangeMin - eps && aScalar <= uRangeMax + eps);
+
+        if (!uShowOutRangeParticles && !inRange) {
+            gl_Position = vec4(9.9, 9.9, 9.9, 1.0); 
+            gl_PointSize = 0.0;
+        } else {
             gl_Position = uMVP * vec4(aPos, 1.0);
-            float value = uUseLogScale ? log(max(abs(aScalar), 1e-30)) / log(10.0) : aScalar;
-            float t = clamp((value - uRangeMin) / max(1e-6, uRangeMax - uRangeMin), 0.0, 1.0);
-            gl_PointSize = uSizeByField ? mix(uMinSize, uMaxSize, t) : uPointSize;
-            vNorm = t;
         }
+
+        // 2. Расчет нормализованного t с учетом логарифма для границ
+        float val = aScalar;
+        float rMin = uRangeMin;
+        float rMax = uRangeMax;
+
+        if (uUseLogScale) {
+            val  = log(max(abs(aScalar), 1e-30)) / log(10.0);
+            rMin = log(max(abs(uRangeMin), 1e-30)) / log(10.0);
+            rMax = log(max(abs(uRangeMax), 1e-30)) / log(10.0);
+        }
+
+        // 3. Безопасный расчет t для сверхмалых чисел
+        float rangeDist = rMax - rMin;
+        float t = 0.0;
+        
+        // Используем 1e-20 чтобы не терять разницу сверхмалых масс
+        if (rangeDist > 1e-20) { 
+            t = clamp((val - rMin) / rangeDist, 0.0, 1.0);
+        } else {
+            // Если минимум и максимум равны (например, все частицы одной массы),
+            // присваиваем им цвет из середины палитры
+            t = 0.5; 
+        }
+        
+        gl_PointSize = uAutoSizePoint ? mix(uMinPointSize, uMaxPointSize, t) : uPointSize;
+        vNorm = t;
+    }
     )";
     static const char* fs = R"(
         #version 330 core
         in float vNorm;
         out vec4 FragColor;
+        
         uniform sampler1D uColorMap;
         uniform bool uShadeAsSphere;
         uniform float uOpacity;
+
         void main() {
             vec2 coord = gl_PointCoord * 2.0 - 1.0;
             float r2 = dot(coord, coord);
@@ -109,21 +151,28 @@ void ParticleRendererLayer::uploadBuffersIfDirty(QOpenGLFunctions_3_3_Core* gl) 
     m_dirty = false;
 
     if (!scalars.isEmpty())
-        autoCalibrateRangeIfNeeded();
+        computeScalarBoundsIfNeeded(scalars);
 }
 
-void ParticleRendererLayer::autoCalibrateRangeIfNeeded() {
+void ParticleRendererLayer::computeScalarBoundsIfNeeded(const QVector<float>& scalars) {
     if (!m_settings || !m_settings->autoRange())
         return;
-    auto node = m_dataNode.lock();
-    if (!node)
-        return;
 
-    auto range = vtkAdapter::getScalarRange(node, m_settings->colorByField());
-    m_settings->setBaseRangeMin(range.first);
-    m_settings->setBaseRangeMax(range.second);
-    m_settings->setRangeMin(range.first);
-    m_settings->setRangeMax(range.second);
+    float max = scalars[0];
+    float min = scalars[0];
+
+    for (const auto& val : scalars) {
+        max = std::max(max, val);
+        min = std::min(min, val);
+    }
+
+    m_settings->setBaseRangeMin(min);
+    m_settings->setBaseRangeMax(max);
+
+    if (m_settings->autoRange()) {
+        m_settings->setRangeMin(min);
+        m_settings->setRangeMax(max);
+    }
 }
 
 void ParticleRendererLayer::render(QOpenGLFunctions_3_3_Core*      gl,
@@ -134,7 +183,9 @@ void ParticleRendererLayer::render(QOpenGLFunctions_3_3_Core*      gl,
     uploadBuffersIfDirty(gl);
     if (m_particleCount == 0)
         return;
+
     gl->glEnable(GL_BLEND);
+
     if (static_cast<LayerSettings::BlendMode>(m_settings->blendMode()) ==
         LayerSettings::BlendMode::Additive)
         gl->glBlendFunc(GL_SRC_ALPHA, GL_ONE);
@@ -148,14 +199,16 @@ void ParticleRendererLayer::render(QOpenGLFunctions_3_3_Core*      gl,
     m_program.bind();
     m_program.setUniformValue("uMVP", ctx.mvp);
     m_program.setUniformValue("uPointSize", m_settings->pointSizePx());
-    m_program.setUniformValue("uMinSize", m_settings->minPointSizePx());
-    m_program.setUniformValue("uMaxSize", m_settings->maxPointSizePx());
-    m_program.setUniformValue("uSizeByField", m_settings->sizeByField());
+    m_program.setUniformValue("uMinPointSize", m_settings->minPointSizePx());
+    m_program.setUniformValue("uMaxPointSize", m_settings->maxPointSizePx());
+    m_program.setUniformValue("uAutoSizePoint", m_settings->autoSizePoint());
     m_program.setUniformValue("uRangeMin", float(m_settings->rangeMin()));
     m_program.setUniformValue("uRangeMax", float(m_settings->rangeMax()));
     m_program.setUniformValue("uUseLogScale", m_settings->useLogScale());
     m_program.setUniformValue("uShadeAsSphere", m_settings->shadeAsSphere());
     m_program.setUniformValue("uOpacity", float(m_settings->opacity()));
+    m_program.setUniformValue("uAutoSizePoint", m_settings->autoSizePoint());
+    m_program.setUniformValue("uShowOutRangeParticles", m_settings->showOutRangeParticles());
     m_program.setUniformValue("uColorMap", 0);
 
     m_vao.bind();

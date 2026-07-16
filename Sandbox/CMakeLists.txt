@@ -17,17 +17,17 @@
 #         Qt6::Gui
 #         Qt6::Widgets
 #             )
-add_sandbox_test(TestSPHVisualize  
-    SOURCES
-        TestSPHVisualize/main.cpp 
-    LIBS
-        QSpace::Common QSpace::Visualize QSpace::IO VTK::CommonCore
-        Qt6::Core
-        Qt6::Gui
-        Qt6::Widgets
-        Qt6::OpenGL
-        Qt6::OpenGLWidgets
-            )
+# add_sandbox_test(TestSPHVisualize  
+#     SOURCES
+#         TestSPHVisualize/main.cpp 
+#     LIBS
+#         QSpace::Common QSpace::Visualize QSpace::IO VTK::CommonCore
+#         Qt6::Core
+#         Qt6::Gui
+#         Qt6::Widgets
+#         Qt6::OpenGL
+#         Qt6::OpenGLWidgets
+#             )
 
 # add_sandbox_test(TestCONV  
 #     SOURCES

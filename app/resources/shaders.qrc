@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/">
+        <file>shaders/splat.frag</file>
+        <file>shaders/splat.vert</file>
+        <file>shaders/resolve.frag</file>
+        <file>shaders/resolve.vert</file>
+        <file>shaders/physicalResolve.frag</file>
+    </qresource>
+</RCC>

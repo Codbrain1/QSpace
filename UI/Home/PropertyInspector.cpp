@@ -6,11 +6,13 @@
 #include "Core/AppCore/DataController.h"
 #include "Core/AppCore/ProjectController.h"
 #include "SettingsEditorWidget.h"
+#include "Structures/ColormapPresets.h"
 #include "Visualize/ColorMapManager/ColorMapManager.h"
 #include "ui_PropertyInspector.h"
 #include <QSignalBlocker>
 #include <qcheckbox.h>
 #include <qcombobox.h>
+#include <qcustomplot.h>
 #include <qelapsedtimer.h>
 #include <qicon.h>
 #include <qmessagebox.h>
@@ -26,6 +28,7 @@ namespace QSpace::UI {
 PropertyInspector::PropertyInspector(Core::AppCore* app, QWidget* parent)
     : QWidget(parent), ui(new Ui::PropertyInspector), m_app(app) {
     ui->setupUi(this);
+    ui->colorbarWidget->setColorMap(QSpace::Visualize::ColorMapPresets::getPresetByName("Plasma"));
     m_dynamicEditor = new SettingsEditorWidget(this);
     if (ui->scrollArea_DynamicProperties) {
         // Если у ScrollArea еще нет внутреннего виджета-контейнера, создаем его
@@ -253,6 +256,7 @@ void PropertyInspector::updateWidgets() {
     }
 
     m_dynamicEditor->setSettings(layer->getSettings().get());
+    ui->colorbarWidget->setSettings(layer->getSettings().get());
 }
 
 void PropertyInspector::handlePaletteChange(int index) {
@@ -260,9 +264,12 @@ void PropertyInspector::handlePaletteChange(int index) {
         return;
 
     // Достаем тип палитры из выбранного пункта
-    auto colorMapId = ui->combo_colormap->itemData(index).value<QUuid>();
-    auto layer      = m_app->dataController()->getLayerById(m_currentElementId);
-
+    auto colorMapId   = ui->combo_colormap->itemData(index).value<QUuid>();
+    auto layer        = m_app->dataController()->getLayerById(m_currentElementId);
+    auto colorMap_ptr = QSpace::Visualize::ColorMapManager::instance().getMap(colorMapId);
+    if (colorMap_ptr.has_value()) {
+        ui->colorbarWidget->setColorMap(colorMap_ptr.value());
+    }
     layer->getSettings()->setColorMapId(colorMapId);
     layer->getView().lock()->render();
 }

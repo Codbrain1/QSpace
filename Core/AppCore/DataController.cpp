@@ -1,7 +1,6 @@
 #include "DataController.h"
 
 // Подключение внутренних менеджеров ядра
-#include "Common/Interfaces/IRenderLayer.h"
 #include "Common/Structures/ObjectRegistryStructures.h"
 #include "Core/DataManager/DataManager.h"
 #include "Core/LayerManager/LayerManager.h"
@@ -131,15 +130,12 @@ void DataController::importExperiment(const QString&                experimentPa
     if (!dir.exists()) {
         return;
     }
-
     // 1. Получаем имя эксперимента из названия папки
     QString experimentName = dir.dirName();
 
     // 2. Создаем объект Эксперимента и регистрируем его в ОЗУ
     auto experiment = std::make_shared<Core::Experiment>(experimentName);
-    experiment->id  = QUuid::createUuid();
-    // experiment->name = experimentName; // Раскомментируйте, если в структуре Experiment есть поле
-    // name
+
     m_objectRegistry->registerExperiment(experiment);
 
     // 3. Рекурсивно собираем все .bin файлы в папке
@@ -150,12 +146,19 @@ void DataController::importExperiment(const QString&                experimentPa
                             QDirIterator::Subdirectories);
 
     while (it.hasNext()) {
-        QString filePath = it.next();
+        QString   filePath = it.next();
+        QFileInfo fileinfo(filePath);
+
+        auto entityType = IO::Utils::getEntityType(fileinfo.fileName());
+        auto fileFormat = IO::Utils::getFormat(fileinfo.fileName());
 
         // Формируем схему чтения на основе выбранной версии программы
         IO::ReadScheme scheme;
-        // В зависимости от вашей структуры ReadScheme, настройте её здесь:
-        // scheme.version = version;
+        if (version == Core::ModelingProgrammVersion::V2_3)
+            scheme = IO::SchemeFactory::createScheme_v2_3(entityType, fileFormat);
+        else {
+            scheme = IO::SchemeFactory::createScheme_v2(entityType, fileFormat);
+        }
 
         tasks.append({filePath, scheme});
     }

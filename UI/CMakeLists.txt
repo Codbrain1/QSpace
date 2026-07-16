@@ -22,6 +22,8 @@ target_sources(UI PRIVATE
     Home/SelectExperimentDialog.cpp
     Home/SettingsEditorWidget.h
     Home/SettingsEditorWidget.cpp
+    Home/ColorbarWidget.h
+    Home/ColorbarWidget.cpp
 
 )
 target_include_directories(UI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
@@ -29,8 +31,10 @@ target_link_libraries(UI PUBLIC
     project_config
     QSpace::Core
     QSpace::Visualize
+    QSpace::Physics
     Qt6::Widgets
     Qt6::Core
     Qt6::Gui
     VTK::GUISupportQt
+    qcustomplot
 )

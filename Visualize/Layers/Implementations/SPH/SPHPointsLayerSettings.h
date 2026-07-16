@@ -8,15 +8,21 @@ namespace QSpace::Visualize::Layers {
 class SPHPointsLayerSettings : public LayerSettings {
     Q_OBJECT
   public:
-    enum class KernelType { CubicSpline = 0, Gaussian = 1, Wendland = 2 };
+    enum class NormalizationMode {
+        Unknown   = 0,
+        Intensive = 1, //  плотность, температура, скорость... -> кернел-взвешенное среднее
+        Extensive = 2  // аддитивная величина: масса -> поверхностная плотность (сумма/площадь)
+    };
+
+    // Q_ENUM(NormalizationMode)
 
   private:
     // clang-format off
-    Q_PROPERTY(float        smoothingRadius         READ smoothingRadius        WRITE setSmoothingRadius        NOTIFY changed)
-    Q_PROPERTY(bool         autoSmoothingRadius     READ autoSmoothingRadius    WRITE setAutoSmoothingRadius    NOTIFY changed)
-    Q_PROPERTY(KernelType   kernelType              READ kernelType             WRITE setKernelType             NOTIFY changed)
-    Q_PROPERTY(float        accumResolutionScale    READ accumResolutionScale   WRITE setAccumResolutionScale   NOTIFY changed)
-    Q_PROPERTY(float        densityGamma            READ densityGamma           WRITE setDensityGamma           NOTIFY changed)
+    Q_PROPERTY(float                smoothingRadius         READ smoothingRadius        WRITE setSmoothingRadius        NOTIFY changed)
+    Q_PROPERTY(bool                 autoSmoothingRadius     READ autoSmoothingRadius    WRITE setAutoSmoothingRadius    NOTIFY changed)
+    // Q_PROPERTY(NormalizationMode    normMode                READ normMode               WRITE setNormMode               NOTIFY changed)
+    Q_PROPERTY(float                accumResolutionScale    READ accumResolutionScale   WRITE setAccumResolutionScale   NOTIFY changed)
+    Q_PROPERTY(float                densityGamma            READ densityGamma           WRITE setDensityGamma           NOTIFY changed)
 
 public:
 
@@ -29,10 +35,6 @@ public:
     void setAutoSmoothingRadius(bool v) { if (m_autoSmoothingRadius != v) { m_autoSmoothingRadius = v; emit changed(); } }
 
 
-    // выбор формы SPH-кернела — влияет на резкость/мягкость сглаживания
-    KernelType kernelType() const { return m_kernelType; }
-    void setKernelType(KernelType t) { if (m_kernelType != t) { m_kernelType = t; emit changed(); } }
-
     // понижение разрешения аккумулирующего FBO (0.5 = вдвое меньше) — для больших N
     float accumResolutionScale() const { return m_accumResolutionScale; }
     void setAccumResolutionScale(float s) { if (!qFuzzyCompare(m_accumResolutionScale, s)) { m_accumResolutionScale = s; emit changed(); } }
@@ -41,6 +43,9 @@ public:
     float densityGamma() const { return m_densityGamma; }
     void setDensityGamma(float g) { if (!qFuzzyCompare(m_densityGamma, g)) { m_densityGamma = g; emit changed(); } }
 
+    NormalizationMode normMode() {return m_normMode; }
+    void setNormMode(NormalizationMode m) { if (m_normMode != m) { m_normMode = m; emit changed();} }
+
     // clang-format on
 
     // Внутри SPHPointsLayerSettings
@@ -48,7 +53,7 @@ public:
         static const QMap<QString, QString> sphNames = {
             {"smoothingRadius", "Радиус сглаживания"},
             {"autoSmoothingRadius", "Авто-радиус сглаживания"},
-            {"kernelType", "Тип SPH-ядра"},
+            // {"kernelType", "Тип SPH-ядра"},
             {"accumResolutionScale", "Масштаб разрешения FBO"},
             {"densityGamma", "Гамма-коррекция плотности"}};
 
@@ -73,7 +78,7 @@ public:
             c.min      = 0.001;
             c.max      = 50.0;
             c.step     = 0.01;
-            c.decimals = 3; // Шаг 0.01 и 3 знака!
+            c.decimals = 8; // Шаг 0.01 и 3 знака!
             return c;
         }
         if (propName == "accumResolutionScale") {
@@ -94,24 +99,16 @@ public:
     }
 
     QString enumValueDisplayName(const QString& propName, const QString& enumKey) const override {
-        if (propName == "kernelType") {
-            if (enumKey == "CubicSpline")
-                return "Кубический сплайн (Cubic Spline)";
-            if (enumKey == "Gaussian")
-                return "Гауссово ядро (Gaussian)";
-            if (enumKey == "Wendland")
-                return "Ядро Вендланда (Wendland)";
-        }
         return LayerSettings::enumValueDisplayName(propName, enumKey);
     }
 
 
   private:
-    float      m_smoothingRadius      = 0.05f;
-    bool       m_autoSmoothingRadius  = true;
-    KernelType m_kernelType           = KernelType::CubicSpline;
-    float      m_accumResolutionScale = 1.0f;
-    float      m_densityGamma         = 1.0f;
+    float             m_smoothingRadius      = 0.05f;
+    bool              m_autoSmoothingRadius  = false;
+    NormalizationMode m_normMode             = NormalizationMode::Extensive;
+    float             m_accumResolutionScale = 1.0f;
+    float             m_densityGamma         = 1.0f;
 };
 
 } // namespace QSpace::Visualize::Layers

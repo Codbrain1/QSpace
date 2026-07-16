@@ -29,7 +29,6 @@ class LayerSettings : public QObject {
     Q_PROPERTY(QString       colorByField  READ colorByField  WRITE setColorByField  NOTIFY changed)
     Q_PROPERTY(QUuid         colorMapId    READ colorMapId    WRITE setColorMapId    NOTIFY changed)
     Q_PROPERTY(bool          useLogScale   READ useLogScale   WRITE setUseLogScale   NOTIFY changed)
-    Q_PROPERTY(bool          showScalarBar READ showScalarBar WRITE setShowScalarBar NOTIFY changed)
     Q_PROPERTY(double        rangeMin      READ rangeMin      WRITE setRangeMin      NOTIFY changed)
     Q_PROPERTY(double        rangeMax      READ rangeMax      WRITE setRangeMax      NOTIFY changed)
     Q_PROPERTY(double        baseRangeMin  READ baseRangeMin  WRITE setBaseRangeMin  NOTIFY changed)
@@ -37,7 +36,7 @@ class LayerSettings : public QObject {
     Q_PROPERTY(bool          autoRange     READ autoRange     WRITE setAutoRange     NOTIFY changed)
     Q_PROPERTY(int           zOrder        READ zOrder        WRITE setZOrder        NOTIFY changed)
     Q_PROPERTY(BlendMode     blendMode     READ blendMode     WRITE setBlendMode     NOTIFY changed)
-    Q_PROPERTY(bool          pickable      READ pickable      WRITE setPickable      NOTIFY changed)
+    // Q_PROPERTY(bool          pickable      READ pickable      WRITE setPickable      NOTIFY changed)
 
 public:
 
@@ -61,9 +60,6 @@ public:
     bool useLogScale() const { return m_useLogScale; }
     void setUseLogScale(bool u) { if (u != m_useLogScale) { m_useLogScale = u; emit changed(); } }
 
-    bool showScalarBar() const { return m_showScalarBar; }
-    void setShowScalarBar(bool s) { if (s != m_showScalarBar) { m_showScalarBar = s; emit changed(); } }
-
     double rangeMin() const { return m_rangeMin; }
     void setRangeMin(double v) { if (!qFuzzyCompare(v, m_rangeMin)) { m_rangeMin = v; emit changed(); } }
 
@@ -85,8 +81,8 @@ public:
     BlendMode blendMode() const { return m_blendMode; }
     void setBlendMode(BlendMode m) { if (m_blendMode != m) { m_blendMode = m; emit changed(); } }
 
-    bool pickable() const { return m_pickable; }
-    void setPickable(bool p) { if (m_pickable != p) { m_pickable = p; emit changed(); } }
+    // bool pickable() const { return m_pickable; }
+    // void setPickable(bool p) { if (m_pickable != p) { m_pickable = p; emit changed(); } }
 
     // clang-format on
 
@@ -115,15 +111,14 @@ public:
                                                          {"colorByField", "Окрашивать по полю"},
                                                          {"colorMapId", "Цветовая карта"},
                                                          {"useLogScale", "Логарифмическая шкала"},
-                                                         {"showScalarBar", "Показывать шкалу"},
                                                          {"rangeMin", "Мин. значение диапазона"},
                                                          {"rangeMax", "Макс. значение диапазона"},
                                                          {"baseRangeMin", "Глобальный минимум"},
                                                          {"baseRangeMax", "Глобальный максимум"},
                                                          {"autoRange", "Авто-диапазон"},
                                                          {"zOrder", "Порядок отображения (Z)"},
-                                                         {"blendMode", "Режим смешивания"},
-                                                         {"pickable", "Доступен для выбора"}};
+                                                         {"blendMode", "Режим смешивания"}};
+        //  {"pickable", "Доступен для выбора"}};
         return baseNames.value(propName, propName); // Если не нашли, вернем английское имя
     }
 
@@ -143,7 +138,7 @@ public:
             c.min      = 0.0;
             c.max      = 1.0;
             c.step     = 0.05;
-            c.decimals = 2;
+            c.decimals = 4;
         } else if (propName == "rangeMin" || propName == "rangeMax" || propName == "baseRangeMin" ||
                    propName == "baseRangeMax") {
             // ДИНАМИЧЕСКИЙ РАСЧЕТ: шаг — это 1% от текущего глобального диапазона
@@ -151,16 +146,8 @@ public:
             if (delta <= 0.0)
                 delta = 1.0;
 
-            c.step = delta / 100.0;
-            // Адаптивное количество знаков после запятой в зависимости от масштаба данных
-            if (c.step < 0.001)
-                c.decimals = 5;
-            else if (c.step < 0.01)
-                c.decimals = 4;
-            else if (c.step < 0.1)
-                c.decimals = 3;
-            else
-                c.decimals = 2;
+            c.step     = delta / 100.0;
+            c.decimals = 8;
 
             c.min = m_baseRangeMin - delta * 10; // Позволяем крутить чуть шире диапазона
             c.max = m_baseRangeMax + delta * 10;
@@ -189,16 +176,15 @@ public:
     double    m_opacity   = 1.0;  // непрозрачномсть частиц
     QString   m_colorByField;     // имя поля, по которому окрашиваются частицы
     QUuid     m_colorMapId; // идентификатор цветовой карты, используемой для окрашивания частиц
-    bool      m_useLogScale = true; // использовать ли логарифмическую шкалу для окрашивания частиц
-    bool      m_showScalarBar = true;  // показывать ли цветовую шкалу для окрашивания частиц
-    double    m_rangeMin      = 0.0;   // минимальное значение диапазона окрашивания частиц
-    double    m_rangeMax      = 100.0; // максимальное значение диапазона окрашивания частиц
-    double    m_baseRangeMin  = 0.0;   // глобальное минимальное значение
-    double    m_baseRangeMax  = 100.0; // глобальное максимальное значение
-    bool      m_autoRange     = true;  // автоматически ли подбирать диапазон окрашивания частиц
-    int       m_zOrder        = 0;
-    BlendMode m_blendMode     = BlendMode::Alpha;
-    bool      m_pickable      = true;
+    bool      m_useLogScale  = true; // использовать ли логарифмическую шкалу для окрашивания частиц
+    double    m_rangeMin     = 0.0;  // минимальное значение диапазона окрашивания частиц
+    double    m_rangeMax     = 100.0; // максимальное значение диапазона окрашивания частиц
+    double    m_baseRangeMin = 0.0;   // глобальное минимальное значение
+    double    m_baseRangeMax = 100.0; // глобальное максимальное значение
+    bool      m_autoRange    = true;  // автоматически ли подбирать диапазон окрашивания частиц
+    int       m_zOrder       = 0;
+    BlendMode m_blendMode    = BlendMode::Alpha;
+    // bool      m_pickable      = true;
 };
 
 } // namespace QSpace::Visualize::Layers

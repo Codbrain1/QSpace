@@ -8,11 +8,11 @@ namespace QSpace::Visualize::Views::View3D {
 OpenGL3DWidget::OpenGL3DWidget(QObject* parent)
     : AbstractView3D(parent),
       m_settings(std::make_unique<View3DSettings>()),
-      m_viewport(std::make_unique<GLViewport>(m_settings.get())) {
+      m_viewport(new GLViewport(m_settings.get())) {
 }
 
 QWidget* OpenGL3DWidget::getWidget() {
-    return m_viewport.get();
+    return m_viewport;
 }
 
 void OpenGL3DWidget::render() {
@@ -41,10 +41,7 @@ ViewType OpenGL3DWidget::viewType() {
 }
 
 void OpenGL3DWidget::setCameraView(View3D::CameraViewType cameraView) {
-    // ПРЕДПОЛОЖЕНИЕ: сопоставление enum -> int индекс пресета.
-    // Замените на switch по реальным значениям CameraViewType, если они
-    // не совпадают с порядком в GLViewport::setCameraPreset().
-    m_viewport->setCameraPreset(static_cast<int>(cameraView));
+    m_viewport->setCameraPreset(cameraView);
 }
 
 View3D::View3DSettings& OpenGL3DWidget::sceneSettings() {

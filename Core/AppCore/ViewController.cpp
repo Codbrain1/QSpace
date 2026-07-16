@@ -2,6 +2,7 @@
 #include "Core/LayerManager/LayerManager.h"
 #include "Core/ObjectRegistry/ObjectRegistry.h"
 #include "Core/ViewManager/ViewManager.h"
+#include "Visualize/Views/View3D/AbstractView3D.h"
 
 namespace QSpace::Core::Controllers {
 
@@ -30,7 +31,7 @@ void ViewController::initialize() {
             &Core::ViewManager::renderAllViews);
 
     connect(m_objectRegistry, &Core::ObjectRegistry::objectRemoved, this, [this](const QUuid& id) {
-        m_layerManager->removeLayer(id);
+        m_layerManager->removeAllLayersForNode(id);
         emit sceneUpdateRequested();
     });
 }
@@ -76,10 +77,15 @@ void ViewController::resetCameraInAllViews() {
 //         renderer->setGlobalExposure(exposure);
 //     }
 // }
-// void AppCore::setCameraViewInAllViews(Visualize::CameraViewType viewType) {
-//     m_viewManager->forEachView([viewType](Visualize::Views::AbstractView* r) {
-//     r->setCameraView(viewType); });
-// }
+void ViewController::setCameraViewInAllViews(Visualize::Views::View3D::CameraViewType viewType) {
+    m_viewManager->forEachView(
+        [viewType](const std::shared_ptr<Visualize::Views::AbstractView>& r) {
+            if (auto view = std::dynamic_pointer_cast<Visualize::Views::AbstractView3D>(r)) {
+                view->setCameraView(viewType);
+            }
+        });
+}
+
 void ViewController::setBackgroundColorInAllViews(float r, float g, float b) {
     m_viewManager->forEachView([r, g, b](std::shared_ptr<Visualize::Views::AbstractView> rw) {
         rw->setBackgroundColor(r, g, b);
@@ -88,9 +94,9 @@ void ViewController::setBackgroundColorInAllViews(float r, float g, float b) {
 }
 
 void ViewController::setAxesVisibleInAllViews(bool visible) {
-    // m_viewManager->forEachView([visible](std::shared_ptr<Visualize::Views::AbstractView> rw) {
-    //     rw->setAxesVisible(visible);
-    // });
+    m_viewManager->forEachView([visible](std::shared_ptr<Visualize::Views::AbstractView> rw) {
+        rw->setAxisVisible(visible);
+    });
     emit sceneUpdateRequested();
 }
 
