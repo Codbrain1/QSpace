@@ -40,4 +40,26 @@ std::shared_ptr<IRenderLayer> createLayerRenderer(const std::shared_ptr<Core::Da
     return nullptr;
 }
 
+std::shared_ptr<IRenderLayer> createLayerRenderer(Layers::RenderLayerType type) {
+    switch (type) {
+        case Layers::RenderLayerType::Particles: {
+            auto layer = std::make_shared<ParticleRendererLayer>();
+            layer->setSettings(std::make_shared<ParticlePointsLayerSettings>());
+            return layer;
+        }
+        case Layers::RenderLayerType::SPH: {
+            auto layer = std::make_shared<SPHRendererLayer>();
+            layer->setSettings(std::make_shared<SPHPointsLayerSettings>());
+            return layer;
+        }
+        case Layers::RenderLayerType::Binning: {
+            auto layer = std::make_shared<BinningRendererLayer>();
+            layer->setSettings(std::make_shared<BinningPointsLayerSettings>());
+            return layer;
+        }
+    }
+
+    qWarning() << "LayerFactory::createLayerRenderer: unknown RenderLayerType";
+    return nullptr;
+}
 } // namespace QSpace::Visualize::Layers::LayerFactory

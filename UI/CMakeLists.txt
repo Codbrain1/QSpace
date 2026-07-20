@@ -24,6 +24,12 @@ target_sources(UI PRIVATE
     Home/SettingsEditorWidget.cpp
     Home/ColorbarWidget.h
     Home/ColorbarWidget.cpp
+    Home/ViewContainerWidget.h
+    Home/ViewContainerWidget.cpp
+    Home/AutoSettingsToolBar.h
+    Home/AutoSettingsToolBar.cpp
+    Home/PropertyControlFactory.h
+    Home/PropertyControlFactory.cpp
 
 )
 target_include_directories(UI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)

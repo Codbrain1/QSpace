@@ -131,6 +131,7 @@ void GLViewport::forceFullRedraw() {
 void GLViewport::initializeGL() {
     initializeOpenGLFunctions();
     glEnable(GL_PROGRAM_POINT_SIZE);
+    glEnable(GL_PROGRAM_POINT_SIZE);
     glClearColor(float(m_backgroundColor.redF()),
                  float(m_backgroundColor.greenF()),
                  float(m_backgroundColor.blueF()),
@@ -204,8 +205,9 @@ Visualize::RenderContext GLViewport::buildRenderContext() {
                                    aspect,
                                    m_settings->viewport()->nearClip(),
                                    m_settings->viewport()->farClip());
-        const float fovYRad    = qDegreesToRadians(m_settings->viewport()->fovYDegrees());
-        ctx.pixelsPerWorldUnit = float(height()) / (2.0f * std::tan(fovYRad * 0.5f));
+        const float fovYRad = qDegreesToRadians(m_settings->viewport()->fovYDegrees());
+        float       visibleWorldHeightAtDistance = 2.0f * m_distance * std::tan(fovYRad * 0.5f);
+        ctx.pixelsPerWorldUnit = float(height()) / std::max(visibleWorldHeightAtDistance, 0.001f);
     }
 
     ctx.cameraPos = QVector3D(m_center.x() + m_distance * std::cos(m_pitch) * std::sin(m_yaw),
@@ -277,7 +279,7 @@ void GLViewport::paintGL() {
 void GLViewport::paintEvent(QPaintEvent* event) {
     QOpenGLWidget::paintEvent(event); // выполнит paintGL() через внутренний механизм Qt
 
-    if (!m_settings->axis()->visible() || !m_settings->axis()->showLabels())
+    if (!m_settings->axis()->visible())
         return;
 
     QPainter painter(this);

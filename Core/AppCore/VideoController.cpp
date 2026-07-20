@@ -4,6 +4,7 @@
 #include "Core/ObjectRegistry/ObjectRegistry.h"
 #include "Visualize/Layers/Layer.h"
 #include "Visualize/Views/View3D/AbstractView3D.h"
+#include <qtmetamacros.h>
 #include <quuid.h>
 #include <memory>
 
@@ -65,18 +66,13 @@ void VideoController::handleFixedEtalonSnapshot(const QUuid& referenceSnapshotId
     for (const auto& [key, list] : m_snapshotPlayerSate.asKeyValueRange()) {
         for (const auto& layer : list) {
             if (layer) {
-                auto view = layer->getView();
-                if (auto view3D =
-                        std::dynamic_pointer_cast<QSpace::Visualize::Views::AbstractView3D>(
-                            view.lock())) {
-                    view3D->detachRenderLayer(layer->layerId());
-                }
+                m_layerManager->removeLayer(layer->layerId());
             }
         }
     }
-
     m_snapshotPlayerSate.clear();
-    // копируем настройки сника для последующего повторения
+
+    // копируем настройки снимка для последующего повторения
     for (const auto& node : snapshot->components) {
         if (!node)
             continue;
@@ -88,13 +84,13 @@ void VideoController::handleFixedEtalonSnapshot(const QUuid& referenceSnapshotId
                     << "VideoController: failed to create layer for node" << node->id;
                 continue;
             }
-            auto newLayer = layer->deepCopy();
-            layer->setVisible(false);
+            auto newLayer = m_layerManager->createLayerCopy(layer->layerId());
             m_snapshotPlayerSate[node->type].append(newLayer);
+            layer->setVisible(false);
         }
     }
     auto currentSnapshot = m_objectRegistry->getSnapshot(m_currentVisualizeSnapshotId);
-    if (!snapshot) {
+    if (!currentSnapshot) {
         qCWarning(LogCore) << "VideoController: snapshot not found:"
                            << m_currentVisualizeSnapshotId;
         return;
@@ -120,6 +116,15 @@ void VideoController::handleFixedEtalonSnapshot(const QUuid& referenceSnapshotId
             if (layer)
                 layer->setData(nodeIt.value());
     }
+
+    QList<QUuid> list;
+    for (auto it = m_snapshotPlayerSate.begin(); it != m_snapshotPlayerSate.end(); ++it) {
+        for (auto& layer : it.value())
+            if (layer) {
+                list.append(layer->layerId());
+            }
+    }
+    emit changedEtalonLayer(list);
 }
 
 void VideoController::handleActivateVisualizeSnapshot(int index) {

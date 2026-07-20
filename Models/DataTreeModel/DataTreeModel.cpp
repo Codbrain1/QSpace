@@ -668,13 +668,50 @@ QVariant DataTreeModel::data(const QModelIndex& index, int role) const {
 
 // --- Обработка клика по чекбоксу (Изменение видимости) ---
 bool DataTreeModel::setData(const QModelIndex& index, const QVariant& value, int role) {
-    if (!index.isValid() || role != Qt::CheckStateRole || index.column() != NameColumn)
+    if (!index.isValid() || index.column() != NameColumn)
         return false;
 
-    auto*      item    = static_cast<DataTreeItem*>(index.internalPointer());
+    // =========================================================================
+    // ХЕНДЛЕР 1: ОБРАБОТКА ПЕРЕИМЕНОВАНИЯ (Qt::EditRole)
+    // =========================================================================
+
+    auto* item = static_cast<DataTreeItem*>(index.internalPointer());
+
+    if (role == Qt::EditRole) {
+        QString newName = value.toString().trimmed();
+        if (newName.isEmpty())
+            return false;
+
+        switch (item->type()) {
+            case DataTreeItem::Experiment: {
+                if (auto exp = m_registry->getExperiment(item->id())) {
+                    exp->name = newName;
+                }
+                break;
+            }
+            case DataTreeItem::LayerItem: {
+                if (auto layer = m_layerManager->getLayer(item->id())) {
+                    layer->setName(newName);
+                }
+                break;
+            }
+            default:
+                return false;
+        }
+        // 2. Уведомляем View, что текст ячейки изменился
+        emit dataChanged(index, index, {Qt::DisplayRole, Qt::EditRole});
+
+        return true;
+    }
+
+    // =========================================================================
+    // ХЕНДЛЕР 2: ОБРАБОТКА КЛИКА ПО ЧЕКБОКСУ (Qt::CheckStateRole)
+    // =========================================================================
+    if (role != Qt::CheckStateRole)
+        return false; // Защита от всех остальных ролей
     const bool visible = (value.toInt() == Qt::Checked);
 
-    // --- 1. Бизнес-логика и ленивое уведомление VTK/Слоев ---
+    // --- 1. Бизнес-логика и ленивое уведомление Слоев ---
     switch (item->type()) {
         case DataTreeItem::Experiment: {
             if (auto exp = m_registry->getExperiment(item->id())) {
@@ -785,7 +822,11 @@ Qt::ItemFlags DataTreeModel::flags(const QModelIndex& index) const {
     if (index.column() == NameColumn) {
         flags |= Qt::ItemIsUserCheckable;
     }
-
+    if (index.data(CustomRoles::IdRole).isValid()) {
+        auto* item = static_cast<DataTreeItem*>(index.internalPointer());
+        if (item->type() == DataTreeItem::Experiment || item->type() == DataTreeItem::LayerItem)
+            flags |= Qt::ItemIsEditable;
+    }
     return flags;
 }
 

@@ -666,8 +666,8 @@ void LayerExplorerWidget::showCustomContextMenuForExperimentInternal(QMenu* menu
 void LayerExplorerWidget::showCustomContextMenuForSnapshotInternal(QMenu* menu, const QModelIndex& index) {
     QUuid snapshotId = index.data(Models::DataTreeModel::CustomRoles::IdRole).toUuid();
 
-    QAction* deleteAction                = menu->addAction(tr("Удалить снимок"));
     QAction* completeForTimeSliderAction = menu->addAction(tr("Применить для плеера кадров"));
+    QAction* deleteAction                = menu->addAction(tr("Удалить снимок"));
 
     connect(deleteAction, &QAction::triggered, this, [this, snapshotId]() {
         emit removalObjectRequested(snapshotId);
@@ -706,6 +706,10 @@ void LayerExplorerWidget::showCustomContextMenuForLayerInternal(QMenu* menu, con
 
     // Создаем Action
     QAction* deleteAction = menu->addAction(tr("Удалить слой"));
+    menu->addSeparator();
+    QAction* renameAction = menu->addAction(tr("Переименовать"));
+
+    connect(renameAction, &QAction::triggered, this, [this, index]() { ui->treeView_Layers->edit(index); });
 
     // Подключаем логику удаления
     connect(deleteAction, &QAction::triggered, this, [this, layerId]() {

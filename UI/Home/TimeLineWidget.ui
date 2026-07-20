@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>708</width>
-    <height>55</height>
+    <height>85</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -42,11 +42,18 @@
     </widget>
    </item>
    <item>
-    <widget class="QLabel" name="label_Snapshot">
-     <property name="text">
-      <string>Снимок: 0/0 (T=0 миллионов лет)</string>
-     </property>
-    </widget>
+    <layout class="QVBoxLayout" name="verticalLayout_2">
+     <item>
+      <widget class="QLabel" name="label_Snapshot">
+       <property name="text">
+        <string>Снимок: 0/0 (T=0 миллионов лет)</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="comboBox"/>
+     </item>
+    </layout>
    </item>
   </layout>
  </widget>

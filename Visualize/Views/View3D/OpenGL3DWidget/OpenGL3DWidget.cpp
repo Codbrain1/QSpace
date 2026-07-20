@@ -44,8 +44,8 @@ void OpenGL3DWidget::setCameraView(View3D::CameraViewType cameraView) {
     m_viewport->setCameraPreset(cameraView);
 }
 
-View3D::View3DSettings& OpenGL3DWidget::sceneSettings() {
-    return *m_settings;
+View3D::View3DSettings* OpenGL3DWidget::sceneSettings() {
+    return m_settings.get();
 }
 
 void OpenGL3DWidget::attachRenderLayer(const QUuid&                             layerId,

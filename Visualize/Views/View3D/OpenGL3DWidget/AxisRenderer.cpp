@@ -97,6 +97,7 @@ void AxisRenderer::rebuildGeometry(QOpenGLFunctions_3_3_Core* gl,
         }
     }
 
+
     m_vertexCount = verts.size();
 
     m_vao.bind();
@@ -150,13 +151,20 @@ void AxisRenderer::render(QOpenGLFunctions_3_3_Core*      gl,
 
 QVector<AxisTick> AxisRenderer::buildTicks(AxisSettings* settings, float extent) const {
     QVector<AxisTick> ticks;
-    if (!settings->showTicks())
-        return ticks;
 
     const int   n           = std::max(1, settings->tickCount());
     const float step        = extent / float(n);
     auto        pu          = QSpace::Physics::PhysicalUnits::fromSimParams(3.72, 0.9);
     float       lengthScale = static_cast<float>(pu.lengthScale);
+
+    if (settings->showLabels()) {
+        ticks.append({QVector3D(extent + step, 0, 0), settings->labelX(), settings->colorX()});
+        ticks.append({QVector3D(0, extent + step, 0), settings->labelY(), settings->colorY()});
+        ticks.append({QVector3D(0, 0, extent + step), settings->labelZ(), settings->colorZ()});
+    }
+
+    if (!settings->showTicks())
+        return ticks;
 
     for (int i = 1; i <= n; ++i) {
         const float   v = i * step;
@@ -167,10 +175,6 @@ QVector<AxisTick> AxisRenderer::buildTicks(AxisSettings* settings, float extent)
         ticks.append({QVector3D(0, v, 0), label, settings->colorY()});
         ticks.append({QVector3D(0, 0, v), label, settings->colorZ()});
     }
-
-    ticks.append({QVector3D(extent + step, 0, 0), "X", settings->colorX()});
-    ticks.append({QVector3D(0, extent + step, 0), "Y", settings->colorY()});
-    ticks.append({QVector3D(0, 0, extent + step), "Z", settings->colorZ()});
     return ticks;
 }
 

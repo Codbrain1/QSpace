@@ -17,8 +17,6 @@ class TimeLineWidget : public QWidget {
   signals:
     void currentTimeStampValueChanged(int valueTimestamp);
     void editLayerProperty(const QUuid& layerId);
-  public slots:
-    void handleSetMainLayer(const QUuid& layerId);
   private slots:
     void handleToolButtonPrev_clicked();
     void handleToolButtonNext_clicked();
@@ -26,11 +24,12 @@ class TimeLineWidget : public QWidget {
     void handleTimeSliderChangeValue(int value);
 
     void handleSnapshotsListChangeSize(const int size);
+    void handleChangeEtalonSnapshot(const QList<QUuid>& list);
 
   private:
+    QList<QUuid>        layerList;
     Ui::TimeLineWidget* ui;
     Core::AppCore*      m_app;
-    QUuid               m_layerId;
     void                setTextTimeLabelTextInternal();
 };
 } // namespace QSpace::UI

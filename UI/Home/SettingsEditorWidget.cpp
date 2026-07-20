@@ -25,6 +25,9 @@ void SettingsEditorWidget::setSettings(QSpace::Visualize::Layers::LayerSettings*
     // Отключаем старый объект, если он был привязан
     if (m_settings)
         m_settings->disconnect(this);
+    else {
+        clearEditor();
+    }
 
     m_settings = settings;
     clearEditor();
@@ -83,14 +86,16 @@ void SettingsEditorWidget::createRowForProperty(const QMetaProperty& prop) {
                 this,
                 [this, prop, combo](int index) {
                     int enumValue = combo->itemData(index).toInt();
-                    prop.write(m_settings, enumValue);
+                    if (m_settings)
+                        prop.write(m_settings, enumValue);
                 });
         editorWidget = combo;
     } else if (type == QMetaType::Bool) {
         auto* cb = new QCheckBox(this);
         cb->setChecked(value.toBool());
         connect(cb, &QCheckBox::toggled, this, [this, prop](bool checked) {
-            prop.write(m_settings, checked);
+            if (m_settings)
+                prop.write(m_settings, checked);
         });
         editorWidget = cb;
     } else if (type == QMetaType::Double || type == QMetaType::Float) {
@@ -104,20 +109,25 @@ void SettingsEditorWidget::createRowForProperty(const QMetaProperty& prop) {
 
         sb->setValue(value.toDouble());
         connect(sb, &QDoubleSpinBox::valueChanged, this, [this, prop](double val) {
-            prop.write(m_settings, val);
+            if (m_settings)
+                prop.write(m_settings, val);
         });
         editorWidget = sb;
     } else if (type == QMetaType::Int) {
         auto* sb = new QSpinBox(this);
         sb->setRange(-1000000, 1000000);
         sb->setValue(value.toInt());
-        connect(sb, &QSpinBox::valueChanged, this, [this, prop](int val) { prop.write(m_settings, val); });
+        connect(sb, &QSpinBox::valueChanged, this, [this, prop](int val) {
+            if (m_settings)
+                prop.write(m_settings, val);
+        });
         editorWidget = sb;
     } else if (type == QMetaType::QString) {
         auto* le = new QLineEdit(this);
         le->setText(value.toString());
         connect(le, &QLineEdit::textChanged, this, [this, prop](const QString& text) {
-            prop.write(m_settings, text);
+            if (m_settings)
+                prop.write(m_settings, text);
         });
         editorWidget = le;
     } else if (type == QMetaType::QColor) {
@@ -127,7 +137,8 @@ void SettingsEditorWidget::createRowForProperty(const QMetaProperty& prop) {
             QColor current = prop.read(m_settings).value<QColor>();
             QColor chosen  = QColorDialog::getColor(current, this, "Выберите цвет");
             if (chosen.isValid()) {
-                prop.write(m_settings, chosen);
+                if (m_settings)
+                    prop.write(m_settings, chosen);
                 updateColorButton(btn, chosen);
             }
         });

@@ -7,6 +7,7 @@
 #include <QObject>
 #include <QUuid>
 #include <quuid.h>
+#include "Enums/LayerEnums.h"
 #include <memory>
 
 namespace QSpace::Core {
@@ -20,8 +21,11 @@ class LayerManager : public QObject {
 
     QUuid createLayer(std::shared_ptr<DataNode>                       node,
                       std::shared_ptr<Visualize::Views::AbstractView> view);
-    void  removeLayer(const QUuid& layerId);
-    void  removeAllLayersForNode(const QUuid& nodeId);
+
+    std::shared_ptr<Visualize::Layers::Layer> createLayerCopy(const QUuid& etalonLayerId);
+
+    void removeLayer(const QUuid& layerId);
+    void removeAllLayersForNode(const QUuid& nodeId);
 
     // Метод для очистки всех слоев конкретного окна (вызывается при закрытии окна)
     void removeAllLayersForView(Visualize::Views::AbstractView* view);

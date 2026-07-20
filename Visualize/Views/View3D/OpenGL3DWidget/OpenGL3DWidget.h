@@ -23,7 +23,7 @@ class OpenGL3DWidget : public AbstractView3D {
     ViewType viewType() override;
 
     void                    setCameraView(View3D::CameraViewType cameraView) override;
-    View3D::View3DSettings& sceneSettings() override;
+    View3D::View3DSettings* sceneSettings() override;
 
     void attachRenderLayer(const QUuid&                             layerId,
                            std::shared_ptr<Visualize::IRenderLayer> layer) override;

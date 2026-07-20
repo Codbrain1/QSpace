@@ -120,7 +120,6 @@ class DataTreeModel : public QAbstractItemModel {
     void refreshNode(const QUuid& nodeId);
 
   signals:
-    // --- ВОТ ЭТИХ СИГНАЛОВ НЕ ХВАТАЛО ДЛЯ СБОРКИ ---
     void treeModeChanged(QSpace::Models::DataTreeModel::TreeMode mode);
     void treeRebuilt();
     void sceneUpdateRequested();

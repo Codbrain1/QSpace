@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="16"
+   height="16"
+   viewBox="0 0 4.2333334 4.2333334"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4.3 (0d15f75, 2025-12-25)"
+   sodipodi:docname="icon_grid.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     inkscape:zoom="64"
+     inkscape:cx="11.304687"
+     inkscape:cy="8.1328125"
+     inkscape:window-width="2560"
+     inkscape:window-height="1369"
+     inkscape:window-x="1912"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <rect
+       style="fill:#f9f9f9;fill-opacity:0;stroke:#707070;stroke-width:0.197575;stroke-dasharray:none;paint-order:markers stroke fill;stroke-opacity:1"
+       id="rect1"
+       width="4.0395088"
+       height="4.0353746"
+       x="0.098787077"
+       y="0.098787077" />
+    <path
+       style="fill:#f9f9f9;fill-opacity:0;stroke:#707070;stroke-width:0.201;stroke-dasharray:none;paint-order:markers stroke fill;stroke-opacity:1"
+       d="M 1.3518555,0.10748698 V 4.150651"
+       id="path4" />
+    <path
+       style="fill:#f9f9f9;fill-opacity:0;stroke:#707070;stroke-width:0.201;stroke-dasharray:none;paint-order:markers stroke fill;stroke-opacity:1"
+       d="M 2.7574545,0.11162108 V 4.1341145"
+       id="path5" />
+    <path
+       style="fill:#f9f9f9;fill-opacity:0;stroke:#707070;stroke-width:0.201;stroke-dasharray:none;paint-order:markers stroke fill;stroke-opacity:1"
+       d="M 0.10748698,2.7243815 H 4.1258463"
+       id="path6" />
+    <path
+       style="fill:#f9f9f9;fill-opacity:0;stroke:#707070;stroke-width:0.201;stroke-dasharray:none;paint-order:markers stroke fill;stroke-opacity:1"
+       d="M 0.09095052,1.3229166 H 4.1217122"
+       id="path7" />
+  </g>
+</svg>

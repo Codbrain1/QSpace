@@ -29,7 +29,7 @@ class ColorBarWidget : public QWidget {
 
     // Применить настройки слоя (диапазон значений, палитра, видимость и т.д.)
     void setSettings(QSpace::Visualize::Layers::LayerSettings* settings);
-
+    void setOrientation(bool isVertical);
     // Доступ к нижележащему QCustomPlot, если понадобится тонкая настройка снаружи
     QCustomPlot* plot() const {
         return m_plot;

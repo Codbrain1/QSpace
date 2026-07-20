@@ -32,6 +32,23 @@ class Layer : public QObject {
           m_settings(nullptr) {
     }
 
+    Layer(const QString&                                  name,
+          std::shared_ptr<Visualize::Views::AbstractView> targetView,
+          QObject*                                        parent = nullptr)
+        : QObject(parent),
+          m_layerId(QUuid::createUuid()),
+          m_name(name),
+          m_view(targetView),
+          m_settings(nullptr) {
+    }
+
+    ~Layer() {
+        if (auto view3D = std::dynamic_pointer_cast<QSpace::Visualize::Views::AbstractView3D>(
+                m_view.lock())) {
+            view3D->detachRenderLayer(m_layerId);
+        }
+    }
+
     std::weak_ptr<Views::AbstractView> getView() {
         return m_view;
     }
@@ -114,44 +131,6 @@ class Layer : public QObject {
             v->render(); // TODO из за этого может тормозить рендеринг
             emit updateRequired();
         }
-    }
-
-    std::shared_ptr<Layer> deepCopy() const {
-        // 1. Поверхностно копируем weak_ptr, временно превращая их в shared_ptr для конструктора
-        auto sharedNode = m_dataNode.lock();
-        auto sharedView = m_view.lock();
-
-        // 2. Создаем новый экземпляр слоя.
-        // Конструктор автоматически сгенерирует новый уникальный m_layerId через
-        // QUuid::createUuid()
-        auto copyLayer = std::make_shared<Layer>(sharedNode, sharedView);
-
-        // 3. Копируем простые члены, сохраняя текущее состояние (на случай, если имя меняли через
-        // setName)
-        copyLayer->m_name               = m_name;
-        copyLayer->m_isSyncedWithMaster = m_isSyncedWithMaster;
-        copyLayer->m_dataNodeId         = m_dataNodeId;
-
-        // 4. Глубокое копирование движка рендеринга и его настроек
-        if (m_renderEngine) {
-            // Вызываем виртуальный клон движка (см. Шаг 2)
-            auto clonedEngine = m_renderEngine->clone();
-
-            if (clonedEngine) {
-                // assignEngine внутри себя привяжет сигналы нового слоя к настройкам движка
-                // и примонтирует движок к view3D, используя НАСТОЯЩИЙ (новый) copyLayer->m_layerId!
-                copyLayer->assignEngine(clonedEngine);
-
-                // Магия: глубоко копируем настройки через ваши QVariantMap.
-                // Нам не нужно знать, SPH это настройки или какие-то другие — метасистема Qt всё
-                // сделает за нас.
-                if (m_settings && copyLayer->m_settings) {
-                    copyLayer->m_settings->fromVariantMap(this->m_settings->toVariantMap());
-                }
-            }
-        }
-
-        return copyLayer;
     }
 
   signals:

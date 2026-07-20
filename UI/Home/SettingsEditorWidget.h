@@ -1,6 +1,8 @@
 #pragma once
 #include <QMap>
+#include <QPointer>
 #include <QWidget>
+
 
 class QFormLayout;
 class QMetaProperty;
@@ -26,8 +28,8 @@ class SettingsEditorWidget : public QWidget {
     void updateUiValues();
     void clearEditor();
 
-    QFormLayout*                              m_layout   = nullptr;
-    QSpace::Visualize::Layers::LayerSettings* m_settings = nullptr;
-    QMap<QString, QWidget*>                   m_editors;
+    QFormLayout*                                       m_layout = nullptr;
+    QPointer<QSpace::Visualize::Layers::LayerSettings> m_settings;
+    QMap<QString, QWidget*>                            m_editors;
 };
 } // namespace QSpace::UI

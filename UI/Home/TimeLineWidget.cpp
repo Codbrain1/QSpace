@@ -2,6 +2,7 @@
 #include "Common/Logger/Logger.h"
 #include "Core/AppCore/DataController.h"
 #include "Core/AppCore/VideoController.h"
+#include "QAbstractItemView"
 #include "ui_TimeLineWidget.h"
 #include <qloggingcategory.h>
 #include <qtoolbutton.h>
@@ -29,6 +30,20 @@ TimeLineWidget::TimeLineWidget(Core::AppCore* app, QWidget* parent)
 
     connect(ui->toolButtonPrev, &QToolButton::clicked, this, &TimeLineWidget::handleToolButtonPrev_clicked);
     connect(ui->toolButtonNext, &QToolButton::clicked, this, &TimeLineWidget::handleToolButtonNext_clicked);
+    connect(m_app->videoController(),
+            &QSpace::Core::Controllers::VideoController::changedEtalonLayer,
+            this,
+            &TimeLineWidget::handleChangeEtalonSnapshot);
+
+    auto* popupView = ui->comboBox->view();
+
+    connect(ui->comboBox, &QComboBox::activated, this, [this](int index) {
+        if (index < 0)
+            return;
+
+        QUuid selectedLayerId = ui->comboBox->itemData(index).toUuid();
+        emit  editLayerProperty(selectedLayerId);
+    });
     // connect(ui->toolButtonEditLayerSettings,
     //         &QToolButton::clicked,
     //         this,
@@ -55,11 +70,6 @@ void TimeLineWidget::handleTimeSliderChangeValue(int value) {
     setTextTimeLabelTextInternal();
     emit currentTimeStampValueChanged(value);
 }
-void TimeLineWidget::handleSetMainLayer(const QUuid& layerId) {
-    if (m_layerId != layerId) {
-        m_layerId = layerId;
-    }
-}
 
 // =========== Изменение диапазона слайдера ===========
 void TimeLineWidget::handleSnapshotsListChangeSize(int size) {
@@ -80,7 +90,6 @@ void TimeLineWidget::handleSnapshotsListChangeSize(int size) {
     setTextTimeLabelTextInternal();
 }
 void TimeLineWidget::handleToolButtonEditLayerSettings() {
-    emit editLayerProperty(m_layerId);
 }
 // =========== Внутренние методы ===========
 void TimeLineWidget::setTextTimeLabelTextInternal() {
@@ -97,7 +106,19 @@ void TimeLineWidget::setTextTimeLabelTextInternal() {
                                  .arg(timestamp);
     ui->label_Snapshot->setText(snapshotString);
 }
-
+void TimeLineWidget::handleChangeEtalonSnapshot(const QList<QUuid>& list) {
+    layerList = list;
+    ui->comboBox->clear();
+    for (const QUuid& id : layerList) {
+        // Получаем красивое имя слоя из вашего менеджера по его UUID
+        auto layer = m_app->dataController()->getLayerById(id);
+        if (!layer)
+            return;
+        QString layerName = layer->name();
+        // Передаем имя и прикрепляем к этому пункту скрытый UUID
+        ui->comboBox->addItem(layerName, id);
+    }
+}
 TimeLineWidget::~TimeLineWidget() {
     delete ui;
 }

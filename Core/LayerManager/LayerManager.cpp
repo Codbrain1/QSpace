@@ -15,7 +15,7 @@ LayerManager::~LayerManager() = default;
 
 QUuid LayerManager::createLayer(std::shared_ptr<DataNode>                       node,
                                 std::shared_ptr<Visualize::Views::AbstractView> view) {
-    if (!node || !view || !node->data) {
+    if (!node || !view || !node->isLoaded()) {
         qCWarning(LogCore) << "LayerManager::createLayer - Invalid node or view";
         return QUuid();
     }
@@ -45,11 +45,41 @@ QUuid LayerManager::createLayer(std::shared_ptr<DataNode>                       
     return layer->layerId();
 }
 
+std::shared_ptr<Visualize::Layers::Layer>
+LayerManager::createLayerCopy(const QUuid& etalonLayerId) {
+    auto it = m_layers.find(etalonLayerId);
+    if (it == m_layers.end())
+        return nullptr;
+    auto etalonLayer = it.value();
+    auto view        = etalonLayer->getView().lock();
+
+    auto layer = std::make_shared<Visualize::Layers::Layer>(etalonLayer->name(), view);
+
+    auto renderEngine = Visualize::Layers::LayerFactory::createLayerRenderer(
+        Visualize::Layers::RenderLayerType::SPH);
+
+    if (!renderEngine)
+        return nullptr;
+
+    layer->assignEngine(renderEngine);
+    layer->update();
+    layer->getSettings()->fromVariantMap(etalonLayer->getSettings()->toVariantMap());
+
+    // 5. Регистрация в индексах
+    m_layers.insert(layer->layerId(), layer);
+    m_viewToLayers[view.get()].append(layer->layerId());
+    return layer;
+}
+
 void LayerManager::removeLayer(const QUuid& layerId) {
     if (!m_layers.contains(layerId))
         return;
 
-    auto layer      = m_layers[layerId];
+    auto layer = m_layers[layerId];
+    if (!layer) {
+        return;
+    }
+
     auto rawViewPtr = layer->getView().lock().get(); // Получаем адрес окна, если оно живо
 
     // Отвязываем от View (только если окно еще существует)
@@ -64,8 +94,20 @@ void LayerManager::removeLayer(const QUuid& layerId) {
             view3D->detachRenderLayer(layerId);
         }
     }
-    // Удаляем из остальных индексов
-    m_nodeToLayers[layer->dataNodeId()].removeOne(layerId);
+
+    // 2. Ищем ноду безопасным способом без неявного создания элемента
+    auto it = m_nodeToLayers.find(layer->dataNodeId());
+
+    if (it != m_nodeToLayers.end()) {
+        // Если нода найдена, удаляем слой из её списка
+        it.value().removeOne(layerId);
+
+        // Хитрый ход: если после удаления слоя список для этой ноды опустел,
+        // удаляем и саму ноду из мапы, чтобы не засорять память
+        if (it.value().isEmpty()) {
+            m_nodeToLayers.erase(it);
+        }
+    }
     m_layers.remove(layerId);
 
     emit layerRemoved(layerId);

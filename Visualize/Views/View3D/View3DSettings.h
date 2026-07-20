@@ -15,7 +15,6 @@ class GridSettings : public QObject {
 
     Q_PROPERTY(bool   visible READ visible WRITE setVisible NOTIFY changed)
     Q_PROPERTY(QColor color   READ color   WRITE setColor   NOTIFY changed)
-    Q_PROPERTY(float  spacing READ spacing WRITE setSpacing NOTIFY changed) 
     Q_PROPERTY(float  extent  READ extent  WRITE setExtent  NOTIFY changed) 
     Q_PROPERTY(int    lineCount READ lineCount WRITE setLineCount NOTIFY changed)
   public:
@@ -27,8 +26,6 @@ class GridSettings : public QObject {
     QColor color() const { return m_color; }
     void setColor(const QColor& c) { if (m_color != c) { m_color = c; emit changed(); } }
 
-    float spacing() const { return m_spacing; }
-    void setSpacing(float s) { if (!qFuzzyCompare(m_spacing, s)) { m_spacing = s; emit changed(); } }
 
     float extent() const { return m_extent; }
     void setExtent(float e) { if (!qFuzzyCompare(m_extent, e)) { m_extent = e; emit changed(); } }
@@ -43,7 +40,6 @@ class GridSettings : public QObject {
   private:
     bool   m_visible   = false;               // видимость сетки
     QColor m_color     = QColor(90, 90, 100); // цвет сетки
-    float  m_spacing   = 1.0f;                // расстояние между линиями (в мировых единицах)
     float  m_extent    = 10.0f;               // половина от общего размера сетки
     int    m_lineCount = 16;                  // число линий на сетке
 };
@@ -177,9 +173,9 @@ public:
     // https://vuzdoc.ru/76377/tehnika/proektsii
 
     QColor m_backgroundColor = QColor(13, 13, 20); // фон отображаемого окна
-    bool   m_orthographic    = false; // Переключатель между двумя типами проекции: Перспективная
-                                      // проекция и Ортографическая (параллельная) проекция
-    float m_fovYDegrees = 45.0f;      // по вертикали (угол обзора камеры), в градусах. Используется
+    bool   m_orthographic    = true; // Переключатель между двумя типами проекции: Перспективная
+                                     // проекция и Ортографическая (параллельная) проекция
+    float m_fovYDegrees = 45.0f;     // по вертикали (угол обзора камеры), в градусах. Используется
     // только когда включена перспективная проекция
 
     // Границы отсечения по глубине (near/far clipping planes). Определяют диапазон
@@ -188,7 +184,7 @@ public:
     // Параметры bottom и top определяют координаты верхней и нижней плоскости отсечения. Параметры
     // zNear и zFar задают расстояние от точки (0, 0, 0) до ближней и дальней плоскостей отсечения и
     // могут быть положительными и отрицательными.
-    float m_nearClip = -0.0001f;
+    float m_nearClip = 0.0f;
     float m_farClip  = 1000.0f;
 
     // Показывать ли координатный гизмо — маленький 3D-компас (обычно в углу экрана)

@@ -57,8 +57,14 @@
     <addaction name="action_bg_black"/>
     <addaction name="action_bg_white"/>
    </widget>
+   <widget class="QMenu" name="menu">
+    <property name="title">
+     <string>Управление окнами</string>
+    </property>
+   </widget>
    <addaction name="menu_file"/>
    <addaction name="menu_bg"/>
+   <addaction name="menu"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
    <property name="windowTitle">
@@ -115,11 +121,17 @@
    <widget class="QWidget" name="dockWidgetContents_TimeSlider"/>
   </widget>
   <action name="action_open_session">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Открыть проект</string>
    </property>
   </action>
   <action name="action_save_session">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Сохранить</string>
    </property>

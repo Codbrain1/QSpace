@@ -49,6 +49,7 @@ class VideoController : public QObject {
   signals:
     void snapshotsListSizeChanged(const int size);
     void requestNodeLoad(const QUuid& id);
+    void changedEtalonLayer(const QList<QUuid>& layers);
 
   public slots:
     // применяем эксперимент для отображения
@@ -71,10 +72,11 @@ class VideoController : public QObject {
 
     void requestLoadFloatWindow(int index);
 
-    const int floatWindow = 10;
+    const int floatWindow = 15;
     QMap<QSpace::Visualize::EntityType,
          QList<std::shared_ptr<QSpace::Visualize::Layers::Layer>>>
-          m_snapshotPlayerSate;         // слои для текущего snapshot
+        m_snapshotPlayerSate; // слои для текущего snapshot
+
     QUuid m_currentVisualizeSnapshotId; // текущий отображаемый кадр
     // QUuid m_referenceSnapshotId; // "эталонный" снимок, на который зафиксирован диапазон окраски
     QUuid m_targetExperimentId; // эксперимент отображаемый с помощью плеера кадров

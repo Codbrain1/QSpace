@@ -43,9 +43,8 @@ void GridRenderer::releaseGL(QOpenGLFunctions_3_3_Core* gl) {
 }
 
 void GridRenderer::rebuildGeometry(QOpenGLFunctions_3_3_Core* gl, GridSettings* settings) {
-    const float spacing = settings->spacing();
-    const float extent  = settings->extent();
-    const int   lines   = std::max(1, settings->lineCount());
+    const float extent = settings->extent();
+    const int   lines  = std::max(1, settings->lineCount());
 
     QVector<float> verts; // 3 floata на вершину (pos), линии парами
     verts.reserve((lines + 1) * 4 * 3);
@@ -70,7 +69,6 @@ void GridRenderer::rebuildGeometry(QOpenGLFunctions_3_3_Core* gl, GridSettings* 
     gl->glEnableVertexAttribArray(0);
     m_vao.release();
 
-    m_cachedSpacing   = spacing;
     m_cachedExtent    = extent;
     m_cachedLineCount = lines;
 }
@@ -83,8 +81,7 @@ void GridRenderer::render(QOpenGLFunctions_3_3_Core*      gl,
 
     // пересобираем геометрию только если параметры реально поменялись —
     // не на каждый кадр, чтобы не гонять память впустую при 60 FPS
-    if (!qFuzzyCompare(m_cachedSpacing, settings->spacing()) ||
-        !qFuzzyCompare(m_cachedExtent, settings->extent()) ||
+    if (!qFuzzyCompare(m_cachedExtent, settings->extent()) ||
         m_cachedLineCount != settings->lineCount()) {
         rebuildGeometry(gl, settings);
     }

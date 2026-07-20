@@ -14,7 +14,7 @@ class AbstractView3D : public AbstractView {
     virtual ~AbstractView3D() = default;
 
     virtual void                    setCameraView(View3D::CameraViewType cameraView) = 0;
-    virtual View3D::View3DSettings& sceneSettings()                                  = 0;
+    virtual View3D::View3DSettings* sceneSettings()                                  = 0;
 
     // ---- НЕ публичный API для пользователя. Вызывается только из LayerManager. ----
     // View не решает, что рисовать — только КАК рисовать то, что ему передали.

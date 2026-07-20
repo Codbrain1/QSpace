@@ -36,31 +36,6 @@ class BinningRendererLayer : public IOpenGLRenderLayer {
         return m_visible;
     }
 
-    std::shared_ptr<Visualize::IRenderLayer> clone() const override { // TODO
-        // Создаем абсолютно чистый новый движок SPH
-        auto copy = std::make_shared<BinningRendererLayer>();
-
-        // Поверхностно копируем weak_ptr на данные, как просили
-        copy->m_dataNode = m_dataNode;
-
-        // Сбрасываем флаги в исходное состояние, чтобы новый движок
-        // честно проинициализировал свои VBO/VAO в новом контексте OpenGL
-        copy->m_dirty               = true;
-        copy->m_gridLineVertexCount = 0;
-        copy->m_cachedGridCellSize  = -1.0;
-        copy->m_particleCount       = 0;
-        copy->m_hasBounds           = false;
-        copy->m_boundsMin           = m_boundsMin;
-        copy->m_boundsMax           = m_boundsMax;
-        auto settings               = std::make_shared<BinningPointsLayerSettings>();
-        copy->setSettings(settings);
-        // Важно: если в конструкторе SPHRenderLayer по умолчанию создается
-        // дефолтный m_settings = std::make_shared<SPHPointsLayerSettings>(),
-        // то больше ничего делать не нужно — класс Layer сам заполнит его данными через VariantMap.
-
-        return copy;
-    }
-
     void initializeGL(QOpenGLFunctions_3_3_Core* gl) override;
     void render(QOpenGLFunctions_3_3_Core* gl, const Visualize::RenderContext& ctx) override;
     void releaseGL(QOpenGLFunctions_3_3_Core* gl) override;

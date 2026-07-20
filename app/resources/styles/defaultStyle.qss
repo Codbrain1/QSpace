@@ -1,16 +1,18 @@
-/* Адаптивное меню: цвета подтягиваются из текущей темы Windows/Linux/macOS */
+/* ===================== QMenu ===================== */
 QMenu {
-    /* Используем Window вместо window, чтобы Qt гарантированно понял роль */
-    background-color: palette(Window);       
-    color: palette(WindowText);              /* ИСПРАВЛЕНО: CamelCase без дефиса */
-    border: 1px solid palette(Mid);          
+    background-color: palette(Window);
+    color: palette(WindowText);
+    border: 1px solid palette(Mid);
     padding: 4px 0px;
 }
 
-/* Элемент меню при наведении */
+QMenu::item {
+    padding: 4px 20px;
+}
+
 QMenu::item:selected {
-    background-color: palette(Highlight);     
-    color: palette(HighlightedText);         /* ИСПРАВЛЕНО: CamelCase без дефиса */
+    background-color: palette(Highlight);
+    color: palette(HighlightedText);
 }
 
 QMenu::separator {
@@ -18,11 +20,64 @@ QMenu::separator {
     background-color: palette(Mid);
     margin: 4px 0px;
 }
-QToolButton {
+
+/* ===================== QToolBar ===================== */
+QToolBar {
+    background-color: palette(Window);
+    border-bottom: 1px solid palette(Mid);
+    padding: 2px 6px;
+    spacing: 4px;
+}
+
+/* Единственное место, где задаются размеры/padding кнопки —
+   больше НЕ переопределяется другим селектором ниже, поэтому
+   конфликта специфичности с "QToolBar QToolButton" больше нет. */
+QToolBar QToolButton {
     min-width: 20px;
     max-width: 20px;
     min-height: 20px;
     max-height: 20px;
     padding: 0px;
     margin: 0px;
+    background: transparent;
+    border: none;
+    border-radius: 3px;
+}
+
+QToolBar QToolButton:hover {
+    background-color: palette(Midlight);
+    border: 1px solid palete(WindowText); 
+    border-radius: 3px;
+}
+
+QToolBar QToolButton:checked {
+    background-color: palette(Highlight);
+}
+
+QToolBar QToolButton:checked:hover {
+    background-color: palette(Highlight);
+}
+
+QToolBar QComboBox,
+QToolBar QSpinBox,
+QToolBar QDoubleSpinBox {
+    background-color: palette(Base);
+    color: palette(Text);
+    border: 1px solid palette(Mid);
+    border-radius: 3px;
+    padding: 0px 4px;
+    min-height: 20px;
+    max-height: 20px;
+    min-width: 70px; 
+}
+
+QToolBar QComboBox:hover,
+QToolBar QSpinBox:hover,
+QToolBar QDoubleSpinBox:hover {
+    background-color: palette(Midlight);
+}
+
+QToolBar QComboBox::drop-down {
+    border: none;
+    width: 14px;
 }

@@ -10,7 +10,7 @@
 namespace QSpace::Visualize::Views::View3D {
 
 // Рисует плоскую сетку (GL_LINES) на плоскости XZ. Геометрия перестраивается лениво —
-// только когда spacing/extent/lineCount реально изменились, а не каждый кадр.
+// только когда extent/lineCount реально изменился, а не каждый кадр.
 class GridRenderer : public QObject {
     Q_OBJECT
   public:
@@ -36,7 +36,6 @@ class GridRenderer : public QObject {
 
     // кэш параметров, под которые построена текущая геометрия —
     // чтобы не пересобирать буфер каждый кадр без необходимости
-    float m_cachedSpacing   = -1.0f;
     float m_cachedExtent    = -1.0f;
     int   m_cachedLineCount = -1;
 };

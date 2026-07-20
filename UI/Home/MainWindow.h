@@ -35,21 +35,21 @@ class MainWindow : public QMainWindow {
     void handleBackgroundChange(QAction* action);
     void axesVisibleToggled(bool visible);
     void gridVisibleToggled(bool visible);
-    void handleVideoExport();
+    // void handleVideoExport();
     void handleProjectSave();
     void handleProjectOpen();
     void handleSavePathSelection();
     void handleSessionStateChange(const QSpace::Session::CurrentSession& session);
-    void handleExportFinished(bool success);
+    // void handleExportFinished(bool success);
     void handleLayerSelectionsChange(const QList<LayerExplorerWidget::SelectedItem>& ids);
     void handleViewCreated(const QUuid& viewId, Visualize::Views::ViewType type);
     void handleViewRemoved(const QUuid& viewId); // TODO: реализовать удаление доков для удаленных окон
     void handleLayerSelectionChange(const QUuid& layerId);
 
   private:
-    QSpace::Core::AppCore*               m_app;
-    Ui::MainWindow*                      ui;
-    std::unique_ptr<QProgressDialog>     m_exportProgressDialog;
+    QSpace::Core::AppCore* m_app;
+    Ui::MainWindow*        ui;
+    // std::unique_ptr<QProgressDialog>     m_exportProgressDialog;
     std::unique_ptr<LayerExplorerWidget> m_layerExplorerWidget; //
     std::unique_ptr<PropertyInspector>   m_propertyInspector;   // TODO: изменить название widget
     std::unique_ptr<TimeLineWidget>      m_timeSliderWidget;

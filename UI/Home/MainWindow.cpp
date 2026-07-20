@@ -11,6 +11,8 @@
 #include "Models/DataTreeModel/DataTreeModel.h"
 #include "PropertyInspector.h"
 #include "TimeLineWidget.h"
+#include "ViewContainerWidget.h"
+#include "Visualize/Views/View3D/AbstractView3D.h"
 #include "ui_newmainwindow.h"
 #include <QDoubleSpinBox>
 #include <QHBoxLayout>
@@ -70,13 +72,13 @@ MainWindow::MainWindow(Core::AppCore* app, QWidget* parent)
     // --- ПОДГОТОВКА ДИАЛОГА ПРОГРЕССА ---
     //--------------------------------------------------
 
-    m_exportProgressDialog =
-        std::make_unique<QProgressDialog>(tr("Video Rendering..."), tr("Cancel"), 0, 100, this);
-    m_exportProgressDialog->setWindowTitle(tr("Exporting Video"));
-    m_exportProgressDialog->setWindowModality(Qt::WindowModal); // Блокируем главное окно
-    m_exportProgressDialog->setAutoClose(true);
-    m_exportProgressDialog->setAutoReset(true);
-    m_exportProgressDialog->reset(); // Скрываем по умолчанию
+    // m_exportProgressDialog =
+    //     std::make_unique<QProgressDialog>(tr("Video Rendering..."), tr("Cancel"), 0, 100, this);
+    // m_exportProgressDialog->setWindowTitle(tr("Exporting Video"));
+    // m_exportProgressDialog->setWindowModality(Qt::WindowModal); // Блокируем главное окно
+    // m_exportProgressDialog->setAutoClose(true);
+    // m_exportProgressDialog->setAutoReset(true);
+    // m_exportProgressDialog->reset(); // Скрываем по умолчанию
 
     {
         using namespace QSpace::Visualize::Views::View3D;
@@ -111,17 +113,21 @@ MainWindow::MainWindow(Core::AppCore* app, QWidget* parent)
     setCorner(Qt::BottomLeftCorner, Qt::BottomDockWidgetArea);
     setCorner(Qt::BottomRightCorner, Qt::BottomDockWidgetArea);
 }
+
 void MainWindow::handleViewCreated(const QUuid& viewId, Visualize::Views::ViewType type) {
     if (viewId.isNull()) {
         qCCritical(LogUI) << "Failed to create view!";
         return;
     }
+
     auto view       = m_app->viewController()->getView(viewId);
     auto viewWidget = view->getWidget();
+
     if (!view || !viewWidget) {
         qCCritical(LogUI) << "View created but not found in AppCore!";
         return;
     }
+
     QString      dockTitle = tr("View - %1").arg(view->viewName());
     QDockWidget* dock      = new QDockWidget(dockTitle, this);
     dock->setObjectName(viewId.toString()); // Устанавливаем имя для поиска при удалении
@@ -130,19 +136,16 @@ void MainWindow::handleViewCreated(const QUuid& viewId, Visualize::Views::ViewTy
                       QDockWidget::DockWidgetFloatable);
     dock->setWidget(viewWidget);
 
+    if (auto view3D = dynamic_cast<QSpace::Visualize::Views::AbstractView3D*>(view)) {
+        auto* container = new UI::ViewContainerWidget(viewWidget, view3D->sceneSettings(), dock);
+        dock->setWidget(container);
+    }
     // Используем лямбду для передачи viewId
-    connect(dock, &QDockWidget::visibilityChanged, this, [this, viewId](bool visible) {
-        // Если окно стало невидимым (пользователь нажал на 'x'),
-        // значит пора очистить ресурсы в ядре
-        if (!visible) {
-            // // Вызываем удаление через фасад.
-            // // Использование Qt::QueuedConnection гарантирует, что удаление произойдет
-            // // только когда текущий цикл обработки событий UI завершится.
-            // QMetaObject::invokeMethod(m_app,
-            //                           "requestViewRemoval",
-            //                           Qt::QueuedConnection,
-            //                           Q_ARG(QUuid, viewId));
-        }
+    connect(dock, &QDockWidget::destroyed, this, [this, viewId]() {
+        //   m_viewDockWidgets.remove(viewId); QMetaObject::invokeMethod(m_app,
+        //   "requestViewRemoval",
+        //   Qt::QueuedConnection,
+        //   Q_ARG(QUuid, viewId));
     });
     // 5. Размещение дока на форме
     // Если это не первое окно — создаем вкладки (Tabbed Layout)
@@ -163,6 +166,7 @@ void MainWindow::handleViewCreated(const QUuid& viewId, Visualize::Views::ViewTy
     dock->show();
     dock->raise();
 }
+
 void MainWindow::handleViewRemoved(const QUuid& viewId) {
     if (!m_viewDockWidgets.contains(viewId))
         return;
@@ -214,10 +218,10 @@ void MainWindow::setupSlots() {
     connect(ui->action_toggle_axes, &QAction::toggled, this, &MainWindow::axesVisibleToggled);
     connect(ui->action_toggle_grid, &QAction::toggled, this, &MainWindow::gridVisibleToggled);
 
-    // запуск рендеринга видео
-    QAction* actionExport =
-        ui->mainToolBar->addAction(QIcon::fromTheme("video-x-generic"), tr("Export Video"));
-    connect(actionExport, &QAction::triggered, this, &MainWindow::handleVideoExport);
+    // // запуск рендеринга видео
+    // QAction* actionExport =
+    //     ui->mainToolBar->addAction(QIcon::fromTheme("video-x-generic"), tr("Export Video"));
+    // connect(actionExport, &QAction::triggered, this, &MainWindow::handleVideoExport);
 
     // загрузка и сохранение проекта
     connect(ui->action_save_session, &QAction::triggered, this, &MainWindow::handleProjectSave);
@@ -291,6 +295,7 @@ void MainWindow::setupSlots() {
             }
         },
         Qt::ConnectionType::QueuedConnection);
+    connect(ui->action_exit, &QAction::triggered, qApp, &QCoreApplication::quit);
 }
 void MainWindow::handleLayerSelectionsChange(const QList<LayerExplorerWidget::SelectedItem>& ids) {
     if (ids.isEmpty()) {
@@ -303,14 +308,15 @@ void MainWindow::handleLayerSelectionsChange(const QList<LayerExplorerWidget::Se
 void MainWindow::handleLayerSelectionChange(const QUuid& layerId) {
     m_propertyInspector->setCurrentElement(layerId, Models::DataTreeItem::Type::LayerItem);
 }
-void MainWindow::handleExportFinished(bool success) {
-    m_exportProgressDialog->reset(); // Прячем окно
-    if (success) {
-        QMessageBox::information(this, tr("Ready"), tr("Video saved successfully!"));
-    } else {
-        QMessageBox::warning(this, tr("Cancel"), tr("Video export was canceled or finished with an error."));
-    }
-}
+// void MainWindow::handleExportFinished(bool success) {
+//     m_exportProgressDialog->reset(); // Прячем окно
+//     if (success) {
+//         QMessageBox::information(this, tr("Ready"), tr("Video saved successfully!"));
+//     } else {
+//         QMessageBox::warning(this, tr("Cancel"), tr("Video export was canceled or finished with an
+//         error."));
+//     }
+// }
 void MainWindow::handleSessionStateChange(const QSpace::Session::CurrentSession& session) {
     QString title = QString("QSpace - %1%2")
                         .arg(session.projectName.isEmpty() ? tr("New Project") : session.projectName)
@@ -327,42 +333,43 @@ void MainWindow::handleSavePathSelection() {
         m_app->projectController()->saveCurrentProjectAs(path);
     }
 }
-void MainWindow::handleVideoExport() {
-    // 1. Проверяем, выбран ли слой, который будем анимировать
-    auto selectedItems = m_layerExplorerWidget->getSelectedIds();
-    if (selectedItems.isEmpty()) {
-        QMessageBox::warning(this,
-                             tr("No layer selected"),
-                             tr("Please select a layer in the tree to export an animation based on it."));
-        return;
-    }
-    QUuid baseNodeId =
-        selectedItems.first().id; // Для простоты берем первый выбранный слой. Можно расширить логику позже.
+// void MainWindow::handleVideoExport() {
+//     // 1. Проверяем, выбран ли слой, который будем анимировать
+//     auto selectedItems = m_layerExplorerWidget->getSelectedIds();
+//     if (selectedItems.isEmpty()) {
+//         QMessageBox::warning(this,
+//                              tr("No layer selected"),
+//                              tr("Please select a layer in the tree to export an animation based on it."));
+//         return;
+//     }
+//     QUuid baseNodeId =
+//         selectedItems.first().id; // Для простоты берем первый выбранный слой. Можно расширить логику
+//         позже.
 
-    // 2. Выбираем файлы для анимации
-    QStringList files = QFileDialog::getOpenFileNames(this,
-                                                      tr("Select data files for animation"),
-                                                      "",
-                                                      tr("Bin Files (*.bin)"));
-    if (files.isEmpty())
-        return;
+//     // 2. Выбираем файлы для анимации
+//     QStringList files = QFileDialog::getOpenFileNames(this,
+//                                                       tr("Select data files for animation"),
+//                                                       "",
+//                                                       tr("Bin Files (*.bin)"));
+//     if (files.isEmpty())
+//         return;
 
-    // 3. Выбираем куда сохранить видео
-    QString savePath =
-        QFileDialog::getSaveFileName(this, tr("Save video as..."), "", tr("Video Files (*.ogv)"));
-    if (savePath.isEmpty())
-        return;
+//     // 3. Выбираем куда сохранить видео
+//     QString savePath =
+//         QFileDialog::getSaveFileName(this, tr("Save video as..."), "", tr("Video Files (*.ogv)"));
+//     if (savePath.isEmpty())
+//         return;
 
-    // TODO: Здесь можно добавить вызов QInputDialog для запроса `stride` (шага кадров) у
-    // пользователя
-    int stride = 1;
-    int fps    = 16;
-    // 4. Показываем диалог загрузки и запускаем процесс
-    m_exportProgressDialog->setValue(0);
-    m_exportProgressDialog->show();
+//     // TODO: Здесь можно добавить вызов QInputDialog для запроса `stride` (шага кадров) у
+//     // пользователя
+//     int stride = 1;
+//     int fps    = 16;
+//     // 4. Показываем диалог загрузки и запускаем процесс
+//     m_exportProgressDialog->setValue(0);
+//     m_exportProgressDialog->show();
 
-    // m_app->videoController()->startVideoExport(baseNodeId, files, savePath, stride, fps);
-}
+//     // m_app->videoController()->startVideoExport(baseNodeId, files, savePath, stride, fps);
+// }
 MainWindow::~MainWindow() {
     delete ui;
 }

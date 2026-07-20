@@ -88,6 +88,9 @@ void PropertyInspector::setupUiLogic() {
             &Visualize::ColorMapManager::paleteAdded,
             this,
             &PropertyInspector::handleColorMapAdded);
+    connect(ui->checkBox_colorbarOrientation, &QCheckBox::toggled, [this](bool isChecked) {
+        ui->colorbarWidget->setOrientation(isChecked);
+    });
 }
 
 void PropertyInspector::handleColorMapAdded(const Visualize::ColorMap& map) {

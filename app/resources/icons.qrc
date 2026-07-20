@@ -1,3 +1,9 @@
 <RCC>
-    <qresource prefix="/"/>
+    <qresource prefix="/">
+        <file>icons/grid_visible.svg</file>
+        <file>icons/orthographic_off.svg</file>
+        <file>icons/viewport_orthographic_off.svg</file>
+        <file>icons/orthographic_on.svg</file>
+        <file>icons/viewport_orthographic_on.svg</file>
+    </qresource>
 </RCC>
